@@ -1,0 +1,997 @@
+diff --git a/common/src/apm_profile_table.c b/common/src/apm_profile_table.c
+index 7439ff1..19f5b68 100644
+--- a/common/src/apm_profile_table.c
++++ b/common/src/apm_profile_table.c
+@@ -23,8 +23,8 @@ SysClkApmConfiguration sysclk_g_apm_configurations[] = {
+     {0x00020006, 1020000000, 384000000, 1065600000},
+     {0x92220007, 1020000000, 460800000, 1600000000},
+     {0x92220008, 1020000000, 460800000, 1331200000},
+-    {0x92220009, 1785000000,  76800000, 1600000000},
+-    {0x9222000A, 1785000000,  76800000, 1331200000},
++    {0x92220009, 1963500000,  76800000, 1600000000},
++    {0x9222000A, 1963500000,  76800000, 1331200000},
+     {0x9222000B, 1020000000,  76800000, 1600000000},
+     {0x9222000C, 1020000000,  76800000, 1331200000},
+     {0, 0, 0, 0},
+diff --git a/common/src/clock_table.c b/common/src/clock_table.c
+index a8164dc..2765962 100644
+--- a/common/src/clock_table.c
++++ b/common/src/clock_table.c
+@@ -11,11 +11,15 @@
+ #include <stdint.h>
+ 
+ uint32_t sysclk_g_freq_table_mem_hz[] = {
+-    665600000,
+-    800000000,
+-    1065600000,
++  //665600000,
++  //800000000,
++  //1065600000,
+     1331200000,
+-    1600000000,
++  //1600000000,
++    1731200000,
++    1862400000,
++    1996800000,
++    2131200000,
+     0,
+ };
+ 
+@@ -32,6 +36,12 @@ uint32_t sysclk_g_freq_table_cpu_hz[] = {
+     1581000000,
+     1683000000,
+     1785000000,
++    1887000000,
++    1963500000,
++    2091000000,
++    2193000000,
++    2295000000,
++    2397000000,
+     0,
+ };
+ 
+@@ -48,5 +58,14 @@ uint32_t sysclk_g_freq_table_gpu_hz[] = {
+     768000000,
+     844800000,
+     921600000,
++    998400000,
++    1075200000,
++    1152000000,
++    1228800000,
++    1267200000,
++    1305600000,
++    1344000000,
++  //1382400000,
++  //1420800000,
+     0,
+ };
+diff --git a/manager/src/advanced_settings_tab.cpp b/manager/src/advanced_settings_tab.cpp
+index 325d228..6d9725e 100644
+--- a/manager/src/advanced_settings_tab.cpp
++++ b/manager/src/advanced_settings_tab.cpp
+@@ -77,7 +77,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
+     });
+ 
+     // MEM
+-    brls::SelectListItem *memFreqListItem = createFreqListItem(SysClkModule_MEM, context.overrideFreqs[SysClkModule_MEM] / 1000000);
++    /*brls::SelectListItem *memFreqListItem = createFreqListItem(SysClkModule_MEM, context.overrideFreqs[SysClkModule_MEM] / 1000000);
+     memFreqListItem->getValueSelectedEvent()->subscribe([](int result)
+     {
+         Result rc = result == 0 ?
+@@ -90,11 +90,11 @@ AdvancedSettingsTab::AdvancedSettingsTab()
+             errorResult(result == 0 ? "sysclkIpcRemoveOverride" : "sysclkIpcSetOverride",  rc);
+             // TODO: Reset selected value
+         }
+-    });
++    });*/
+ 
+     this->addView(cpuFreqListItem);
+     this->addView(gpuFreqListItem);
+-    this->addView(memFreqListItem);
++    //this->addView(memFreqListItem);
+ 
+     // Config
+     this->addView(new brls::Header("Configuration"));
+diff --git a/manager/src/app_profile_frame.cpp b/manager/src/app_profile_frame.cpp
+index 4ad9545..0ea6af3 100644
+--- a/manager/src/app_profile_frame.cpp
++++ b/manager/src/app_profile_frame.cpp
+@@ -116,7 +116,7 @@ void AppProfileFrame::addFreqs(brls::List* list, SysClkProfile profile)
+     list->addView(gpuListItem);
+ 
+     // MEM
+-    brls::SelectListItem* memListItem = createFreqListItem(SysClkModule_MEM, this->profiles.mhzMap[profile][SysClkModule_MEM]);
++    /*brls::SelectListItem* memListItem = createFreqListItem(SysClkModule_MEM, this->profiles.mhzMap[profile][SysClkModule_MEM]);
+ 
+     this->profiles.mhzMap[profile][SysClkModule_MEM] *= 1000000;
+ 
+@@ -126,7 +126,7 @@ void AppProfileFrame::addFreqs(brls::List* list, SysClkProfile profile)
+ 
+         brls::Logger::debug("Caching freq for module %d and profile %d to %" PRIu32, SysClkModule_MEM, profile, this->profiles.mhzMap[profile][SysClkModule_MEM]);
+     });
+-    list->addView(memListItem);
++    list->addView(memListItem);*/
+ }
+ 
+ void AppProfileFrame::onProfileChanged()
+diff --git a/manager/src/cheat_sheet_tab.cpp b/manager/src/cheat_sheet_tab.cpp
+index 6823e0e..08a91bf 100644
+--- a/manager/src/cheat_sheet_tab.cpp
++++ b/manager/src/cheat_sheet_tab.cpp
+@@ -19,6 +19,8 @@
+ */
+ 
+ #include "cheat_sheet_tab.h"
++#include "ipc/client.h"
++#include "utils.h"
+ 
+ #include <borealis.hpp>
+ 
+@@ -28,8 +30,9 @@ CheatSheetTab::CheatSheetTab()
+     this->addView(new brls::Header("CPU Clocks"));
+     brls::Table *cpuTable = new brls::Table();
+ 
+-    cpuTable->addRow(brls::TableRowType::BODY, "Maximum", "1785 MHz");
+-    cpuTable->addRow(brls::TableRowType::BODY, "Official Docked and Handheld", "1020 MHz");
++    cpuTable->addRow(brls::TableRowType::BODY, "OC Suite Maximum", "2397.0 MHz");
++    cpuTable->addRow(brls::TableRowType::BODY, "Official Boost", "1785.0 MHz");
++    cpuTable->addRow(brls::TableRowType::BODY, "Official Docked and Handheld", "1020.0 MHz");
+ 
+     this->addView(cpuTable);
+ 
+@@ -37,10 +40,10 @@ CheatSheetTab::CheatSheetTab()
+     this->addView(new brls::Header("GPU Clocks"));
+     brls::Table *gpuTable = new brls::Table();
+ 
+-    gpuTable->addRow(brls::TableRowType::BODY, "Maximum", "921 MHz");
+-    gpuTable->addRow(brls::TableRowType::BODY, "Official Docked", "768 MHz");
+-    gpuTable->addRow(brls::TableRowType::BODY, "Maximum Handheld", "460 MHz");
+-    gpuTable->addRow(brls::TableRowType::BODY, "Official Handheld", "384 MHz");
++    gpuTable->addRow(brls::TableRowType::BODY, "OC Suite Maximum", "1344.0 MHz");
++    gpuTable->addRow(brls::TableRowType::BODY, "Official Maximum", "921.6 MHz");
++    gpuTable->addRow(brls::TableRowType::BODY, "Official Docked", "768.0 MHz");
++    gpuTable->addRow(brls::TableRowType::BODY, "Official Handheld", "384.0/460.8 MHz");
+ 
+     this->addView(gpuTable);
+ 
+@@ -48,8 +51,20 @@ CheatSheetTab::CheatSheetTab()
+     this->addView(new brls::Header("MEM Clocks"));
+     brls::Table *memTable = new brls::Table();
+ 
+-    memTable->addRow(brls::TableRowType::BODY, "Maximum, Official Docked", "1600 MHz");
+-    memTable->addRow(brls::TableRowType::BODY, "Official Handheld", "1331 MHz");
++    // Get context
++    SysClkContext context;
++    Result rc = sysclkIpcGetCurrentContext(&context);
++
++    if (R_FAILED(rc))
++    {
++        brls::Logger::error("Unable to get context");
++        errorResult("sysclkIpcGetCurrentContext", rc);
++        brls::Application::crash("Could not get the current sys-clk context, please check that it is correctly installed and enabled.");
++        return;
++    }
++
++    memTable->addRow(brls::TableRowType::BODY, "OC Suite", formatFreq(context.freqs[SysClkModule_MEM]));
++    memTable->addRow(brls::TableRowType::BODY, "Official", "1331.2/1600.0 MHz");
+ 
+     this->addView(memTable);
+ }
+diff --git a/overlay/src/ui/gui/app_profile_gui.cpp b/overlay/src/ui/gui/app_profile_gui.cpp
+index 29adfe5..116c803 100644
+--- a/overlay/src/ui/gui/app_profile_gui.cpp
++++ b/overlay/src/ui/gui/app_profile_gui.cpp
+@@ -62,7 +62,7 @@ void AppProfileGui::addProfileUI(SysClkProfile profile)
+     this->listElement->addItem(new tsl::elm::CategoryHeader(sysclkFormatProfile(profile, true)));
+     this->addModuleListItem(profile, SysClkModule_CPU, &sysclk_g_freq_table_cpu_hz[0]);
+     this->addModuleListItem(profile, SysClkModule_GPU, &sysclk_g_freq_table_gpu_hz[0]);
+-    this->addModuleListItem(profile, SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
++    //this->addModuleListItem(profile, SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
+ }
+ 
+ void AppProfileGui::listUI()
+diff --git a/overlay/src/ui/gui/global_override_gui.cpp b/overlay/src/ui/gui/global_override_gui.cpp
+index 3ea98e4..91742b7 100644
+--- a/overlay/src/ui/gui/global_override_gui.cpp
++++ b/overlay/src/ui/gui/global_override_gui.cpp
+@@ -62,7 +62,7 @@ void GlobalOverrideGui::listUI()
+ {
+     this->addModuleListItem(SysClkModule_CPU, &sysclk_g_freq_table_cpu_hz[0]);
+     this->addModuleListItem(SysClkModule_GPU, &sysclk_g_freq_table_gpu_hz[0]);
+-    this->addModuleListItem(SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
++    //this->addModuleListItem(SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
+ }
+ 
+ void GlobalOverrideGui::refresh()
+diff --git a/sysmodule/src/clock_manager.cpp b/sysmodule/src/clock_manager.cpp
+index 46d7207..4139f34 100644
+--- a/sysmodule/src/clock_manager.cpp
++++ b/sysmodule/src/clock_manager.cpp
+@@ -8,10 +8,14 @@
+  * --------------------------------------------------------------------------
+  */
+ 
++#define FORCE_ALL_HANDHELD_MODES_TO_USE_DOCK_CLOCK
++#include <nxExt.h>
++#include "errors.h"
+ #include "clock_manager.h"
+ #include "file_utils.h"
+ #include "clocks.h"
+ #include "process_management.h"
++#include <cstring>
+ 
+ ClockManager* ClockManager::instance = NULL;
+ 
+@@ -59,6 +63,136 @@ ClockManager::~ClockManager()
+     delete this->context;
+ }
+ 
++bool ClockManager::IsCpuBoostMode()
++{
++    std::uint32_t confId = 0;
++    Result rc = 0;
++    rc = apmExtGetCurrentPerformanceConfiguration(&confId);
++    ASSERT_RESULT_OK(rc, "apmExtGetCurrentPerformanceConfiguration");
++    if(confId == 0x92220009 || confId == 0x9222000A)
++        return true;
++    else
++        return false;
++}
++
++SysClkProfile ClockManager::ReverseNXProfile(bool ForceDock)
++{
++    RealProfile = Clocks::GetCurrentProfile();
++    switch(RealProfile)
++    {
++        case SysClkProfile_HandheldChargingOfficial:
++#ifdef FORCE_ALL_HANDHELD_MODES_TO_USE_DOCK_CLOCK
++        case SysClkProfile_HandheldChargingUSB:
++        case SysClkProfile_HandheldCharging:
++        case SysClkProfile_Handheld:
++#endif
++            if (ForceDock)
++                return SysClkProfile_Docked;
++            else
++                return RealProfile;
++        case SysClkProfile_Docked:
++            if (ForceDock)
++                return SysClkProfile_Docked;
++            else
++                return FileUtils::IsDownclockDockEnabled() ? SysClkProfile_HandheldChargingOfficial : SysClkProfile_Docked;
++        default:
++            return RealProfile;
++    }
++}
++
++void ClockManager::checkReverseNXTool()
++{
++    char ReverseNXToolAsm[] = "_ZN2nn2oe18GetPerformanceModeEv.asm64"; // Checking one asm64 file is enough
++    char ReverseNXToolAsmPath[128];
++    uint8_t flag = 0;
++    snprintf(ReverseNXToolAsmPath, sizeof ReverseNXToolAsmPath, "/SaltySD/patches/%s", ReverseNXToolAsm);
++
++    FILE *readReverseNXToolAsm;
++    readReverseNXToolAsm = fopen(ReverseNXToolAsmPath, "rb");
++
++    // Enforce mode globally: Enabled
++    if(readReverseNXToolAsm != NULL)
++    {
++        checkReverseNXToolAsm(readReverseNXToolAsm, &flag);
++        switch(flag)
++        {
++            case 1:
++                FileUtils::LogLine("[mgr] ReverseNX-Tool patches detected: Enforce Handheld globally");
++                this->context->profile = ReverseNXProfile(false);
++                isDockedReverseNX = false;
++                isEnabledReverseNX = true;
++                isEnabledReverseNXTool = true;
++                break;
++            case 2:
++                FileUtils::LogLine("[mgr] ReverseNX-Tool patches detected: Enforce Docked globally");
++                this->context->profile = ReverseNXProfile(true);
++                isDockedReverseNX = true;
++                isEnabledReverseNX = true;
++                isEnabledReverseNXTool = true;
++                break;
++        }
++    }
++    else
++    {
++        snprintf(ReverseNXToolAsmPath, sizeof ReverseNXToolAsmPath, "/SaltySD/patches/%016lX/%s", this->context->applicationId, ReverseNXToolAsm);
++        readReverseNXToolAsm = fopen(ReverseNXToolAsmPath, "rb");
++        // Found game-specific setting
++        if(readReverseNXToolAsm != NULL)
++        {
++            checkReverseNXToolAsm(readReverseNXToolAsm, &flag);
++            switch(flag)
++            {
++                case 1:
++                    FileUtils::LogLine("[mgr] ReverseNX-Tool patches detected: Force Handheld in %016lX", this->context->applicationId);
++                    this->context->profile = ReverseNXProfile(false);
++                    isDockedReverseNX = false;
++                    isEnabledReverseNX = true;
++                    isEnabledReverseNXTool = true;
++                    break;
++                case 2:
++                    FileUtils::LogLine("[mgr] ReverseNX-Tool patches detected: Force Docked in %016lX", this->context->applicationId);
++                    this->context->profile = ReverseNXProfile(true);
++                    isDockedReverseNX = true;
++                    isEnabledReverseNX = true;
++                    isEnabledReverseNXTool = true;
++                    break;
++                default:
++                    isEnabledReverseNXTool = false;
++            }
++        }
++    }
++}
++
++bool ClockManager::GameStartBoost()
++{
++    if (tickStartBoost && this->GetConfig()->Enabled())
++    {
++        if (Clocks::GetCurrentHz(SysClkModule_CPU) != MAX_CPU)
++        {
++            Clocks::SetHz(SysClkModule_CPU, MAX_CPU);
++            this->context->freqs[SysClkModule_CPU] = MAX_CPU;
++        }
++
++        std::uint64_t applicationId = ProcessManagement::GetCurrentApplicationId();
++        // If user exit the game
++        if (applicationId != this->context->applicationId)
++        {
++            tickStartBoost = 0;
++            return false;
++        }
++
++        if (tickStartBoost == 1)
++        {
++            FileUtils::LogLine("[mgr] Boost done, reset to stock");
++            Clocks::ResetToStock();
++        }
++        tickStartBoost--;
++        return true;
++    }
++
++    return false;
++}
++
+ void ClockManager::SetRunning(bool running)
+ {
+     this->running = running;
+@@ -72,27 +206,75 @@ bool ClockManager::Running()
+ void ClockManager::Tick()
+ {
+     std::scoped_lock lock{this->contextMutex};
+-    if (this->RefreshContext() || this->config->Refresh())
++
++    if(!GameStartBoost())
+     {
+-        std::uint32_t hz = 0;
+-        for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
++        bool cpuBoost = FileUtils::IsBoostEnabled() ? IsCpuBoostMode() : false;
++        if (this->RefreshContext() || this->config->Refresh())
+         {
+-            hz = this->context->overrideFreqs[module];
+-
+-            if(!hz)
++            std::uint32_t hz = 0;
++            std::uint32_t hzForceOverride = 0;
++            for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
+             {
+-                hz = this->config->GetAutoClockHz(this->context->applicationId, (SysClkModule)module, this->context->profile);
+-            }
++                hz = this->context->overrideFreqs[module];
+ 
+-            if (hz)
+-            {
+-                hz = Clocks::GetNearestHz((SysClkModule)module, this->context->profile, hz);
++                if(!hz)
++                {
++                    hz = this->config->GetAutoClockHz(this->context->applicationId, (SysClkModule)module, this->context->profile);
++                    hzForceOverride = this->config->GetAutoClockHz(0xA111111111111111, (SysClkModule)module, this->context->profile);
++                    if (!hz && hzForceOverride)
++                        hz = hzForceOverride;
+ 
+-                if (hz != this->context->freqs[module] && this->context->enabled)
++                    if(isEnabledReverseNX && !hz)
++                    {
++                        switch(module)
++                        {
++                            case SysClkModule_CPU:
++                                hz = 1020'000'000;
++                                break;
++                            case SysClkModule_GPU:
++                                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
++                                                        || RealProfile != SysClkProfile_Docked))
++                                    hz = 460'800'000;
++                                else
++                                    hz = 768'000'000;
++                                break;
++                        }
++                    }
++
++                }
++
++                if (hz)
+                 {
+-                    FileUtils::LogLine("[mgr] %s clock set : %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
+-                    Clocks::SetHz((SysClkModule)module, hz);
+-                    this->context->freqs[module] = hz;
++                    hz = Clocks::GetNearestHz((SysClkModule)module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
++
++                    if (hz != this->context->freqs[module] && this->context->enabled)
++                    {
++                        if (cpuBoost)
++                        {
++                            if (module == SysClkModule_CPU && hz < MAX_CPU)
++                            {
++                                hz = MAX_CPU;
++                                FileUtils::LogLine("[mgr] CpuBoostMode detected, bump CPU to max");
++                            }
++                        }
++                        FileUtils::LogLine("[mgr] %s clock set : %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
++                        Clocks::SetHz((SysClkModule)module, hz);
++                        this->context->freqs[module] = hz;
++                    }
++                }
++            }
++        }
++        else if (FileUtils::IsBoostEnabled())
++        {
++            // If user doesn't set any freq but with sys-clk enabled, then boost CPU in CpuBoostMode
++            if(cpuBoost && this->GetConfig()->Enabled())
++            {
++                if(this->context->freqs[SysClkModule_CPU] != MAX_CPU)
++                {
++                    FileUtils::LogLine("[mgr] CpuBoostMode detected, bump CPU to max");
++                    Clocks::SetHz(SysClkModule_CPU, MAX_CPU);
++                    this->context->freqs[SysClkModule_CPU] = MAX_CPU;
+                 }
+             }
+         }
+@@ -104,6 +286,56 @@ void ClockManager::WaitForNextTick()
+     svcSleepThread(this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) * 1000000ULL);
+ }
+ 
++void ClockManager::checkReverseNXToolAsm(FILE* readFile, uint8_t* flag)
++{
++    // Copied from ReverseNXTool
++    uint8_t Docked[0x10] = {0xE0, 0x03, 0x00, 0x32, 0xC0, 0x03, 0x5F, 0xD6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++    uint8_t Handheld[0x10] = {0x00, 0x00, 0xA0, 0x52, 0xC0, 0x03, 0x5F, 0xD6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++    uint8_t filebuffer[0x10] = {0};
++    uint8_t cmpresult = 0;
++    fread(&filebuffer, 1, 16, readFile);
++    cmpresult = memcmp(filebuffer, Docked, sizeof(Docked));
++    if (cmpresult != 0)
++    {
++        cmpresult = memcmp(filebuffer, Handheld, sizeof(Handheld));
++        if (cmpresult != 0)
++            *flag = 0; // Set to default
++        else
++            *flag = 1; // Handheld
++    }
++    else
++        *flag = 2; // Docked
++
++    fclose(readFile);
++}
++
++void ClockManager::checkReverseNXRT(bool recheckReverseNX, uint8_t* flag)
++{
++    FILE* readReverseNXRTConf = fopen(FILE_REVERSENX_RT_CONF_PATH, "rb");
++    if (readReverseNXRTConf != NULL)
++    {
++        uint8_t ReverseNXRTConfArr[9];
++        fread(ReverseNXRTConfArr, 9, 1, readReverseNXRTConf);
++        fclose(readReverseNXRTConf);
++        remove(FILE_REVERSENX_RT_CONF_PATH);
++
++        uint8_t currentTid[8];
++        for(int i = 0; i < 8; i++)
++            currentTid[i] = this->context->applicationId >> 8*(7-i);
++
++        uint8_t cmpresult = memcmp(currentTid, ReverseNXRTConfArr, sizeof(currentTid));
++
++        if (cmpresult == 0)
++            *flag = ReverseNXRTConfArr[8]; // 1: Handheld, 2: Docked, 3: Reset
++        else
++            *flag = 0;  // 0: Not applicable
++    }
++    else if (recheckReverseNX)
++        *flag = prevReverseNXRT; // Use previous state when profile changes
++    else
++        *flag = 0;
++}
++
+ bool ClockManager::RefreshContext()
+ {
+     bool hasChanged = false;
+@@ -120,21 +352,103 @@ bool ClockManager::RefreshContext()
+     if (applicationId != this->context->applicationId)
+     {
+         FileUtils::LogLine("[mgr] TitleID change: %016lX", applicationId);
++        prevReverseNXRT = 0; // Reset ReverseNX-RT previous state when Title ID changes
+         this->context->applicationId = applicationId;
+         hasChanged = true;
++
++        if (FileUtils::IsReverseNXEnabled() || recheckReverseNX)
++        {
++            // A new game starts or the real profile changes, then we need to check if ReverseNXTool patches are applied
++            isEnabledReverseNX = false;
++
++            // Check if ReverseNXTool patches are applied
++            if (applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
++                this->checkReverseNXTool();
++        }
++
++        if (FileUtils::IsBoostStartEnabled() && this->context->applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
++        {
++            // If a game starts and override for CPU clock is not enabled, then set MAX_CPU for 10 sec
++            std::uint32_t overcpu = this->context->overrideFreqs[SysClkModule_CPU];
++            if (!overcpu)
++            {
++                tickStartBoost = (std::uint32_t)( 10'000 / this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) ) + 1;
++                FileUtils::LogLine("[mgr] A game starts, bump CPU to max for 10 sec");
++                return true;
++            }
++        }
+     }
+ 
++    if (!tickCheckReverseNXRT || recheckReverseNX)
++    {
++        uint8_t flag = 0;
++        checkReverseNXRT(recheckReverseNX, &flag);
++
++        switch(flag)
++        {
++            case 1:
++                FileUtils::LogLine("[mgr] ReverseNX-RT detected: Enforce Handheld Mode");
++                this->context->profile = ReverseNXProfile(false);
++                prevReverseNXRT = flag;
++                isEnabledReverseNX = true;
++                isDockedReverseNX = false;
++                hasChanged = true;
++                break;
++            case 2:
++                FileUtils::LogLine("[mgr] ReverseNX-RT detected: Enforce Docked Mode");
++                this->context->profile = ReverseNXProfile(true);
++                prevReverseNXRT = flag;
++                isEnabledReverseNX = true;
++                isDockedReverseNX = true;
++                hasChanged = true;
++                break;
++            case 3:
++                FileUtils::LogLine("[mgr] ReverseNX-RT disabled: Reset to System-controlled Mode and recheck ReverseNX-Tool");
++                RealProfile = Clocks::GetCurrentProfile();
++                this->context->profile = RealProfile;
++                prevReverseNXRT = 0;
++                isEnabledReverseNX = false;
++                isDockedReverseNX = false;
++                hasChanged = true;
++                if (this->context->applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
++                    this->checkReverseNXTool();
++                break;
++            case 0:
++                if (recheckReverseNX && isEnabledReverseNXTool && this->context->applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
++                    this->checkReverseNXTool();
++                break;
++        }
++        // Check once per sec
++        tickCheckReverseNXRT = (std::uint32_t)( 1'000 / this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) ) + 1;
++    }
++    tickCheckReverseNXRT--;
++
++    if (recheckReverseNX)
++        recheckReverseNX = false;
++
+     SysClkProfile profile = Clocks::GetCurrentProfile();
+-    if (profile != this->context->profile)
++    if (profile != this->context->profile && !isEnabledReverseNX)
+     {
+         FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(profile, true));
+         this->context->profile = profile;
+         hasChanged = true;
+     }
++    if (profile != RealProfile && isEnabledReverseNX)
++    {
++        FileUtils::LogLine("[mgr] Profile change: %s, recheck ReverseNX", Clocks::GetProfileName(profile, true));
++        this->context->profile = profile;
++        RealProfile = profile;
++        hasChanged = true;
++        recheckReverseNX = true;
++    }
+ 
+     // restore clocks to stock values on app or profile change
+     if(hasChanged)
+     {
++        if (profile == SysClkProfile_Handheld)
++            MAX_CPU = 1963'500'000;
++        else
++            MAX_CPU = 2295'000'000;
+         Clocks::ResetToStock();
+     }
+ 
+@@ -142,7 +456,9 @@ bool ClockManager::RefreshContext()
+     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
+     {
+         hz = Clocks::GetCurrentHz((SysClkModule)module);
+-        if (hz != 0 && hz != this->context->freqs[module])
++        uint32_t cur_mhz = hz/1000'000;
++        uint32_t be4_mhz = this->context->freqs[module]/1000'000;
++        if (hz != 0 && cur_mhz != be4_mhz)
+         {
+             FileUtils::LogLine("[mgr] %s clock change: %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
+             this->context->freqs[module] = hz;
+diff --git a/sysmodule/src/clock_manager.h b/sysmodule/src/clock_manager.h
+index 3eecb21..fd5dce2 100644
+--- a/sysmodule/src/clock_manager.h
++++ b/sysmodule/src/clock_manager.h
+@@ -20,14 +20,32 @@
+ class ClockManager
+ {
+   public:
++    std::uint32_t MAX_CPU = 1963500000;
++
+     static ClockManager* GetInstance();
+     static void Initialize();
+     static void Exit();
+ 
++    bool recheckReverseNX = false;
++    bool isEnabledReverseNX = false;
++    bool isEnabledReverseNXTool = false;
++    bool isDockedReverseNX = false;
++    std::uint16_t tickCheckReverseNXRT = 0;
++    std::uint16_t tickStartBoost = 0;
++    char prevReverseNXRT = 0;
++    SysClkProfile RealProfile;
++
++    bool IsCpuBoostMode();
++    SysClkProfile ReverseNXProfile(bool);
++    void checkReverseNXTool();
++    bool GameStartBoost();
++
+     void SetRunning(bool running);
+     bool Running();
+     void Tick();
+     void WaitForNextTick();
++    void checkReverseNXToolAsm(FILE*, uint8_t*);
++    void checkReverseNXRT(bool, uint8_t*);
+     SysClkContext GetCurrentContext();
+     Config* GetConfig();
+ 
+diff --git a/sysmodule/src/clocks.cpp b/sysmodule/src/clocks.cpp
+index 62ef40f..3ef7e15 100644
+--- a/sysmodule/src/clocks.cpp
++++ b/sysmodule/src/clocks.cpp
+@@ -12,6 +12,8 @@
+ #include "clocks.h"
+ #include "errors.h"
+ 
++bool Clocks::isMariko = false;
++
+ void Clocks::GetList(SysClkModule module, std::uint32_t **outClocks)
+ {
+     switch(module)
+@@ -60,6 +62,26 @@ void Clocks::Initialize()
+         rc = tcInitialize();
+         ASSERT_RESULT_OK(rc, "tcInitialize");
+     }
++
++    // Check if it's Mariko
++    u64 hardware_type = 0;
++    splInitialize();
++    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
++    splExit();
++
++    switch(hardware_type) {
++        case 0: //Icosa
++        case 1: //Copper
++            break;
++        case 2: //Hoag
++        case 3: //Iowa
++        case 4: //Calcio
++        case 5: //Aula
++            isMariko = true;
++            break;
++        default:
++            break;
++    }
+ }
+ 
+ void Clocks::Exit()
+@@ -171,7 +193,8 @@ void Clocks::ResetToStock()
+ 
+         Clocks::SetHz(SysClkModule_CPU, apmConfiguration->cpu_hz);
+         Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
+-        Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
++        // We don't need to set MEM freqs any more
++        //Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
+     }
+     else
+     {
+@@ -195,16 +218,16 @@ SysClkProfile Clocks::GetCurrentProfile()
+         return SysClkProfile_Docked;
+     }
+ 
+-    ChargerType chargerType;
++    PsmChargerType chargerType;
+ 
+     rc = psmGetChargerType(&chargerType);
+     ASSERT_RESULT_OK(rc, "psmGetChargerType");
+ 
+-    if(chargerType == ChargerType_Charger)
++    if(chargerType == PsmChargerType_EnoughPower)
+     {
+         return SysClkProfile_HandheldChargingOfficial;
+     }
+-    else if(chargerType == ChargerType_Usb)
++    else if(chargerType == PsmChargerType_LowPower || chargerType == PsmChargerType_NotSupported)
+     {
+         return SysClkProfile_HandheldChargingUSB;
+     }
+@@ -214,6 +237,10 @@ SysClkProfile Clocks::GetCurrentProfile()
+ 
+ void Clocks::SetHz(SysClkModule module, std::uint32_t hz)
+ {
++    // We don't need to set MEM freqs any more
++    if (module == SysClkModule_MEM)
++        return;
++
+     Result rc = 0;
+ 
+     if(hosversionAtLeast(8,0,0))
+@@ -222,7 +249,6 @@ void Clocks::SetHz(SysClkModule module, std::uint32_t hz)
+ 
+         rc = clkrstOpenSession(&session, Clocks::GetPcvModuleId(module), 3);
+         ASSERT_RESULT_OK(rc, "clkrstOpenSession");
+-
+         rc = clkrstSetClockRate(&session, hz);
+         ASSERT_RESULT_OK(rc, "clkrstSetClockRate");
+ 
+@@ -248,7 +274,7 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
+         ASSERT_RESULT_OK(rc, "clkrstOpenSession");
+ 
+         rc = clkrstGetClockRate(&session, &hz);
+-        ASSERT_RESULT_OK(rc, "clkrstSetClockRate");
++        ASSERT_RESULT_OK(rc, "clkrstGetClockRate");
+ 
+         clkrstCloseSession(&session);
+     }
+@@ -280,11 +306,11 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
+     {
+         if(profile < SysClkProfile_HandheldCharging)
+         {
+-            return SYSCLK_GPU_HANDHELD_MAX_HZ;
++            return isMariko ? 1536000000 : SYSCLK_GPU_HANDHELD_MAX_HZ;
+         }
+         else if(profile <= SysClkProfile_HandheldChargingUSB)
+         {
+-            return SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ;
++            return isMariko ? 1536000000 : SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ;
+         }
+     }
+ 
+@@ -293,6 +319,79 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
+ 
+ std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
+ {
++    // Hardcoded values to return, I don't know why it will bump to max when excessive OC
++    if(module == SysClkModule_MEM)
++    {
++        switch(inHz)
++        {
++            case 1331000000:
++                return 1331200000;
++            case 1731000000:
++                return 1731200000;
++            case 1862000000:
++                return 1862400000;
++            case 1996000000:
++                return 1996800000;
++            default:
++                return inHz;
++        }
++    }
++
++    if(module == SysClkModule_CPU)
++    {
++        switch(inHz)
++        {
++            case 1963000000:
++                return 1963500000;
++            default:
++                return inHz;
++        }
++    }
++
++    if(module == SysClkModule_GPU)
++    {
++        switch(inHz)
++        {
++            case 76000000:
++                return 76800000;
++            case 153000000:
++                return 153600000;
++            case 230000000:
++                return 230400000;
++            case 307000000:
++                return 307200000;
++            case 460000000:
++                return 460800000;
++            case 537000000:
++                return 537600000;
++            case 614000000:
++                return 614400000;
++            case 691000000:
++                return 691200000;
++            case 844000000:
++                return 844800000;
++            case 921000000:
++                return 921600000;
++            case 998000000:
++                return 998400000;
++            case 1075000000:
++                return 1075200000;
++            case 1228000000:
++                return 1228800000;
++            case 1267000000:
++                return 1267200000;
++            case 1305000000:
++                return 1305600000;
++            case 1382000000:
++                return 1382400000;
++            case 1420000000:
++                return 1420800000;
++            default:
++                return inHz;
++        }
++    }
++
++    return inHz;
+     std::uint32_t *clockTable = NULL;
+     GetList(module, &clockTable);
+ 
+diff --git a/sysmodule/src/clocks.h b/sysmodule/src/clocks.h
+index 7f86be8..5ff180b 100644
+--- a/sysmodule/src/clocks.h
++++ b/sysmodule/src/clocks.h
+@@ -16,6 +16,7 @@
+ class Clocks
+ {
+   public:
++    static bool isMariko;
+     static void Exit();
+     static void Initialize();
+     static void ResetToStock();
+diff --git a/sysmodule/src/file_utils.cpp b/sysmodule/src/file_utils.cpp
+index 5503f44..8f91a1a 100644
+--- a/sysmodule/src/file_utils.cpp
++++ b/sysmodule/src/file_utils.cpp
+@@ -9,12 +9,19 @@
+  */
+ 
+ #include "file_utils.h"
++#include "clocks.h"
++#include <dirent.h>
++#include <filesystem>
+ #include <nxExt.h>
+ 
+ static LockableMutex g_log_mutex;
+ static LockableMutex g_csv_mutex;
+ static std::atomic_bool g_has_initialized = false;
+ static bool g_log_enabled = false;
++static bool g_boost_enabled = false;
++static bool g_boost_start_enabled = false;
++static bool g_downclock_dock_enabled = false;
++static bool g_reversenx_enabled = false;
+ static std::uint64_t g_last_flag_check = 0;
+ 
+ extern "C" void __libnx_init_time(void);
+@@ -124,9 +131,55 @@ void FileUtils::RefreshFlags(bool force)
+         g_log_enabled = false;
+     }
+ 
++    // Only Enable Boost for Mariko
++    if (Clocks::isMariko)
++    {
++        file = fopen(FILE_BOOST_FLAG_PATH, "r");
++        if (file)
++        {
++            g_boost_enabled = true;
++            fclose(file);
++        } else {
++            g_boost_enabled = false;
++        }
++
++        file = fopen(FILE_BOOST_START_FLAG_PATH, "r");
++        if (file)
++        {
++            g_boost_start_enabled = true;
++            fclose(file);
++        } else {
++            g_boost_start_enabled = false;
++        }
++    }
++
++    file = fopen(FILE_DOWNCLOCK_DOCK_FLAG_PATH, "r");
++    if (file)
++    {
++        g_downclock_dock_enabled = true;
++        fclose(file);
++    } else {
++        g_downclock_dock_enabled = false;
++    }
++
+     g_last_flag_check = now;
+ }
+ 
++bool FileUtils::IsBoostEnabled()
++{
++    return g_boost_enabled;
++}
++
++bool FileUtils::IsBoostStartEnabled()
++{
++    return g_boost_start_enabled;
++}
++
++bool FileUtils::IsDownclockDockEnabled()
++{
++    return g_downclock_dock_enabled;
++}
++
+ void FileUtils::InitializeAsync()
+ {
+     Thread initThread = {0};
+@@ -163,9 +216,23 @@ Result FileUtils::Initialize()
+         FileUtils::LogLine("=== " TARGET " " TARGET_VERSION " ===");
+     }
+ 
++    FILE *file = fopen(FILE_SALTYNX_PATH, "r");
++    if (file)
++    {
++        g_reversenx_enabled = true;
++        fclose(file);
++    } else {
++        g_reversenx_enabled = false;
++    }
++
+     return rc;
+ }
+ 
++bool FileUtils::IsReverseNXEnabled()
++{
++    return g_reversenx_enabled;
++}
++
+ void FileUtils::Exit()
+ {
+     if (!g_has_initialized)
+diff --git a/sysmodule/src/file_utils.h b/sysmodule/src/file_utils.h
+index 4f1642e..336e63b 100644
+--- a/sysmodule/src/file_utils.h
++++ b/sysmodule/src/file_utils.h
+@@ -22,6 +22,11 @@
+ #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
+ #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
+ #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
++#define FILE_BOOST_FLAG_PATH FILE_CONFIG_DIR "/boost.flag"
++#define FILE_BOOST_START_FLAG_PATH FILE_CONFIG_DIR "/boost_start.flag"
++#define FILE_DOWNCLOCK_DOCK_FLAG_PATH FILE_CONFIG_DIR "/downclock_dock.flag"
++#define FILE_SALTYNX_PATH "/atmosphere/contents/0000000000534C56/flags/boot2.flag" // Just check for SaltyNX boot flag
++#define FILE_REVERSENX_RT_CONF_PATH FILE_CONFIG_DIR "/ReverseNX-RT.conf"
+ 
+ class FileUtils
+ {
+@@ -30,6 +35,10 @@ class FileUtils
+     static Result Initialize();
+     static bool IsInitialized();
+     static bool IsLogEnabled();
++    static bool IsBoostEnabled();
++    static bool IsBoostStartEnabled();
++    static bool IsDownclockDockEnabled();
++    static bool IsReverseNXEnabled();
+     static void InitializeAsync();
+     static void LogLine(const char *format, ...);
+     static void WriteContextToCsv(const SysClkContext* context);

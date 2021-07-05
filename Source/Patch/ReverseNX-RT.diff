@@ -1,0 +1,190 @@
+diff --git a/.gitignore b/.gitignore
+index 3e35c18..6b42bc5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -8,3 +8,4 @@ build/
+ *.nacp
+ 
+ *.nro
++*.DS_Store
+diff --git a/Overlay/libs/Atmosphere-libs b/Overlay/libs/Atmosphere-libs
+index 2d522dc..bc08912 160000
+--- a/Overlay/libs/Atmosphere-libs
++++ b/Overlay/libs/Atmosphere-libs
+@@ -1 +1 @@
+-Subproject commit 2d522dc6a12b2eb5eb3f103a8c5b5126ca301b1a
++Subproject commit bc08912dd31bb172467add8e24b4f0adac431939
+diff --git a/Overlay/libs/libtesla b/Overlay/libs/libtesla
+index 6628524..a5ce77d 160000
+--- a/Overlay/libs/libtesla
++++ b/Overlay/libs/libtesla
+@@ -1 +1 @@
+-Subproject commit 66285245361a02e5480c7bb7dac9ef6449ae6181
++Subproject commit a5ce77d14f144a24c21684128ae79ef1e808734c
+diff --git a/Overlay/source/main.cpp b/Overlay/source/main.cpp
+index cec060c..7b7d8b1 100644
+--- a/Overlay/source/main.cpp
++++ b/Overlay/source/main.cpp
+@@ -2,8 +2,12 @@
+ #include <tesla.hpp>    // The Tesla Header
+ #include "dmntcht.h"
+ 
++#define PROCESS_MANAGEMENT_QLAUNCH_TID 0x0100000000001000ULL
++
+ bool def = true;
++bool defChanged = false;
+ bool isDocked = false;
++bool isDockedChanged = false;
+ bool PluginRunning = false;
+ bool closed = false;
+ Handle debug;
+@@ -17,6 +21,7 @@ bool dmntcht = false;
+ bool SaltySD = false;
+ bool bak = false;
+ bool plugin = false;
++bool sysclkComm = false;
+ char DockedChar[32];
+ char SystemChar[32];
+ char PluginChar[36];
+@@ -54,6 +59,29 @@ bool isServiceRunning(const char *serviceName) {
+ 	}
+ }
+ 
++u64 GetCurrentApplicationId()
++{
++	// Copied from sys-clk
++    Result rc = 0;
++    std::uint64_t pid = 0;
++    std::uint64_t tid = 0;
++    rc = pmdmntGetApplicationProcessId(&pid);
++
++    if (rc == 0x20f)
++    {
++        return PROCESS_MANAGEMENT_QLAUNCH_TID;
++    }
++
++    rc = pminfoGetProgramId(&tid, pid);
++
++    if (rc == 0x20f)
++    {
++        return PROCESS_MANAGEMENT_QLAUNCH_TID;
++    }
++
++    return tid;
++}
++
+ class GuiTest : public tsl::Gui {
+ public:
+ 	GuiTest(u8 arg1, u8 arg2, bool arg3) { }
+@@ -95,9 +123,10 @@ class GuiTest : public tsl::Gui {
+ 		if (MAGIC == 0x06BA7E39) {
+ 			auto *clickableListItem = new tsl::elm::ListItem("Change system control");
+ 			clickableListItem->setClickListener([](u64 keys) { 
+-				if (keys & KEY_A) {
++				if (keys & HidNpadButton_A) {
+ 					if (PluginRunning == true) {
+ 						def = !def;
++						defChanged = true;
+ 						if (dmntcht == true) {
+ 							dmntchtWriteCheatProcessMemory(def_address, &def, 0x1);
+ 							dmntchtReadCheatProcessMemory(def_address, &def, 0x1);
+@@ -120,9 +149,10 @@ class GuiTest : public tsl::Gui {
+ 			
+ 			auto *clickableListItem2 = new tsl::elm::ListItem("Change mode");
+ 			clickableListItem2->setClickListener([](u64 keys) { 
+-				if (keys & KEY_A) {
++				if (keys & HidNpadButton_A) {
+ 					if (PluginRunning == true && def == false) {
+ 						isDocked =! isDocked;
++						isDockedChanged = true;
+ 						if (dmntcht == true) {
+ 							dmntchtWriteCheatProcessMemory(docked_address, &isDocked, 0x1);
+ 							dmntchtReadCheatProcessMemory(docked_address, &isDocked, 0x1);
+@@ -145,7 +175,7 @@ class GuiTest : public tsl::Gui {
+ 		else if (SaltySD == true && plugin == true && check == false) {
+ 			auto *clickableListItem = new tsl::elm::ListItem("(De)activate plugin");
+ 			clickableListItem->setClickListener([](u64 keys) { 
+-				if (keys & KEY_A) {
++				if (keys & HidNpadButton_A) {
+ 					if (bak == false) {
+ 						rename("sdmc:/SaltySD/plugins/ReverseNX-RT.elf", "sdmc:/SaltySD/plugins/ReverseNX-RT.elf.bak");
+ 						bak = true;
+@@ -185,6 +215,38 @@ class GuiTest : public tsl::Gui {
+ 					svcReadDebugProcessMemory(&isDocked, debug, docked_address, 0x1);
+ 					svcCloseHandle(debug);
+ 				}
++				if (sysclkComm && isDockedChanged && def == false && bak == false)
++				{
++					uint8_t sysclkConfArr[9];
++					u64 currentTID = GetCurrentApplicationId();
++					if (currentTID != PROCESS_MANAGEMENT_QLAUNCH_TID)
++					{
++						for(int i = 0; i < 8; i++) // TID to hex
++							sysclkConfArr[i] = currentTID >> 8*(7-i);
++						sysclkConfArr[8] = isDocked + 1;
++
++						FILE* sysclkConf = fopen("/config/sys-clk/ReverseNX-RT.conf", "wb+");
++						fwrite(sysclkConfArr, sizeof(sysclkConfArr), 1, sysclkConf);
++						fclose(sysclkConf);
++					}
++					isDockedChanged = false;
++				}
++				if (sysclkComm && defChanged && def == true && bak == false) // change from force mode to system-controlled mode
++				{
++					uint8_t sysclkConfArr[9];
++					u64 currentTID = GetCurrentApplicationId();
++					if (currentTID != PROCESS_MANAGEMENT_QLAUNCH_TID)
++					{
++						for(int i = 0; i < 8; i++) // TID to hex
++							sysclkConfArr[i] = currentTID >> 8*(7-i);
++						sysclkConfArr[8] = 3;
++
++						FILE* sysclkConf = fopen("/config/sys-clk/ReverseNX-RT.conf", "wb+");
++						fwrite(sysclkConfArr, sizeof(sysclkConfArr), 1, sysclkConf);
++						fclose(sysclkConf);
++					}
++					defChanged = false;
++				}
+ 				i = 0;
+ 			}
+ 			else i++;
+@@ -202,7 +264,7 @@ class GuiTest : public tsl::Gui {
+ 	}
+ 
+ 	// Called once every frame to handle inputs not handled by other UI elements
+-	virtual bool handleInput(u64 keysDown, u64 keysHeld, touchPosition touchInput, JoystickPosition leftJoyStick, JoystickPosition rightJoyStick) override {
++	virtual bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState joyStickPosLeft, HidAnalogStickState joyStickPosRight) override {
+ 		return false;   // Return true here to singal the inputs have been consumed
+ 	}
+ };
+@@ -213,6 +275,7 @@ class OverlayTest : public tsl::Overlay {
+ 	virtual void initServices() override {
+ 		smInitialize();
+ 		fsdevMountSdmc();
++		pminfoInitialize();
+ 		
+ 		SaltySD = CheckPort();
+ 		if (SaltySD == false) return;
+@@ -234,6 +297,14 @@ class OverlayTest : public tsl::Overlay {
+ 			else return;
+ 		}
+ 
++		// Check if sys-clk exist
++		temp = fopen("/atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag", "r");
++		if (temp != NULL)
++		{
++			sysclkComm = true;
++			fclose(temp);
++		}
++
+ 		if (R_FAILED(pmdmntGetApplicationProcessId(&PID))) remove("sdmc:/SaltySD/ReverseNX-RT.hex");
+ 		else {
+ 			check = true;
+@@ -284,6 +355,7 @@ class OverlayTest : public tsl::Overlay {
+ 	virtual void exitServices() override {
+ 		dmntchtExit();
+ 		if (dmntcht == false) svcCloseHandle(debug);
++		pminfoExit();
+ 		fsdevUnmountDevice("sdmc");
+ 		smExit();
+ 	}  // Callet at the end to clean up all services previously initialized

@@ -1,0 +1,149 @@
+pcvModulePath = "bis:/Contents/registered/875acbb5a5b6526159ac68a3c91884c7.nca/00"
+OldBackupPath = "sd:/atmosphere/oc_patches/12-patch.bak"
+BackupPath = "sd:/atmosphere/oc_patches/pcv-backup"
+PatchPath = "sd:/atmosphere/oc_patches/pcv-module"
+
+POWER = 0x8
+
+pauseexit = {
+	println("Press any button to exit.\n")
+	pause()
+	exit()
+}
+
+pausecont = {
+	println("Press A/POWER button to continue.")
+	println("Press any other button to exit.")
+	if ( ! ( pause() & POWER ) ) {
+		exit()
+	}
+}
+
+header = {
+	println("\n-- Switch OC Suite Patcher --\n\n")
+	println(" OC Suite is provided 'as is' without warranty of any kind,\n USE AT YOUR OWN RISKS!")
+	println(" If you don't have Joy-Cons connected or are using Switch Lite,")
+	println(" Press VOL+/- to navigate and POWER button to confirm.\n")
+}
+
+header()
+
+if (_EMU) {
+	menuOptions = ["Exit", "Mount EmuMMC", "Mount SysMMC"]
+} 
+else() {
+	menuOptions = ["Exit", "Mount SysMMC"]
+}
+
+res = menu(menuOptions, 0)
+
+clearscreen()
+
+if ( res == 0 ) {
+	exit()
+}
+
+if ( res == 1 && _EMU ) {
+	println("EmuMMC is selected!")
+	wait(1000)
+	if ( mmcConnect("EMUMMC") ) {
+		println("An error occured during mmc connect!")
+		pauseexit()
+	}
+}
+
+if ( res == 2 || ( res == 1 && ! _EMU ) ) {
+	println("SysMMC is selected!")
+	wait(1000)
+	if ( mmcConnect("SYSMMC") ) {
+		println("An error occured during mmc connect!")
+		pauseexit()
+	}
+}
+
+println("Mounting SYSTEM Partition and Checking...")
+
+if ( mmcMount("SYSTEM") ) {
+	println("An error occured during SYSTEM mount!")
+	pauseexit()
+}
+
+if ( ! fileExists(pcvModulePath) ) {
+	println("You're NOT using targeted Horizon OS version!")
+	println("Targeted version: 12.0.x\n")
+	pauseexit()
+}
+
+if ( fileExists(OldBackupPath) ) {
+	println("Old Backup found! Renaming...")
+	if ( fileMove(OldBackupPath, BackupPath) ) {
+		println("An error occured during renaming backup!")
+		pauseexit()
+	}
+}
+
+clearscreen()
+header()
+
+menuOptions = ["Exit", "Dump PCV Module Backup", "Apply Patched PCV Module", "Restore PCV Module Backup"]
+
+res = menu(menuOptions, 0)
+
+clearscreen()
+
+if ( res == 0 ) {
+	exit()
+}
+
+if ( res == 1 ) {
+	if ( fileExists(BackupPath) ) {
+		color("RED")
+		println("You have the backup already. Do you want to DELETE it and redump?")
+		println("Make sure you DO NOT have the patched one in the MMC!")
+		color("WHITE")
+		wait(3000)
+		pausecont()
+		if ( fileDel(BackupPath) ) {
+			println("An error occured during removing old backup!")
+			pauseexit()
+		}
+	}
+	println("Dumping...")
+	if ( fileCopy(pcvModulePath, BackupPath) ) {
+		println("An error occured during dumping!")
+		pauseexit()
+	}
+	println("Done! ")
+	pauseexit()
+}
+
+if ( res == 2 ) {
+	if ( ! fileExists(PatchPath) ) {
+		color("RED")
+		println("Patched PCV Module NOT FOUND!")
+		println("Make sure you have followed the instructions in README.")
+		color("WHITE")
+		pauseexit()
+	}
+	println("Applying Patched PCV Module...")
+	if ( fileDel(pcvModulePath) && fileCopy(PatchPath, pcvModulePath) ) {
+		println("An error occured!")
+		pauseexit()
+	}
+	println("Done! ")
+	pauseexit()
+}
+
+if ( res == 3 ) {
+	if ( ! fileExists(BackupPath) ) {
+		println("PCV Module Backup NOT FOUND!")
+		pauseexit()
+	}
+	println("Restoring PCV Module...")
+	if ( fileDel(pcvModulePath) && fileCopy(BackupPath, pcvModulePath) ) {
+		println("An error occured!")
+		pauseexit()
+	}
+	println("Done! ")
+	pauseexit()
+}
