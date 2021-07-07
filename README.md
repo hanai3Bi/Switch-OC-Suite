@@ -10,7 +10,8 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 ### Failure to read this README carefully or Doing CPU/GPU Overclocking on Erista will brick or fry your device (in the short term or long term, who knows).
 
-- Erista support will be dropped later.
+- HOS 12.1.0 doesn't change anything (regarding this patch suite), except for introducing new master key revision(0b) and updating nifm module.
+- Erista support will be dropped later(13.0.0?).
 
 
 
@@ -25,7 +26,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 - RAM Overclock up to 2131.2 MHz for Erista and 1996.8 MHz for Mariko
 
-- Disable some background services, less power consumption in standby mode (Optional)
+- Disable Push Notifications service, less power consumption in standby mode (Optional)
 
 - Sync sys-clk profiles with ReverseNX(-Tools and -RT), no need to change clocks after toggling modes
 
@@ -33,7 +34,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 - Game recording and SysDVR streaming @ 60fps with high video bitrate (Optional)
 
-- Remove copyright watermark in screenshots/recordings and bypass connection test, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
+- Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
 
 ### Details
 
@@ -98,7 +99,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 **Steps:**
 
-1. Make sure you are running targeted HOS (12.0.x), and have `prod.keys` dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
+1. Make sure you are running targeted HOS (12.0.x and 12.1.0), and have `prod.keys` *with latest master key (0b for 12.1.0+)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
 
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
 
@@ -186,8 +187,8 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 - **For Erista:**
   - Remove the "Fan Control for Mariko" section.
 
-- Remove the "disable services" part if you use Nintendo Online services like friends, cloud saving and notifications, or use Tesla overlays in Docked mode.
-  - **Known Issue**: Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode when some services are disabled.
+- Remove the "Disable Push Notifications service" part if you use Nintendo Online services.
+  - ~~**Known Issue**: Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode when some services are disabled.~~ Only `[npns]` is reserved, I don't have time to screen all the rest one by one.
 
 - For "Game Recording FPS and Bitrate", if you play demanding games or don't care about streaming/framerate/bitrate, comment out this section.
 
@@ -223,7 +224,7 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 
 - CTCaer for modded Hekate bootloader, RE and hardware research
 
-- HookedBehemoth for nifm_ctest and am_no_copyright [patches](https://github.com/HookedBehemoth/exefs_patches)
+- HookedBehemoth for am_no_copyright [patch](https://github.com/HookedBehemoth/exefs_patches)
 
 - masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT)
 

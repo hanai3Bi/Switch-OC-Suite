@@ -9,8 +9,6 @@ namespace ams::ldr {
 
     namespace {
 
-        constexpr u32 CtestOffset[2] = { 0xF400, 0x1079C };
-
         constexpr u32 CopyrightOffset[2] = { 0xC6128, 0xCA414 }; //am_no_copyright port
 
         constexpr u8 BehemothPatch[8] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 }; //🤔
@@ -253,11 +251,6 @@ namespace ams::ldr {
         }
 
         return;
-    }
-
-    void ApplyCtestPatch(u8 *mapped_module, size_t mapped_size, int i) {
-        AMS_ABORT_UNLESS(CtestOffset[i] - 0x100 <= mapped_size);
-        std::memcpy(mapped_module + CtestOffset[i] - 0x100, BehemothPatch, sizeof(BehemothPatch));
     }
 
     void ApplyCopyrightPatch(u8 *mapped_module, size_t mapped_size, int i) {
