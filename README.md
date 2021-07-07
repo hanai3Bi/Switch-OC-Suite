@@ -99,7 +99,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 **Steps:**
 
-1. Make sure you are running targeted HOS (12.0.x and 12.1.0), and have `prod.keys` *with latest master key (0b for 12.1.0+)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
+1. Make sure you are running targeted HOS (12.1.0), and have `prod.keys` *with latest master key (0b)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
 
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
 
