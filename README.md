@@ -1,6 +1,8 @@
 # Switch OC Suite
 
-Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
+Overclocking suite for Switch (Mariko Only) running on Atmosphere CFW.
+
+For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version for easier maintenance.)
 
 
 
@@ -10,23 +12,20 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 ### Failure to read this README carefully or Doing CPU/GPU Overclocking on Erista will brick or fry your device (in the short term or long term, who knows).
 
-- HOS 12.1.0 doesn't change anything (regarding this patch suite), except for introducing new master key revision(0b) and updating nifm module.
-- Erista support will be dropped later(13.0.0?).
-
 
 
 
 ## Features
 
-- CPU/GPU Overclock up to 2397.0/1344.0 MHz for Mariko and up to 2295.0/1075.2 MHz for Erista
+- CPU/GPU Overclock up to 2397.0/1344.0 MHz for Mariko
 
-- Auto-Boost CPU when a game starts or is loading (Mariko Only)
+- Auto-Boost CPU when a game starts or is loading
 
-- Optimization for fan control at high load (Mariko Only)
+- Optimization for fan control at high load
 
-- RAM Overclock up to 2131.2 MHz for Erista and 1996.8 MHz for Mariko
+- RAM Overclock up to 1996.8 MHz for Mariko
 
-- Disable Push Notifications service, less power consumption in standby mode (Optional)
+- Disable background services, less power consumption in standby mode (Optional)
 
 - Sync sys-clk profiles with ReverseNX(-Tools and -RT), no need to change clocks after toggling modes
 
@@ -38,40 +37,34 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 ### Details
 
-- Bump CPU/GPU frequencies up to 2397.0/1344.0 MHz for Mariko and 2295.0/1075.2 MHz for Erista, bypassing Horizon OS limit.
+- Bump CPU/GPU frequencies up to 2397.0/1344.0 MHz for Mariko, bypassing Horizon OS limit.
 
   - Some SoCs may not reach MAX clock, or be unstable at/near MAX clock.
-  - CPU/GPU Overclocking on Erista will consume more power than what the charger provides, and generates much more heat. **You have been WARNED AGAIN!**
-  - Mariko is still functioning w/o charger under MAX OC(Your Mileage May Vary), therefore limit posed by sys-clk is lifted only for Mariko, but don't overdo it on battery.
+  - Mariko is still functioning w/o charger under MAX OC(Your Mileage May Vary), therefore limit posed by sys-clk is lifted for Mariko, but don't overdo it on battery.
   
-- Auto-Boost CPU when a game starts or is in loading screen (Mariko Only, Optional). 
+- Auto-Boost CPU when a game starts or is in loading screen (Optional). 
 
     - 1963.5 MHz w/o charger and 2295.0 MHz with charger
 
     - Some games don't utilize SetCpuBoostMode, e.g. Overcooked 2, so Auto-Boost would be invalid in loading screens.
 
-- RAM Overclock for both Erista and Mariko consoles. For now, Erista can reach up to 2131.2 MHz with overvolting, and up to 1996.8 MHz for Mariko without overvolting.
+- RAM Overclock, up to 1996.8 MHz for Mariko without overvolting.
 
   - RAM frequencies other than the only one you've chosen can NOT be used, but the impact of power consumption is negligible. So the ability to set RAM frequencies is removed in favor of ptm RAM patches, which could set RAM at specific clock permanently.
-
-  - For Mariko:
+  - Recommended frequency for Hynix RAM is 1731.2/1862.4 MHz(fk Hynix), but for Samsung and Micron ones you may use higher frequencies like 1996.8 MHz.
+    - Use Hekate to check out the brand of your RAM chips.
+  - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
   
-    - Recommended frequency for Hynix RAM is 1731.2/1862.4 MHz(fk Hynix), but for Samsung and Micron ones you may use higher frequencies like 1996.8 MHz.
-      - Use Hekate to check out the brand of your RAM chips.
-    - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
-
-  - For Erista:
-
-    - If you boot via Hekate, Minerva module(`/bootloader/sys/libsys_minerva.bso`) should be removed or recompiled with [changes](https://github.com/CTCaer/hekate/blob/master/modules/hekate_libsys_minerva/sys_sdrammtc.c#L31) applied.
-    - RAM voltage is set at 1125mV @ 1731.2 MHz, 1150 mV @ 1862.4 MHz, 1175 mV @ 1996.8 MHz and 1200 mV @ 2131.2 MHz.
-
 - Game recording and SysDVR streaming @ 60fps with high video bitrate (Optional).
 
   - Video duration shown in album will be 2x than the actual value, but playback speed is not affected.
-
-  - Recordings may be less than 30sec if higher bitrate is used.
-
+- Recordings may be less than 30sec if higher bitrate is used.
   - It has noticeable performance impacts in demanding games.
+- For optimal streaming experience, SysDVR via USB interface is recommended.
+
+### Known Issues
+
+- Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode, usually happens after CPU Boost Mode ends. (Currently under investigation)
 
 
 
@@ -81,7 +74,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 **Contains:**
 
-- Patches for pcv and ptm modules
+- Patches for pcv and ptm modules (for HOS 12.1.0)
 
 - Precompiled patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
 
@@ -89,7 +82,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 - Prebuilt sys-clk and ReverseNX-RT modified for OC
 
-- `system-settings.ini` for Horizon OS
+- `system-settings.ini`
 
 ⚠️**Warnings**:⚠️
 
@@ -112,7 +105,7 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 4. Dump your pcv module.
 
-   If you already have the pcv backup of targeted HOS version, jump to Step 4. Otherwise, redump is required.
+   If you already have the pcv backup of targeted HOS version, jump to Step 5. Otherwise, redump is required.
 
    - Load [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer/releases/latest) payload in hekate.
 
@@ -184,21 +177,15 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 
 **system_settings.ini** in `/atmosphere/config/`
 
-- **For Erista:**
-  - Remove the "Fan Control for Mariko" section.
-
-- Remove the "Disable Push Notifications service" part if you use Nintendo Online services.
-  - ~~**Known Issue**: Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode when some services are disabled.~~ Only `[npns]` is reserved, I don't have time to screen all the rest one by one.
+- Remove the "Disable Background service" part if you use Nintendo Online services.
 
 - For "Game Recording FPS and Bitrate", if you play demanding games or don't care about streaming/framerate/bitrate, comment out this section.
 
 **sys-clk**
 
-- **For Mariko:**
+- Remove `/config/sys-clk/boost.flag` if you like longer waiting time in loading screens.
 
-  - Remove `/config/sys-clk/boost.flag` if you like longer waiting time in loading screens.
-
-  - Remove `/config/sys-clk/boost_start.flag` if you don't want games to boot faster.
+- Remove `/config/sys-clk/boost_start.flag` if you don't want games to boot faster.
 
 - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld flag is set in ReverseNX.
 
