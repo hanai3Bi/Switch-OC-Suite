@@ -12,7 +12,6 @@ Overclocking suite for Switch(Erista and Mariko) running on Atmosphere CFW.
 
 - Erista support will be dropped later.
 
-- nx-ovlloader seems to be unstable in Docked mode only with RAM OC applied. Grab `STACK_SIZE` patch [here](https://github.com/KazushiMe/nx-ovlloader/tree/patch-1) and build it yourself.
 
 
 
@@ -186,8 +185,9 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 
 - **For Erista:**
   - Remove the "Fan Control for Mariko" section.
-  
-- Remove the "disable services" part if you use Nintendo Online services like friends, cloud saving and notifications.
+
+- Remove the "disable services" part if you use Nintendo Online services like friends, cloud saving and notifications, or use Tesla overlays in Docked mode.
+  - **Known Issue**: Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode when some services are disabled.
 
 - For "Game Recording FPS and Bitrate", if you play demanding games or don't care about streaming/framerate/bitrate, comment out this section.
 
