@@ -51,7 +51,7 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 - RAM Overclock, up to 1996.8 MHz for Mariko without overvolting.
 
   - RAM frequencies other than the only one you've chosen can NOT be used, but the impact of power consumption is negligible. So the ability to set RAM frequencies is removed in favor of ptm RAM patches, which could set RAM at specific clock permanently.
-  - Recommended frequency for Hynix RAM is 1731.2/1862.4 MHz(fk Hynix), but for Samsung and Micron ones you may use higher frequencies like 1996.8 MHz.
+  - Recommended frequency for Hynix RAM is 1600.0/1731.2/1862.4 MHz(fk Hynix), but for Samsung and Micron ones you may use higher frequencies like 1996.8 MHz.
     - Use Hekate to check out the brand of your RAM chips.
   - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
   

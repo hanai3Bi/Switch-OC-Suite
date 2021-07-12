@@ -4,6 +4,7 @@
 // PTM PerformanceConfiguration Patch for 12.0.x
 // Change all RAM freqs to 1862.4 MHz and Boost CPU freqs to 1963.5 MHz by default
 // RAM
+// 1600.0 MHz - 00105E5F
 // 1731.2 MHz - 00043067
 // 1862.4 MHz - 00F8016F
 // 1996.8 MHz - 00C00477
