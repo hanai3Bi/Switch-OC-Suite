@@ -62,10 +62,6 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
   - It has noticeable performance impacts in demanding games.
 - For optimal streaming experience, SysDVR via USB interface is recommended.
 
-### Known Issues
-
-- Tesla Menu and its overlays will sometimes crash atmosphere in Docked mode, usually happens after CPU Boost Mode ends. (Currently under investigation)
-
 
 
 ## Installation
