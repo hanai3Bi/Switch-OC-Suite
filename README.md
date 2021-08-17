@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch (Mariko Only) running on Atmosphere CFW.
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW.
 
 For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version for easier maintenance.)
 
@@ -10,7 +10,7 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 
 ### Reserved and intended for personal use ONLY. It will NOT be actively maintained.
 
-### Failure to read this README carefully or Doing CPU/GPU Overclocking on Erista will brick or fry your device (in the short term or long term, who knows).
+Atmosphere is adding Mariko DRAM training support, which may shed light on EMC overvolting for Mariko. But RAM OC may not work on next AMS (or Hekate) version without proper modifications to mem tables.
 
 
 
