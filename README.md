@@ -2,13 +2,11 @@
 
 Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW.
 
-For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version for easier maintenance.)
+Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
 
 
 
 ## Notice
-
-- Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces DRAM training for Mariko. **Currently under investigation.**
 
 ### Disclaimer
 
@@ -33,7 +31,8 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 
 - **Overclock**
   - **Recommended CPU/GPU clock is 2295.0/1305.6 MHz**, since max clock(2397.0/1344.0 MHz) may not work on some SoCs.
-  - **Recommended RAM clock is 1862.4 MHz** for most DRAM chips, **except Hynix ones. RAM clock is set** permanently via **ptm-patch**, rather than sys-clk, considering the ability to select other clocks than the max one is lost if RAM OC takes into effect, and the impact of added power consumption is negligible.
+  - **Recommended RAM clock is 1862.4 MHz** for most DRAM chips, **except Hynix ones** (1795.2/1728.0 MHz).
+    - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk, considering the ability to select other clocks than the max one is lost if RAM OC takes into effect, and the impact of added power consumption is negligible.
     - Use Hekate to check out the brand of your RAM chips.
     - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
     - Once RAM overvolting is available on Mariko, we may gain more stability and reach higher clock.
@@ -92,6 +91,7 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 **Notice**:
 - **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch, and ban risks exist (?).
 - **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
+- **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.
 
 **Steps:**
 1. Make sure you are running targeted HOS (12.1.0), and have `prod.keys` *with latest master key (0b)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
@@ -110,23 +110,7 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 6. Select RAM frequency and prepare the patches: 
    - Copy the `/atmosphere/oc_patches/xx-xxxx.x/ptm-patch` folder ->`/atmosphere/exefs_patches/` on your SD card.
    - Copy `/atmosphere/oc_patches/xx-xxxx.x/pcv-bspatch` -> `PatchTools` on your PC.
-7. Open `cmd.exe`, change working directory to the `PatchTools` folder and type in the following commands.
-   Assuming that you put the folder on your Desktop:
-   ```cmd
-   cd %USERPROFILE%\Desktop\PatchTools
-   mkdir .\temp
-   mkdir .\temp\pcv_exefs
-   hactool -k prod.keys --disablekeywarns -t -nca .\pcv-backup --exefsdir .\temp
-   nx2elf .\temp\main
-   bspatch .\temp\main.elf .\temp\main-mod.elf .\pcv-bspatch
-   elf2nso .\temp\main-mod.elf .\temp\pcv_exefs\main
-   copy .\temp\main.npdm .\temp\pcv_exefs\
-   hacpack -k prod.keys -o .\ --type nca --ncatype program --titleid 010000000000001A --exefsdir .\temp\pcv_exefs\
-   ren *.nca pcv-module
-   rd /S /Q .\temp\
-   rd /S /Q .\hacpack_backup\
-   
-   ```
+7. Run `Patcher.bat` in PatchTools (Do NOT use admin privileges).
 8. Move the patched `pcv-module` to `/atmosphere/oc_patches/`.
 9. In TegraExplorer, `Browse SD` -> `patcher.te` -> `Launch Script` and then `Apply Patched PCV Module`.
 10. Wait for `Done!` and then reboot to enjoy.

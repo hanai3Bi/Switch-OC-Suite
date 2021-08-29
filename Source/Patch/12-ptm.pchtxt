@@ -1,7 +1,7 @@
 @nsobid-A79706954C6C45568B0FFE610627E2E89D8FB0D4
 @flag offset_shift 0x100
 
-// PTM PerformanceConfiguration Patch for 12.0.x
+// PTM PerformanceConfiguration Patch for 12.0.x-12.1.0
 // Change all RAM freqs to 1862.4 MHz and Boost CPU freqs to 1963.5 MHz by default
 // RAM
 // 1600.0 MHz - 00105E5F
