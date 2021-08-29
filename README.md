@@ -8,9 +8,9 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 
 ## Notice
 
-### Reserved and intended for personal use ONLY. It will NOT be actively maintained.
+Reserved and intended for personal use ONLY. It will NOT be actively maintained.
 
-Atmosphere is adding Mariko DRAM training support, which may shed light on EMC overvolting for Mariko. But RAM OC may not work on next AMS (or Hekate) version without proper modifications to mem tables.
+Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces DRAM training for Mariko.
 
 
 
