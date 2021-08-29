@@ -5,9 +5,14 @@
 // Change all RAM freqs to 1862.4 MHz and Boost CPU freqs to 1963.5 MHz by default
 // RAM
 // 1600.0 MHz - 00105E5F
-// 1731.2 MHz - 00043067
+// 1728.0 MHz - 0030FF66
+// 1795.2 MHz - 0094006B
 // 1862.4 MHz - 00F8016F
+// 1894.4 MHz - 0040EA70
+// 1932.8 MHz - 00303473
 // 1996.8 MHz - 00C00477
+// 2064.0 MHz - 0024067B
+// 2099.2 MHz - 00401F7D
 // 2131.2 MHz - 0088077F
 // CPU
 // 1963.5 MHz - E0A10875

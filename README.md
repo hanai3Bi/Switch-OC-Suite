@@ -8,59 +8,72 @@ For Horizon OS 11.0.x ~ 12.1.0. (AIO Package only supports the latest OS version
 
 ## Notice
 
-Reserved and intended for personal use ONLY. It will NOT be actively maintained.
+- Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces DRAM training for Mariko. **Currently under investigation.**
 
-Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces DRAM training for Mariko.
+### Disclaimer
 
+**Proceed with caution!**
+
+**I AM NOT RESPONSIBLE (NOR IS ANYONE ELSE) FOR ANYTHING THAT MIGHT HAPPEN TO YOUR CONSOLE** (bans, internal component failure, etc.) by installing OC Suite or tinkering software/hardware with any info from this repo.
 
 
 
 ## Features
 
-- CPU/GPU Overclock up to 2397.0/1344.0 MHz for Mariko
-
-- Auto-Boost CPU when a game starts or is loading
-
-- Optimization for fan control at high load
-
-- RAM Overclock up to 1996.8 MHz for Mariko
-
-- Disable background services, less power consumption in standby mode (Optional)
-
-- Sync sys-clk profiles with ReverseNX(-Tools and -RT), no need to change clocks after toggling modes
-
-- Profile-aware frequency override for all games
-
-- Game recording and SysDVR streaming @ 60fps with high video bitrate (Optional)
-
+- **CPU/GPU/RAM Overclock** up to **2397.0/1344.0/2131.2 MHz**
+- **Auto-Boost CPU for faster game loading**
+- **Fan Control Optimization** at high load
+- **Modded sys-clk and ReverseNX**(-Tools and -RT), **no need to change clocks manually** after toggling modes in ReverseNX
+- Disable background services, less heat and power consumption in standby mode
+- Profile-aware clock override for all games
+- Game recording and SysDVR streaming @ 60fps with high video bitrate
 - Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
 
-### Details
+#### Details
 
-- Bump CPU/GPU frequencies up to 2397.0/1344.0 MHz for Mariko, bypassing Horizon OS limit.
-
-  - Some SoCs may not reach MAX clock, or be unstable at/near MAX clock.
-  - Mariko is still functioning w/o charger under MAX OC(Your Mileage May Vary), therefore limit posed by sys-clk is lifted for Mariko, but don't overdo it on battery.
-  
-- Auto-Boost CPU when a game starts or is in loading screen (Optional). 
-
-    - 1963.5 MHz w/o charger and 2295.0 MHz with charger
-
-    - Some games don't utilize SetCpuBoostMode, e.g. Overcooked 2, so Auto-Boost would be invalid in loading screens.
-
-- RAM Overclock, up to 1996.8 MHz for Mariko without overvolting.
-
-  - RAM frequencies other than the only one you've chosen can NOT be used, but the impact of power consumption is negligible. So the ability to set RAM frequencies is removed in favor of ptm RAM patches, which could set RAM at specific clock permanently.
-  - Recommended frequency for Hynix RAM is 1600.0/1731.2/1862.4 MHz(fk Hynix), but for Samsung and Micron ones you may use higher frequencies like 1996.8 MHz.
+- **Overclock**
+  - **Recommended CPU/GPU clock is 2295.0/1305.6 MHz**, since max clock(2397.0/1344.0 MHz) may not work on some SoCs.
+  - **Recommended RAM clock is 1862.4 MHz** for most DRAM chips, **except Hynix ones. RAM clock is set** permanently via **ptm-patch**, rather than sys-clk, considering the ability to select other clocks than the max one is lost if RAM OC takes into effect, and the impact of added power consumption is negligible.
     - Use Hekate to check out the brand of your RAM chips.
-  - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
-  
-- Game recording and SysDVR streaming @ 60fps with high video bitrate (Optional).
+    - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
+    - Once RAM overvolting is available on Mariko, we may gain more stability and reach higher clock.
+  - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
+  - For more info, see README.md in sys-clk-OC.
+- **Auto-Boost CPU for faster game loading**
+    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz (w/o charger) and 2295.0 MHz (with charger) for 20 seconds or until the loading screen ends.
+    - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
+    - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
+- **Fan Control Optimization** at high load
+  - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
+- **Modded sys-clk and ReverseNX**(-Tools and -RT), **no need to change clocks manually** after toggling modes in ReverseNX
+  - Add `/config/sys-clk/downclock_dock.flag` to use handheld(lower GPU) clocks in Docked mode when Handheld mode is set in ReverseNX.
+  - To **disable this feature**, simply use original version of ReverseNX rather than the one in the repo.
+- Disable background services, less heat and power consumption in standby mode
+  - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
+- Profile-aware clock override for all games
+  - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
+    ```ini
+    [A111111111111111]
+    docked_cpu=
+    docked_gpu=
+    handheld_charging_cpu=
+    handheld_charging_gpu=
+    handheld_charging_usb_cpu=
+    handheld_charging_usb_gpu=
+    handheld_charging_official_cpu=
+    handheld_charging_official_gpu=
+    handheld_cpu=
+    handheld_gpu=
+    ```
 
-  - Video duration shown in album will be 2x than the actual value, but playback speed is not affected.
-- Recordings may be less than 30sec if higher bitrate is used.
-  - It has noticeable performance impacts in demanding games.
-- For optimal streaming experience, SysDVR via USB interface is recommended.
+- Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
+  - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow recording in any games.
+  - For optimal streaming experience, SysDVR via USB interface is recommended.
+  - Known Issues (won't fix)
+    - Game recordings may be less than 30 seconds if higher bitrate is used.
+    - It has noticeable performance impacts in demanding games.
+    - Video duration shown in album will be twice than the actual value, while the playback speed is not affected.
+  - To **disable** this feature, simply remove the `[am.debug]` section in `system_settings.ini`.
 
 
 
@@ -71,58 +84,34 @@ Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces D
 **Contains:**
 
 - Patches for pcv and ptm modules (for HOS 12.1.0)
-
-- Precompiled patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
-
+- Patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
   [hactool](https://github.com/SciresM/hactool), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
+- Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
+- `system-settings.ini` with some QoL improvements
 
-- Prebuilt sys-clk and ReverseNX-RT modified for OC
-
-- `system-settings.ini`
-
-⚠️**Warnings**:⚠️
-
-- Since system files are altered, you could **NOT** boot to stock(OFW) with patch applied to SysNAND until you revert the patch, and ban risks exist (?). Therefore, patching SysNAND is **NOT encouraged**.
-
-- Restoring pcv module backup is required before updating Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
+**Notice**:
+- **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch, and ban risks exist (?).
+- **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
 
 **Steps:**
-
 1. Make sure you are running targeted HOS (12.1.0), and have `prod.keys` *with latest master key (0b)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
-
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
-
 3. Place all the files in `SdOut` into SD card.
-   See [Usage and customization](#usage and customization) and [Details](#details) sections for more info.
-
-   - Be careful of `/atmosphere/config/system_settings.ini`, you may want to edit it manually. 
-
+   **See [Details](#details) sections for more info.**
+   - Be careful of `/atmosphere/config/system_settings.ini`, **you may want to edit it manually.**
    - Remove all the files in previous OC Suite version before updating to avoid conflicts.
-
 4. Dump your pcv module.
-
    If you already have the pcv backup of targeted HOS version, jump to Step 5. Otherwise, redump is required.
-
    - Load [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer/releases/latest) payload in hekate.
-
    - Choose `Browse SD` -> `patcher.te` -> `Launch Script`.
-
    - Select the MMC you'd like to mount and `Dump PCV Module Backup`
-
    - Wait for `Done!` showing up and transfer the backup `/atmosphere/oc_patches/pcv-backup` to your PC.
-
 5. Extract `PatchTools` folder from the AIO package, put  `pcv-backup` and  `prod.keys` in.
-
 6. Select RAM frequency and prepare the patches: 
-
    - Copy the `/atmosphere/oc_patches/xx-xxxx.x/ptm-patch` folder ->`/atmosphere/exefs_patches/` on your SD card.
-
    - Copy `/atmosphere/oc_patches/xx-xxxx.x/pcv-bspatch` -> `PatchTools` on your PC.
-
 7. Open `cmd.exe`, change working directory to the `PatchTools` folder and type in the following commands.
-
    Assuming that you put the folder on your Desktop:
-
    ```cmd
    cd %USERPROFILE%\Desktop\PatchTools
    mkdir .\temp
@@ -138,11 +127,8 @@ Except for 1600 MHz, RAM OC has been broken since Atmosphere 0.20.0 introduces D
    rd /S /Q .\hacpack_backup\
    
    ```
-
 8. Move the patched `pcv-module` to `/atmosphere/oc_patches/`.
-
 9. In TegraExplorer, `Browse SD` -> `patcher.te` -> `Launch Script` and then `Apply Patched PCV Module`.
-
 10. Wait for `Done!` and then reboot to enjoy.
 
 
@@ -169,57 +155,15 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 
 
 
-## Usage and customization
+## Acknowledgement
 
-**system_settings.ini** in `/atmosphere/config/`
-
-- Remove the "Disable Background service" part if you use Nintendo Online services.
-
-- For "Game Recording FPS and Bitrate", if you play demanding games or don't care about streaming/framerate/bitrate, comment out this section.
-
-**sys-clk**
-
-- Remove `/config/sys-clk/boost.flag` if you like longer waiting time in loading screens.
-
-- Remove `/config/sys-clk/boost_start.flag` if you don't want games to boot faster.
-
-- Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld flag is set in ReverseNX.
-
-- Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
-
-  ```ini
-  [A111111111111111]
-  docked_cpu=
-  docked_gpu=
-  handheld_charging_cpu=
-  handheld_charging_gpu=
-  handheld_charging_usb_cpu=
-  handheld_charging_usb_gpu=
-  handheld_charging_official_cpu=
-  handheld_charging_official_gpu=
-  handheld_cpu=
-  handheld_gpu=
-  ```
-
-
-
-## Credit
-
-- CTCaer for modded Hekate bootloader, RE and hardware research
-
+- CTCaer for [Hekate-ipl](https://github.com/CTCaer/hekate) bootloader, RE and hardware research
+- [devkitPro](https://devkitpro.org/) for All-In-One homebrew toolchains
 - HookedBehemoth for am_no_copyright [patch](https://github.com/HookedBehemoth/exefs_patches)
-
 - masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT)
-
-- RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk) and a [place](https://*discord*.*gg*/erNC4FB) to discuss
-
+- RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch
-
 - suchmememanyskill for [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer) and [TegraScript](https://github.com/suchmememanyskill/TegraScript)
-
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
-
-- ZatchyCatGames for RE and original OC patches
-
-
+- ZatchyCatGames for RE and original OC loader patches for Atmosphere
 
