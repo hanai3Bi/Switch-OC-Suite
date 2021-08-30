@@ -30,7 +30,7 @@ LIBNAMES	:=	minIni nxExt
 #---------------------------------------------------------------------------------
 # version control constants
 #---------------------------------------------------------------------------------
-TARGET_VERSION	:= OC-$(shell git describe --dirty --always --tags)
+TARGET_VERSION	:= OC-$$(date +%Y/%m/%d)
 
 #---------------------------------------------------------------------------------
 # options for code generation

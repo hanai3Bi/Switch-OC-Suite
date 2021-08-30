@@ -214,7 +214,7 @@ void ClockManager::Tick()
         {
             std::uint32_t hz = 0;
             std::uint32_t hzForceOverride = 0;
-            for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
+            for (unsigned int module = 0; module < SysClkModule_EnumMax - 1; module++)
             {
                 hz = this->context->overrideFreqs[module];
 
@@ -456,6 +456,15 @@ bool ClockManager::RefreshContext()
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
     {
         hz = Clocks::GetCurrentHz((SysClkModule)module);
+        
+        // Skip MEM freq check
+        if (module == SysClkModule_MEM)
+        {
+            this->context->freqs[module] = hz;
+            break;
+        }
+
+        // Round to MHz
         uint32_t cur_mhz = hz/1000'000;
         uint32_t be4_mhz = this->context->freqs[module]/1000'000;
         if (hz != 0 && cur_mhz != be4_mhz)
@@ -475,6 +484,7 @@ bool ClockManager::RefreshContext()
             else
             {
                 FileUtils::LogLine("[mgr] %s override disabled", Clocks::GetModuleName((SysClkModule)module, true));
+                Clocks::ResetToStock(module);
             }
             this->context->overrideFreqs[module] = hz;
             hasChanged = true;

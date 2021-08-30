@@ -26,6 +26,7 @@ Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
 - Profile-aware clock override for all games
 - Game recording and SysDVR streaming @ 60fps with high video bitrate
 - Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
+- **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
 
 #### Details
 

@@ -19,7 +19,7 @@ class Clocks
     static bool isMariko;
     static void Exit();
     static void Initialize();
-    static void ResetToStock();
+    static void ResetToStock(unsigned int module = SysClkModule_EnumMax);
     static SysClkProfile GetCurrentProfile();
     static std::uint32_t GetCurrentHz(SysClkModule module);
     static void SetHz(SysClkModule module, std::uint32_t hz);

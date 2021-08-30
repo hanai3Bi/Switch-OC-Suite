@@ -167,7 +167,7 @@ PcvModuleId Clocks::GetPcvModuleId(SysClkModule sysclkModule)
     return pcvModuleId;
 }
 
-void Clocks::ResetToStock()
+void Clocks::ResetToStock(unsigned int module)
 {
     Result rc = 0;
     if(hosversionAtLeast(9,0,0))
@@ -191,8 +191,14 @@ void Clocks::ResetToStock()
             ERROR_THROW("Unknown apm configuration: %x", confId);
         }
 
-        Clocks::SetHz(SysClkModule_CPU, apmConfiguration->cpu_hz);
-        Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
+        if (module == SysClkModule_EnumMax || module == SysClkModule_CPU)
+        {
+            Clocks::SetHz(SysClkModule_CPU, apmConfiguration->cpu_hz);
+        }
+        if (module == SysClkModule_EnumMax || module == SysClkModule_GPU)
+        {
+            Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
+        }
         // We don't need to set MEM freqs any more
         //Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
     }
