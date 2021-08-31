@@ -84,6 +84,7 @@ bool Config::Refresh()
     if (!this->loaded || this->mtime != this->CheckModificationTime())
     {
         this->Load();
+        Clocks::ResetToStock(); // Reset to stock since we can't detect if user set "Do not override" for specific module
         return true;
     }
     return false;

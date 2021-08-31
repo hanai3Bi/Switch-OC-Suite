@@ -1,8 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW.
-
-Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 12.1.0.
 
 
 
@@ -38,7 +36,7 @@ Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
     - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
     - Once RAM overvolting is available on Mariko, we may gain more stability and reach higher clock.
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
-  - For more info, see README.md in sys-clk-OC.
+  - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 - **Auto-Boost CPU for faster game loading**
     - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz (w/o charger) and 2295.0 MHz (with charger) for 20 seconds or until the loading screen ends.
     - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
@@ -46,8 +44,8 @@ Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
 - **Modded sys-clk and ReverseNX**(-Tools and -RT), **no need to change clocks manually** after toggling modes in ReverseNX
-  - Add `/config/sys-clk/downclock_dock.flag` to use handheld(lower GPU) clocks in Docked mode when Handheld mode is set in ReverseNX.
-  - To **disable this feature**, simply use original version of ReverseNX rather than the one in the repo.
+  - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
+  - To **disable this feature**, use original version of ReverseNX and delete `/config/sys-clk/ReverseNX_sync.flag`.
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
 - Profile-aware clock override for all games
@@ -98,7 +96,7 @@ Support latest Horizon OS (12.1.0) and Atmosphere (0.20.0).
 1. Make sure you are running targeted HOS (12.1.0), and have `prod.keys` *with latest master key (0b)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
 3. Place all the files in `SdOut` into SD card.
-   **See [Details](#details) sections for more info.**
+   **See [Details](#details) section for more info.**
    - Be careful of `/atmosphere/config/system_settings.ini`, **you may want to edit it manually.**
    - Remove all the files in previous OC Suite version before updating to avoid conflicts.
 4. Dump your pcv module.

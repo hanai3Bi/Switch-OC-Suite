@@ -356,7 +356,7 @@ bool ClockManager::RefreshContext()
         this->context->applicationId = applicationId;
         hasChanged = true;
 
-        if (FileUtils::IsReverseNXEnabled() || recheckReverseNX)
+        if (FileUtils::IsReverseNXSyncEnabled() && (FileUtils::IsReverseNXToolExist() || recheckReverseNX))
         {
             // A new game starts or the real profile changes, then we need to check if ReverseNXTool patches are applied
             isEnabledReverseNX = false;
@@ -379,7 +379,7 @@ bool ClockManager::RefreshContext()
         }
     }
 
-    if (!tickCheckReverseNXRT || recheckReverseNX)
+    if (FileUtils::IsReverseNXSyncEnabled() && (!tickCheckReverseNXRT || recheckReverseNX))
     {
         uint8_t flag = 0;
         checkReverseNXRT(recheckReverseNX, &flag);

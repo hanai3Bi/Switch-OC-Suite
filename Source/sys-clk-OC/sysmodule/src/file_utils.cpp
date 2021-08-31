@@ -21,7 +21,8 @@ static bool g_log_enabled = false;
 static bool g_boost_enabled = false;
 static bool g_boost_start_enabled = false;
 static bool g_downclock_dock_enabled = false;
-static bool g_reversenx_enabled = false;
+static bool g_reversenx_tool_exist = false;
+static bool g_reversenx_sync_enabled = false;
 static std::uint64_t g_last_flag_check = 0;
 
 extern "C" void __libnx_init_time(void);
@@ -131,6 +132,12 @@ void FileUtils::RefreshFlags(bool force)
         g_log_enabled = false;
     }
 
+    g_last_flag_check = now;
+}
+
+void FileUtils::InitCheckFlags()
+{
+    FILE *file;
     // Only Enable Boost for Mariko
     if (Clocks::isMariko)
     {
@@ -162,7 +169,23 @@ void FileUtils::RefreshFlags(bool force)
         g_downclock_dock_enabled = false;
     }
 
-    g_last_flag_check = now;
+    file = fopen(FILE_REVERSENX_SYNC_FLAG_PATH, "r");
+    if (file)
+    {
+        g_reversenx_sync_enabled = true;
+        fclose(file);
+    } else {
+        g_reversenx_sync_enabled = false;
+    }
+
+    file = fopen(FILE_SALTYNX_PATH, "r");
+    if (file)
+    {
+        g_reversenx_tool_exist = true;
+        fclose(file);
+    } else {
+        g_reversenx_tool_exist = false;
+    }
 }
 
 bool FileUtils::IsBoostEnabled()
@@ -178,6 +201,16 @@ bool FileUtils::IsBoostStartEnabled()
 bool FileUtils::IsDownclockDockEnabled()
 {
     return g_downclock_dock_enabled;
+}
+
+bool FileUtils::IsReverseNXToolExist()
+{
+    return g_reversenx_tool_exist;
+}
+
+bool FileUtils::IsReverseNXSyncEnabled()
+{
+    return g_reversenx_sync_enabled;
 }
 
 void FileUtils::InitializeAsync()
@@ -216,21 +249,9 @@ Result FileUtils::Initialize()
         FileUtils::LogLine("=== " TARGET " " TARGET_VERSION " ===");
     }
 
-    FILE *file = fopen(FILE_SALTYNX_PATH, "r");
-    if (file)
-    {
-        g_reversenx_enabled = true;
-        fclose(file);
-    } else {
-        g_reversenx_enabled = false;
-    }
+    FileUtils::InitCheckFlags();
 
     return rc;
-}
-
-bool FileUtils::IsReverseNXEnabled()
-{
-    return g_reversenx_enabled;
 }
 
 void FileUtils::Exit()

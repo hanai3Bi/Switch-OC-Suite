@@ -26,6 +26,7 @@
 #define FILE_BOOST_START_FLAG_PATH FILE_CONFIG_DIR "/boost_start.flag"
 #define FILE_DOWNCLOCK_DOCK_FLAG_PATH FILE_CONFIG_DIR "/downclock_dock.flag"
 #define FILE_SALTYNX_PATH "/atmosphere/contents/0000000000534C56/flags/boot2.flag" // Just check for SaltyNX boot flag
+#define FILE_REVERSENX_SYNC_FLAG_PATH FILE_CONFIG_DIR "/ReverseNX_sync.flag"
 #define FILE_REVERSENX_RT_CONF_PATH FILE_CONFIG_DIR "/ReverseNX-RT.conf"
 
 class FileUtils
@@ -38,10 +39,12 @@ class FileUtils
     static bool IsBoostEnabled();
     static bool IsBoostStartEnabled();
     static bool IsDownclockDockEnabled();
-    static bool IsReverseNXEnabled();
+    static bool IsReverseNXSyncEnabled();
+    static bool IsReverseNXToolExist();
     static void InitializeAsync();
     static void LogLine(const char *format, ...);
     static void WriteContextToCsv(const SysClkContext* context);
   protected:
     static void RefreshFlags(bool force);
+    static void InitCheckFlags();
 };
