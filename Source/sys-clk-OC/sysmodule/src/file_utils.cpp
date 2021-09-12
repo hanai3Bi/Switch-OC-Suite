@@ -137,6 +137,26 @@ void FileUtils::RefreshFlags(bool force)
 
 void FileUtils::InitCheckFlags()
 {
+    // Check if it's Mariko
+    u64 hardware_type = 0;
+    splInitialize();
+    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
+    splExit();
+
+    switch(hardware_type) {
+        case 0: //Icosa
+        case 1: //Copper
+            break;
+        case 2: //Hoag
+        case 3: //Iowa
+        case 4: //Calcio
+        case 5: //Aula
+            Clocks::isMariko = true;
+            break;
+        default:
+            break;
+    }
+
     FILE *file;
     // Only Enable Boost for Mariko
     if (Clocks::isMariko)
@@ -146,8 +166,6 @@ void FileUtils::InitCheckFlags()
         {
             g_boost_enabled = true;
             fclose(file);
-        } else {
-            g_boost_enabled = false;
         }
 
         file = fopen(FILE_BOOST_START_FLAG_PATH, "r");
@@ -155,8 +173,6 @@ void FileUtils::InitCheckFlags()
         {
             g_boost_start_enabled = true;
             fclose(file);
-        } else {
-            g_boost_start_enabled = false;
         }
     }
 
@@ -165,8 +181,6 @@ void FileUtils::InitCheckFlags()
     {
         g_downclock_dock_enabled = true;
         fclose(file);
-    } else {
-        g_downclock_dock_enabled = false;
     }
 
     file = fopen(FILE_REVERSENX_SYNC_FLAG_PATH, "r");
@@ -174,8 +188,6 @@ void FileUtils::InitCheckFlags()
     {
         g_reversenx_sync_enabled = true;
         fclose(file);
-    } else {
-        g_reversenx_sync_enabled = false;
     }
 
     file = fopen(FILE_SALTYNX_PATH, "r");
@@ -183,8 +195,6 @@ void FileUtils::InitCheckFlags()
     {
         g_reversenx_tool_exist = true;
         fclose(file);
-    } else {
-        g_reversenx_tool_exist = false;
     }
 }
 

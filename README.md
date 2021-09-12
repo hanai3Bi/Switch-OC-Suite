@@ -38,7 +38,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
   - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 - **Auto-Boost CPU for faster game loading**
-    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz (w/o charger) and 2295.0 MHz (with charger) for 20 seconds or until the loading screen ends.
+    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz (w/o charger) and 2295.0 MHz (with charger) for ~10 seconds or until the loading screen ends.
     - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
     - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
 - **Fan Control Optimization** at high load
