@@ -19,9 +19,11 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - **CPU/GPU/RAM Overclock** up to **2397.0/1344.0/2131.2 MHz**
 - **Auto-Boost CPU for faster game loading**
 - **Fan Control Optimization** at high load
-- **Modded sys-clk and ReverseNX**(-Tools and -RT), **no need to change clocks manually** after toggling modes in ReverseNX
+- **Modded sys-clk and ReverseNX**(-Tools and -RT)
+  - Option to regard Power Delivery chargers supplying >=18W (typically, 9V/2A) as official chargers
+  - **No need to change clocks manually** after toggling modes in ReverseNX
+  - Profile-aware clock override for all games
 - Disable background services, less heat and power consumption in standby mode
-- Profile-aware clock override for all games
 - Game recording and SysDVR streaming @ 60fps with high video bitrate
 - Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
@@ -43,27 +45,29 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
     - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
-- **Modded sys-clk and ReverseNX**(-Tools and -RT), **no need to change clocks manually** after toggling modes in ReverseNX
-  - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
-  - To **disable this feature**, use original version of ReverseNX and delete `/config/sys-clk/ReverseNX_sync.flag`.
+- **Modded sys-clk and ReverseNX**(-Tools and -RT)
+  - Option to regard Power Delivery chargers that could supply >=18W (typically, 9V/2A) as official chargers.
+    - To **disable this feature**, remove `/config/sys-clk/pd18w_official.flag `.
+  - **No need to change clocks manually** after toggling modes in ReverseNX
+    - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
+    - To **disable this feature**, use original version of ReverseNX-RT and delete `/config/sys-clk/ReverseNX_sync.flag`.
+  - Profile-aware clock override for all games
+    - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
+      ```ini
+      [A111111111111111]
+      docked_cpu=
+      docked_gpu=
+      handheld_charging_cpu=
+      handheld_charging_gpu=
+      handheld_charging_usb_cpu=
+      handheld_charging_usb_gpu=
+      handheld_charging_official_cpu=
+      handheld_charging_official_gpu=
+      handheld_cpu=
+      handheld_gpu=
+      ```
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
-- Profile-aware clock override for all games
-  - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
-    ```ini
-    [A111111111111111]
-    docked_cpu=
-    docked_gpu=
-    handheld_charging_cpu=
-    handheld_charging_gpu=
-    handheld_charging_usb_cpu=
-    handheld_charging_usb_gpu=
-    handheld_charging_official_cpu=
-    handheld_charging_official_gpu=
-    handheld_cpu=
-    handheld_gpu=
-    ```
-
 - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
   - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow recording in any games.
   - For optimal streaming experience, SysDVR via USB interface is recommended.
