@@ -21,7 +21,6 @@ static bool g_log_enabled = false;
 static bool g_boost_enabled = false;
 static bool g_boost_start_enabled = false;
 static bool g_downclock_dock_enabled = false;
-static bool g_pd18w_as_official_charger_enabled = false;
 static bool g_reversenx_tool_exist = false;
 static bool g_reversenx_sync_enabled = false;
 static std::uint64_t g_last_flag_check = 0;
@@ -184,13 +183,6 @@ void FileUtils::InitCheckFlags()
         fclose(file);
     }
 
-    file = fopen(FILE_PD18W_AS_OFFICIAL_CHARGER_FLAG_PATH, "r");
-    if (file)
-    {
-        g_pd18w_as_official_charger_enabled = true;
-        fclose(file);
-    }
-
     file = fopen(FILE_REVERSENX_SYNC_FLAG_PATH, "r");
     if (file)
     {
@@ -219,11 +211,6 @@ bool FileUtils::IsBoostStartEnabled()
 bool FileUtils::IsDownclockDockEnabled()
 {
     return g_downclock_dock_enabled;
-}
-
-bool FileUtils::IsPd18wAsOfficialChargerEnabled()
-{
-    return g_pd18w_as_official_charger_enabled;
 }
 
 bool FileUtils::IsReverseNXToolExist()

@@ -11,41 +11,8 @@
 #include <nxExt.h>
 #include "clocks.h"
 #include "errors.h"
-#include "file_utils.h"
 
 bool Clocks::isMariko = false;
-
-typedef enum {
-    None         = 0,
-    PD           = 1,
-    TypeC_1500mA = 2,
-    TypeC_3000mA = 3,
-    DCP          = 4,
-    CDP          = 5,
-    SDP          = 6,
-    Apple_500mA  = 7,
-    Apple_1000mA = 8,
-    Apple_2000mA = 9
-} BatteryChargeInfoFieldsChargerType;
-
-typedef struct {
-    uint32_t InputCurrentLimit;     //Input (Sink) current limit in mA
-    uint32_t VBUSCurrentLimit;      //Output (Source/VBUS/OTG) current limit in mA
-    uint32_t ChargeCurrentLimit;    //Battery charging current limit in mA (512mA when Docked, 768mA when BatteryTemperature < 17.0 C)
-    uint32_t ChargeVoltageLimit;    //Battery charging voltage limit in mV (3952mV when BatteryTemperature >= 51.0 C)
-    uint32_t unk_x10;               //Possibly an emum, getting the same value as PowerRole in all tested cases
-    uint32_t unk_x14;               //Possibly flags
-    uint16_t PDControllerState;     //Power Delivery Controller State
-    uint32_t BatteryTemperature;    //Battery temperature in milli C
-    uint32_t RawBatteryCharge;      //Raw battery charged capacity per cent-mille (i.e. 100% = 100000 pcm)
-    uint32_t VoltageAvg;            //Voltage avg in mV (more in Notes)
-    uint32_t BatteryAge;            //Battery age (capacity full / capacity design) per cent-mille (i.e. 100% = 100000 pcm)
-    uint16_t PowerRole;             //Sink or Source
-    BatteryChargeInfoFieldsChargerType ChargerType;
-    uint32_t ChargerVoltageLimit;   //Charger and external device voltage limit in mV
-    uint32_t ChargerCurrentLimit;   //Charger and external device current limit in mA
-    uint16_t Flags;                 //Unknown flags
-} BatteryChargeInfoFields;
 
 void Clocks::GetList(SysClkModule module, std::uint32_t **outClocks)
 {
@@ -226,10 +193,6 @@ void Clocks::ResetToStock(unsigned int module)
     }
 }
 
-Result psmGetBatteryChargeInfoFields(Service* psmService, BatteryChargeInfoFields *out) {
-    return serviceDispatchOut(psmService, 17, *out);
-}
-
 SysClkProfile Clocks::GetCurrentProfile()
 {
     std::uint32_t mode = 0;
@@ -239,19 +202,6 @@ SysClkProfile Clocks::GetCurrentProfile()
     if(mode)
     {
         return SysClkProfile_Docked;
-    }
-
-    if(FileUtils::IsPd18wAsOfficialChargerEnabled())
-    {
-        static Service* psmService = psmGetServiceSession();
-        static BatteryChargeInfoFields* _Fields = new BatteryChargeInfoFields;
-        psmGetBatteryChargeInfoFields(psmService, _Fields);
-        if(_Fields->ChargerType == PD)
-        {
-            uint8_t ChargerWatts = (_Fields->ChargerVoltageLimit * _Fields->ChargerCurrentLimit)/1000000.0;
-            if(ChargerWatts >= 17)
-                return SysClkProfile_HandheldChargingOfficial;
-        }
     }
 
     PsmChargerType chargerType;
