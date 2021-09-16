@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 12.1.0.
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 13.0.0.
 
 
 
@@ -85,19 +85,19 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 **Contains:**
 
-- Patches for pcv and ptm modules (for HOS 12.1.0)
+- Patches for pcv and ptm modules
 - Patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
   [hactool](https://github.com/SciresM/hactool), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
 - `system-settings.ini` with some QoL improvements
 
 **Notice**:
-- **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch, and ban risks exist (?).
+- **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch.
 - **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
 - **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.
 
 **Steps:**
-1. Make sure you are running targeted HOS (12.1.0), and have `prod.keys` *with latest master key (0b)* dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
+1. Make sure you are running targeted HOS, and have `prod.keys` *with latest master key* (`_0c`) dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
 3. Place all the files in `SdOut` into SD card.
    **See [Details](#details) section for more info.**
@@ -122,22 +122,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 ### Method B: For Pro-users
 
-```bash
-git clone https://github.com/KazushiMe/Switch-OC-Suite.git ~/Switch-OC-Suite
-
-cd $YOUR_ATMOSPHERE_REPO
-cp -R ~/Switch-OC-Suite/Atmosphere/*pp stratosphere/loader/source/
-patch < ~/Switch-OC-Suite/Atmosphere/ldr_patcher.diff
-
-cd $YOUR_SYS_CLK_REPO
-git apply ~/Switch-OC-Suite/sys-clk.diff
-
-cd $YOUR_REVERSENX_RT_REPO
-git apply ~/Switch-OC-Suite/ReverseNX-RT.diff
-```
-
-Then compile sys-clk, ReverseNX-RT and Atmosphere with devkitpro, and don't forget to grab necessary patches in the repo.
-
+Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere with devkitpro.
 Simply build `loader.kip` from Atmosphere and load it with hekate if you don't feel like wasting time.
 
 

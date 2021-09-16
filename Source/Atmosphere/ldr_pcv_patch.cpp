@@ -4,14 +4,18 @@
 
 #define EMC_OVERCLOCK 1
 #define EMC_OVERVOLT 1
+//I'm dropping support for Erista on >= HOS 13.0.0, you may port these offsets by yourself.
+//#define ERISTA_SUPPORT
 
 namespace ams::ldr {
 
     namespace {
 
-        constexpr u32 CopyrightOffset[2] = { 0xC6128, 0xCA414 }; //am_no_copyright port
+        constexpr u32 CopyrightIPSOffset[VERS] = { 0xC6128, 0xCA414, 0xCB90C }; //am_no_copyright port
 
-        constexpr u8 BehemothPatch[8] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 }; //🤔
+        constexpr u8 RET0[8] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 };
+        // MOV X0, XZR
+        // RET
 
         typedef struct {
             u32 hz = 0;
@@ -20,15 +24,17 @@ namespace ams::ldr {
             s32 coeffs[6] = {0};
         } gpu_clock_table_t;
 
-        constexpr u32 EmcFreqOffsets[2][30] = {
+        constexpr u32 EmcFreqOffsets[VERS][30] = {
             { 0xD7C60, 0xD7C68, 0xD7C70, 0xD7C78, 0xD7C80, 0xD7C88, 0xD7C90, 0xD7C98, 0xD7CA0, 0xD7CA8, 0xE1800, 0xEEFA0, 0xF2478, 0xFE284, 0x10A304, 0x10D7DC, 0x110A40, 0x113CA4, 0x116F08, 0x11A16C, 0x11D3D0, 0x120634, 0x123898, 0x126AFC, 0x129D60, 0x12CFC4, 0x130228, 0x13BFE0, 0x140D00, 0x140D50, },
-            { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, }
+            { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, },
+            { 0xE1860, 0xE6580, 0xE65D0, 0xE6B00, 0xE6B08, 0xE6B10, 0xE6B18, 0xE6B20, 0xE6B28, 0xE6B30, 0xE6B38, 0xE6A40, 0xE6A48, 0xF06A0, 0xFDE40, 0x101318, 0x10D124, 0x1191A4, 0x11C67C, 0x11F8E0, 0x122B44, 0x125DA8, 0x12900C, 0x12C270, 0x12F4D4, 0x132738, 0x13599C, 0x138C00, 0x13BE64, 0x13F0C8, }
         };
         // RAM freqs to choose: 1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
         constexpr u32 NewEmcFreq = 1862400;
         // RAM overclock could be UNSTABLE on some RAM without bumping up voltage,
         // and therefore show graphical glitches, hang randomly or even worse, corrupt your NAND
 
+#ifdef ERISTA_SUPPORT
         namespace Erista {
 
             typedef struct {
@@ -75,6 +81,7 @@ namespace ams::ldr {
             // 1150mV for 1862.4 MHz and 1200 mV for 2131.2 MHz, according to the feedback in RetroNX Discord
             // 1125mV(HOS default) for 1731.2 MHz and 1175mV for 1996.8 MHz
         };
+#endif
 
         namespace Mariko {
 
@@ -87,20 +94,22 @@ namespace ams::ldr {
             } cpu_clock_table_t;
 
             /* CPU */
-            constexpr u32 CpuVoltageLimitOffsets[2][11] = { 
+            constexpr u32 CpuVoltageLimitOffsets[VERS][11] = {
                 { 0xE1A8C, 0xE1A98, 0xE1AA4, 0xE1AB0, 0xE1AF8, 0xE1B04, 0xE1B10, 0xE1B1C, 0xE1B28, 0xE1B34, 0xE1F4C },
                 { 0xF08DC, 0xF08E8, 0xF08F4, 0xF0900, 0xF0948, 0xF0954, 0xF0960, 0xF096C, 0xF0978, 0xF0984, 0xF0D9C },
+                { 0xF092C, 0xF0938, 0xF0944, 0xF0950, 0xF0998, 0xF09A4, 0xF09B0, 0xF09BC, 0xF09C8, 0xF09D4, 0xF0DEC }
             };
             constexpr u32 NewCpuVoltageLimit = 1220;
             static_assert(NewCpuVoltageLimit <= 1300); //1300mV hangs for me
 
-            constexpr u32 CpuVoltageCoeffTable[2][10] = { 
+            constexpr u32 CpuVoltageCoeffTable[VERS][10] = {
                 { 0xE2140, 0xE2178, 0xE21B0, 0xE21E8, 0xE2220, 0xE2258, 0xE2290, 0xE22C8, 0xE2300, 0xE2338 },
                 { 0xF0F90, 0xF0FC8, 0xF1000, 0xF1038, 0xF1070, 0xF10A8, 0xF10E0, 0xF1118, 0xF1150, 0xF1188 },
+                { 0xF0FE0, 0xF1018, 0xF1050, 0xF1088, 0xF10C0, 0xF10F8, 0xF1130, 0xF1168, 0xF11A0, 0xF11D8 }
             };
             constexpr u32 NewCpuVoltageCoeff = NewCpuVoltageLimit * 1000;
 
-            constexpr u32 CpuTablesFreeSpace[2] = { 0xE2350, 0xF11A0 };
+            constexpr u32 CpuTablesFreeSpace[VERS] = { 0xE2350, 0xF11A0, 0xF11F0 };
             constexpr cpu_clock_table_t NewCpuTables[] = {
                 {2091000, 0, {1719782, -40440, 27}, NewCpuVoltageCoeff, {}},
                 {2193000, 0, {1809766, -41939, 27}, NewCpuVoltageCoeff, {}},
@@ -118,11 +127,11 @@ namespace ams::ldr {
             };
             static_assert(sizeof(NewCpuTables) <= sizeof(cpu_clock_table_t)*14);
 
-            constexpr u32 MaxCpuClockOffset[2] = { 0xE2740, 0xF1590 };
+            constexpr u32 MaxCpuClockOffset[VERS] = { 0xE2740, 0xF1590, 0xF15E0 };
             constexpr u32 NewMaxCpuClock = 2397000;
 
             /* GPU */
-            constexpr u32 GpuTablesFreeSpace[2] = { 0xE3410, 0xF2260 };
+            constexpr u32 GpuTablesFreeSpace[VERS] = { 0xE3410, 0xF2260, 0xF22B0 };
             constexpr gpu_clock_table_t NewGpuTables[] = {
                 { 1305600, 0, {}, {1380113, -13465, -874, 0, 2580, 648} },
                 { 1344000, 0, {}, {1420000, -14000, -870, 0, 2193, 824} },
@@ -140,8 +149,8 @@ namespace ams::ldr {
             };
             static_assert(sizeof(NewGpuTables) <= sizeof(gpu_clock_table_t)*15);
 
-            constexpr u32 Reg1MaxGpuOffset[2] = { 0x2E0AC, 0x3F6CC };
-            constexpr u8 Reg1NewMaxGpuClock[2][0xC] = {
+            constexpr u32 Reg1MaxGpuOffset[VERS] = { 0x2E0AC, 0x3F6CC, 0x3F12C };
+            constexpr u8 Reg1NewMaxGpuClock[VERS][0xC] = {
                 // Original: 1267MHz
                 /*
                 MOV   W13,#0x5600
@@ -157,10 +166,11 @@ namespace ams::ldr {
                 //0x0D, 0xC0, 0x8A, 0x52, 0x6D, 0x02, 0xA0, 0x72, 0x1F, 0x20, 0x03, 0xD5
                 { 0x0D, 0x00, 0x8E, 0x52, 0xED, 0x02, 0xA0, 0x72, 0x1F, 0x20, 0x03, 0xD5 },
                 { 0x0B, 0x00, 0x8E, 0x52, 0xEB, 0x02, 0xA0, 0x72, 0x1F, 0x20, 0x03, 0xD5 },
+                { 0x0B, 0x00, 0x8E, 0x52, 0xEB, 0x02, 0xA0, 0x72, 0x1F, 0x20, 0x03, 0xD5 },
             };
 
-            constexpr u32 Reg2MaxGpuOffset[2] = { 0x2E110, 0x3F730 };
-            constexpr u8 Reg2NewMaxGpuClock[2][0x8] = {
+            constexpr u32 Reg2MaxGpuOffset[VERS] = { 0x2E110, 0x3F730, 0x3F190 };
+            constexpr u8 Reg2NewMaxGpuClock[VERS][0x8] = {
                 // Original: 1267MHz
                 /*
                 MOV   W13,#0x5600
@@ -173,6 +183,7 @@ namespace ams::ldr {
                 */
                 //0x0D, 0xC0, 0x8A, 0x52, 0x6D, 0x02, 0xA0, 0x72
                 { 0x0D, 0x00, 0x8E, 0x52, 0xED, 0x02, 0xA0, 0x72, },
+                { 0x0B, 0x00, 0x8E, 0x52, 0xEB, 0x02, 0xA0, 0x72, },
                 { 0x0B, 0x00, 0x8E, 0x52, 0xEB, 0x02, 0xA0, 0x72, },
             };
 
@@ -196,6 +207,7 @@ namespace ams::ldr {
 
     void ApplyPcvPatch(u8 *mapped_module, size_t mapped_size, int i) {
 
+#ifdef ERISTA_SUPPORT
         /* Add new CPU and GPU clock tables for Erista */
         AMS_ABORT_UNLESS(Erista::CpuTablesFreeSpace[i] <= mapped_size && Erista::GpuTablesFreeSpace[i] <= mapped_size);
         std::memcpy(mapped_module + Erista::CpuTablesFreeSpace[i], Erista::NewCpuTables, sizeof(Erista::NewCpuTables));
@@ -205,6 +217,7 @@ namespace ams::ldr {
         for(int j = 0; j < 3; j++) {
             std::memcpy(mapped_module + Erista::CpuVoltageLimitOffsets[i][j], &Erista::NewCpuVoltageLimit, sizeof(Erista::NewCpuVoltageLimit));
         }
+#endif
 
         /* Add new CPU and GPU clock tables for Mariko */
         AMS_ABORT_UNLESS(Mariko::CpuTablesFreeSpace[i] <= mapped_size && Mariko::GpuTablesFreeSpace[i] <= mapped_size);
@@ -235,12 +248,14 @@ namespace ams::ldr {
         }
 
         if constexpr(EMC_OVERVOLT) {
+#ifdef ERISTA_SUPPORT
             if(spl::GetSocType() == spl::SocType_Erista) {
                 for(u32 j = 0; j < sizeof(Erista::EmcVolatageOffsets[i])/sizeof(u32); j++) {
                     AMS_ABORT_UNLESS(Erista::EmcVolatageOffsets[i][j] <= mapped_size);
                     std::memcpy(mapped_module + Erista::EmcVolatageOffsets[i][j], &Erista::NewEmcVoltage, sizeof(Erista::NewEmcVoltage));
                 }
             }
+#endif
             // Not available on Mariko
             /*else if(spl::GetSocType() == spl::SocType_Mariko) {
                 for(u32 j = 0; j < sizeof(Mariko::EmcVolatageOffsets[i])/sizeof(u32); j++) {
@@ -254,8 +269,8 @@ namespace ams::ldr {
     }
 
     void ApplyCopyrightPatch(u8 *mapped_module, size_t mapped_size, int i) {
-        AMS_ABORT_UNLESS(CopyrightOffset[i] - 0x100 <= mapped_size);
-        std::memcpy(mapped_module + CopyrightOffset[i] - 0x100, BehemothPatch, sizeof(BehemothPatch));
+        AMS_ABORT_UNLESS(CopyrightIPSOffset[i] - 0x100 <= mapped_size);
+        std::memcpy(mapped_module + CopyrightIPSOffset[i] - 0x100, RET0, sizeof(RET0));
     }
 
 }

@@ -1,5 +1,5 @@
-pcvModulePath = "bis:/Contents/registered/3067dd44caacf32f8bca54ecde4c56e2.nca/00"
-OldBackupPath = "sd:/atmosphere/oc_patches/12-1-patch.bak"
+pcvModulePath = "bis:/Contents/registered/6b675f6f9c9ec3a4448d81fa2bbc895e.nca/00"
+OldBackupPath = "sd:/atmosphere/oc_patches/13-0-patch.bak"
 BackupPath = "sd:/atmosphere/oc_patches/pcv-backup"
 PatchPath = "sd:/atmosphere/oc_patches/pcv-module"
 
@@ -20,7 +20,7 @@ pausecont = {
 }
 
 header = {
-	println("\n-- Switch OC Suite Patcher (HOS 12.1.0) --\n\n")
+	println("\n-- Switch OC Suite Patcher (HOS 13.0.0) --\n\n")
 	println(" OC Suite is provided 'as is' without warranty of any kind,\n USE AT YOUR OWN RISKS!")
 	println(" If you don't have Joy-Cons connected or are using Switch Lite,")
 	println(" Press VOL+/- to navigate and POWER button to confirm.\n")
@@ -77,7 +77,7 @@ if ( mmcMount("SYSTEM") ) {
 if ( ! fileExists(pcvModulePath) ) {
 	color("RED")
 	println("You're NOT using targeted Horizon OS version!")
-	println("Targeted version: 12.1.0\n")
+	println("Targeted version: 13.0.0\n")
 	color("WHITE")
 	pauseexit()
 }
