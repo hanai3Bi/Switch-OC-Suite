@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 13.0.0.
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 12.1.0.
 
 
 
