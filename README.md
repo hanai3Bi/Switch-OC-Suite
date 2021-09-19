@@ -87,11 +87,12 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 - Patches for pcv and ptm modules
 - Patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
-  [hactool](https://github.com/SciresM/hactool), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
+  [hactoolnet](https://github.com/Thealexbarney/LibHac/), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
 - `system-settings.ini` with some QoL improvements
 
 **Notice**:
+
 - **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch.
 - **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
 - **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.

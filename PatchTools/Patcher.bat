@@ -24,7 +24,7 @@ rd /S /Q .\hacpack_backup\
 del .\*.nca
 mkdir .\temp
 mkdir .\temp\pcv_exefs
-hactool -k prod.keys --disablekeywarns -t -nca .\pcv-backup --exefsdir .\temp
+hactoolnet -k prod.keys --disablekeywarns -t -nca .\pcv-backup --exefsdir .\temp
 nx2elf .\temp\main
 bspatch .\temp\main.elf .\temp\main-mod.elf .\pcv-bspatch
 elf2nso .\temp\main-mod.elf .\temp\pcv_exefs\main
