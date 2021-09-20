@@ -1,0 +1,152 @@
+#REQUIRE VER 4.0.0
+#REQUIRE KEYS
+
+targetVer = "12.1.0"
+
+#pcvModulePath = "bis:/Contents/registered/6b675f6f9c9ec3a4448d81fa2bbc895e.nca/00"
+#OldBackupPath = "sd:/atmosphere/oc_patches/13-0-patch.bak"
+
+pcvModulePath = "bis:/Contents/registered/3067dd44caacf32f8bca54ecde4c56e2.nca/00"
+OldBackupPath = "sd:/atmosphere/oc_patches/12-1-patch.bak"
+BackupPath = "sd:/atmosphere/oc_patches/pcv-backup"
+PatchPath = "sd:/atmosphere/oc_patches/pcv-module"
+
+pauseexit = {
+	println("\nPress any button to exit.\n")
+	pause()
+	exit()
+}
+
+pausecont = {
+	println("\nPress A/POWER button to continue.")
+	println("Press any other button to exit.\n")
+	p = pause()
+	if ( ! ( p.a || p.power ) ) {
+		exit()
+	}
+}
+
+fatal = {
+	color(0xFF0000)
+	println("\n[FATAL]", fatalMsg)
+	color(0xFFFFFF)
+	pauseexit()
+}
+
+header = {
+	println("\n-- Switch OC Suite Patcher (", targetVer, ") --\n\n")
+	println(" OC Suite is provided 'as is' without warranty of any kind,\n USE AT YOUR OWN RISKS!")
+	println(" If you don't have Joy-Cons connected or are using Switch Lite,")
+	println(" Press VOL+/- to navigate and POWER button to confirm.\n")
+}
+
+header()
+
+if (emu()) {
+	menuOptions = ["Exit", "Mount EmuMMC", "Mount SysMMC (NOT RECOMMENDED)"]
+}.else() {
+	menuOptions = ["Exit", "Mount SysMMC (NOT RECOMMENDED)"]
+}
+
+res = menu(menuOptions, 0)
+
+clear()
+
+if ( res == 0 ) {
+	exit()
+}
+
+if ( res == 1 && emu() ) {
+	println("EmuMMC is selected!")
+	mmcread = emummcread
+	mmcwrite = emummcwrite
+	mount = mountemu
+}
+
+if ( res == 2 || ( res == 1 && ! emu() ) ) {
+	println("SysMMC is selected!")
+	println("\nIt is NOT recommended to apply on SysMMC")
+	println("Do you still want to continue?")
+	pausecont()
+	mmcread = emmcread
+	mmcwrite = emmcwrite
+	mount = mountsys
+}
+
+println("Mounting SYSTEM Partition and Checking...")
+
+if ( mount("SYSTEM") ) {
+	fatal(fatalMsg = "Failed to mount SYSTEM!")
+}
+
+if ( ! fsexists(pcvModulePath) ) {
+	println("Targeted version: ", targetVer, "\n")
+	fatal(fatalMsg = "You are NOT using targeted Horizon OS version!")
+}
+
+if ( fsexists(OldBackupPath) ) {
+	println("Old Backup found! Renaming...")
+	if ( movefile(OldBackupPath, BackupPath) ) {
+		fatal(fatalMsg = "Failed to rename the old backup!")
+	}
+}
+
+clear()
+header()
+
+menuOptions = ["Exit", "Dump PCV Module Backup", "Apply Patched PCV Module", "Restore PCV Module Backup"]
+
+res = menu(menuOptions, 0)
+
+if ( res == 0 ) {
+	exit()
+}
+
+clear()
+
+if ( res == 1 ) {
+	if ( fsexists(BackupPath) ) {
+		color(0xFF0000)
+		println("You have the backup already. Do you want to DELETE it and redump?")
+		println("Make sure you DO NOT have the patched one in the MMC!")
+		color(0xFFFFFF)
+		pausecont()
+		if ( delfile(BackupPath) ) {
+			fatal(fatalMsg = "Failed to remove the old backup!")
+		}
+	}
+	println("Dumping...")
+	if ( copyfile(pcvModulePath, BackupPath) ) {
+		fatal(fatalMsg = "Failed to dump pcv module from MMC!")
+	}
+}
+
+if ( res == 2 ) {
+	if ( ! fsexists(PatchPath) ) {
+		fatal(fatalMsg = "Patched PCV Module NOT FOUND!\n
+Make sure you are following the instructions in README!")
+	}
+	println("Applying Patched PCV Module...")
+	if ( delfile(pcvModulePath) ) {
+		fatal(fatalMsg = "Failed to delete unpatched pcv module from MMC!")
+	}
+	if ( copyfile(PatchPath, pcvModulePath) ) {
+		fatal(fatalMsg = "Failed to apply patched pcv module!\nPLEASE RESTORE PCV BACKUP BEFORE BOOTING TO CFW!")
+	}
+}
+
+if ( res == 3 ) {
+	if ( ! fsexists(BackupPath) ) {
+		fatal(fatalMsg = "PCV Module Backup NOT FOUND!")
+	}
+	println("Restoring PCV Module...")
+	if ( delfile(pcvModulePath) ) {
+		fatal(fatalMsg = "Failed to delete patched pcv module from MMC!")
+	}
+	if ( copyfile(BackupPath, pcvModulePath) ) {
+		fatal(fatalMsg = "Failed to restore unpatched pcv module!\nPLEASE RESTORE THE BACKUP MANUALLY BEFORE BOOTING TO CFW!")
+	}
+}
+
+println("Done! ")
+pauseexit()
