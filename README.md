@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS [TARGETVER].
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 12.1.0.
 
 
 
@@ -101,7 +101,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.
 
 **Steps:**
-1. Make sure you are running targeted HOS ([TARGETVER]), and have `prod.keys` *with latest master key* (`_0c`) dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
+1. Make sure you are running targeted HOS, and have `prod.keys` *with latest master key* (`_0c`) dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
 2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
 3. Place all the files in `SdOut` into SD card.
    **See [Details](#details) section for more info.**
@@ -142,5 +142,3 @@ Simply build `loader.kip` from Atmosphere and load it with hekate if you don't f
 - suchmememanyskill for [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer) and [TegraScript](https://github.com/suchmememanyskill/TegraScript)
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere
-
-[TARGETVER]: 12.1.0
