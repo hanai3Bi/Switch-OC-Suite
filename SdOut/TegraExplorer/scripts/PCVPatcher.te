@@ -3,8 +3,8 @@
 
 targetVer = "12.1.0/13.0.0"
 
-13pcvModulePath = "bis:/Contents/registered/6b675f6f9c9ec3a4448d81fa2bbc895e.nca/00"
-13OldBackupPath = "sd:/atmosphere/oc_patches/13-0-patch.bak"
+pcvModulePath13 = "bis:/Contents/registered/6b675f6f9c9ec3a4448d81fa2bbc895e.nca/00"
+OldBackupPath13 = "sd:/atmosphere/oc_patches/13-0-patch.bak"
 
 pcvModulePath = "bis:/Contents/registered/3067dd44caacf32f8bca54ecde4c56e2.nca/00"
 OldBackupPath = "sd:/atmosphere/oc_patches/12-1-patch.bak"
@@ -80,12 +80,12 @@ if ( mount("SYSTEM") ) {
 }
 
 if ( ! fsexists(pcvModulePath) ) {
-	pcvModulePath = 13pcvModulePath
+	pcvModulePath = pcvModulePath13
 	if ( ! fsexists(pcvModulePath) ) {
 		println("Targeted version: ", targetVer, "\n")
 		fatal(fatalMsg = "You are NOT using targeted Horizon OS version!")
 	}
-	OldBackupPath = 13OldBackupPath
+	OldBackupPath = OldBackupPath13
 	HOSVer = "13.0.0"
 }.else() {
 	HOSVer = "12.1.0"
