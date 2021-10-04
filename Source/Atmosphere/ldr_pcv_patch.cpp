@@ -27,7 +27,7 @@ namespace ams::ldr {
         constexpr u32 EmcFreqOffsets[VERS][30] = {
             { 0xD7C60, 0xD7C68, 0xD7C70, 0xD7C78, 0xD7C80, 0xD7C88, 0xD7C90, 0xD7C98, 0xD7CA0, 0xD7CA8, 0xE1800, 0xEEFA0, 0xF2478, 0xFE284, 0x10A304, 0x10D7DC, 0x110A40, 0x113CA4, 0x116F08, 0x11A16C, 0x11D3D0, 0x120634, 0x123898, 0x126AFC, 0x129D60, 0x12CFC4, 0x130228, 0x13BFE0, 0x140D00, 0x140D50, },
             { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, },
-            { 0xE1860, 0xE6580, 0xE65D0, 0xE6B00, 0xE6B08, 0xE6B10, 0xE6B18, 0xE6B20, 0xE6B28, 0xE6B30, 0xE6B38, 0xE6A40, 0xE6A48, 0xF06A0, 0xFDE40, 0x101318, 0x10D124, 0x1191A4, 0x11C67C, 0x11F8E0, 0x122B44, 0x125DA8, 0x12900C, 0x12C270, 0x12F4D4, 0x132738, 0x13599C, 0x138C00, 0x13BE64, 0x13F0C8, }
+            { 0xE1860, 0xE6580, 0xE65D0, 0xE6B00, 0xE6B08, 0xE6B10, 0xE6B18, 0xE6B20, 0xE6B28, 0xE6B30, 0xE6B38, 0xE6B40, 0xE6B48, 0xF06A0, 0xFDE40, 0x101318, 0x10D124, 0x1191A4, 0x11C67C, 0x11F8E0, 0x122B44, 0x125DA8, 0x12900C, 0x12C270, 0x12F4D4, 0x132738, 0x13599C, 0x138C00, 0x13BE64, 0x13F0C8, }
         };
         // RAM freqs to choose: 1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
         constexpr u32 NewEmcFreq = 1862400;
@@ -46,14 +46,15 @@ namespace ams::ldr {
             } cpu_clock_table_t;
 
             /* CPU */
-            constexpr u32 CpuVoltageLimitOffsets[2][3] = {
+            constexpr u32 CpuVoltageLimitOffsets[VERS][3] = {
                 { 0xE1AC8, 0xE1AD4, 0xE37E4 },
                 { 0xF0918, 0xF0924, 0xF2634 },
+                { 0xF0968, 0xF0974, 0xF2684 },
             };
             constexpr u32 NewCpuVoltageLimit = 1358;
             static_assert(NewCpuVoltageLimit <= 1400);
 
-            constexpr u32 CpuTablesFreeSpace[2] = { 0xE3B78, 0xF29C8 };
+            constexpr u32 CpuTablesFreeSpace[VERS] = { 0xE3B78, 0xF29C8, 0xF2A18 };
             constexpr cpu_clock_table_t NewCpuTables[] = {
                 { 1887000, 0, 1240000, {}, { 5100873, -279186, 4747 } },
                 { 1963500, 0, 1262000, {}, { 5100873, -279186, 4747 } },
@@ -64,7 +65,7 @@ namespace ams::ldr {
             static_assert(sizeof(NewCpuTables) <= sizeof(cpu_clock_table_t)*16);
 
             /* GPU */
-            constexpr u32 GpuTablesFreeSpace[2] = { 0xE2B58, 0xF19A8 };
+            constexpr u32 GpuTablesFreeSpace[VERS] = { 0xE2B58, 0xF19A8, 0xF19F8 };
             constexpr gpu_clock_table_t NewGpuTables[] = {
                 {  998400, 0, {}, { 1316991, 8144, -940, 808, -21583, 226 } },
                 { 1075200, 0, {}, { 1358883, 8144, -940, 808, -21583, 226 } },
@@ -72,9 +73,10 @@ namespace ams::ldr {
             static_assert(sizeof(NewGpuTables) <= sizeof(gpu_clock_table_t)*20);
 
             /* EMC */
-            constexpr u32 EmcVolatageOffsets[2][2] = {
+            constexpr u32 EmcVolatageOffsets[VERS][2] = {
                 { 0x143998, 0x14399C },
                 { 0x142878, 0x14287C },
+                { 0x1428C8, 0x1428CC },
             };
             constexpr u32 NewEmcVoltage = 1150000;
             static_assert(NewEmcVoltage <= 1250000);
