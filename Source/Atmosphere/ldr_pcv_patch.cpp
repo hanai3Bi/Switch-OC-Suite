@@ -76,7 +76,7 @@ namespace ams::ldr {
             constexpr u32 EmcVolatageOffsets[VERS][2] = {
                 { 0x143998, 0x14399C },
                 { 0x142878, 0x14287C },
-                { 0x1428C8, 0x1428CC },
+                { 0x1428B8, 0x1428BC },
             };
             constexpr u32 NewEmcVoltage = 1150000;
             static_assert(NewEmcVoltage <= 1250000);
@@ -190,19 +190,15 @@ namespace ams::ldr {
             };
 
             /* EMC */
-            // Not available on Mariko
-            /*constexpr u32 EmcVolatageOffsets[2][2] = {
-                {
-                    0x145FE4, //max77812_dram
-                    0x144BA4, //max77812_dram
-                },
-                {
-                    0x143A84,
-                    0x144EC4,
-                }
+            /* Changing EMC volt parameters in mtc table will not make any difference to real voltage
+            constexpr u32 EmcVolatageOffsets[VERS][2] = {
+                { 0x145FE4, 0x144BA4, },
+                { 0x143A84, 0x144EC4, },
+                { 0x143AC4, 0x144F04, },
             };
             constexpr u32 NewEmcVoltage = 650000;
-            static_assert(NewEmcVoltage <= 750000);*/
+            static_assert(NewEmcVoltage <= 750000);
+            */
         };
 
     }

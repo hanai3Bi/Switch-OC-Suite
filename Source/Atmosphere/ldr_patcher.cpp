@@ -114,14 +114,14 @@ namespace ams::ldr {
     }
 
     /* Apply IPS patches. */
-    void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
+    void LocateAndApplyIpsPatchesToModule(const u8 *module_id_data, uintptr_t mapped_nso, size_t mapped_size) {
         for(int i = 0; i < VERS; i++)
         {
-            if(memcmp(PcvModuleId[i], build_id, sizeof(PcvModuleId[i])) == 0) {
+            if(memcmp(PcvModuleId[i], module_id_data, sizeof(PcvModuleId[i])) == 0) {
                 ApplyPcvPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
                 return; // Return here since pcv module loads before sd card can be mounted
             }
-            else if(memcmp(AmModuleId[i], build_id, sizeof(AmModuleId[i])) == 0) {
+            else if(memcmp(AmModuleId[i], module_id_data, sizeof(AmModuleId[i])) == 0) {
                 ApplyCopyrightPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
             }
         }
@@ -131,15 +131,15 @@ namespace ams::ldr {
         }
 
         ro::ModuleId module_id;
-        std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
+        std::memcpy(&module_id.data, module_id_data, sizeof(module_id.data));
         ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
     }
 
     /* Apply embedded patches. */
-    void ApplyEmbeddedPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
+    void ApplyEmbeddedPatchesToModule(const u8 *module_id_data, uintptr_t mapped_nso, size_t mapped_size) {
         /* Make module id. */
         ro::ModuleId module_id;
-        std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
+        std::memcpy(&module_id.data, module_id_data, sizeof(module_id.data));
 
         if (IsUsb30ForceEnabled()) {
             for (const auto &patch : Usb30ForceEnablePatches) {
