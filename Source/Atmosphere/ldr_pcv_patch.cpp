@@ -3,7 +3,8 @@
 #include <stratosphere.hpp>
 
 #define EMC_OVERCLOCK 1
-#define EMC_OVERVOLT 1
+//#define EMC_OVERVOLT 1
+
 //I'm dropping support for Erista on >= HOS 13.0.0, you may port these offsets by yourself.
 //#define ERISTA_SUPPORT
 
@@ -73,7 +74,7 @@ namespace ams::ldr {
             static_assert(sizeof(NewGpuTables) <= sizeof(gpu_clock_table_t)*20);
 
             /* EMC */
-            constexpr u32 EmcVolatageOffsets[VERS][2] = {
+            constexpr u32 EmcVoltageOffsets[VERS][2] = {
                 { 0x143998, 0x14399C },
                 { 0x142878, 0x14287C },
                 { 0x1428B8, 0x1428BC },
@@ -189,16 +190,35 @@ namespace ams::ldr {
                 { 0x0B, 0x00, 0x8E, 0x52, 0xEB, 0x02, 0xA0, 0x72, },
             };
 
-            /* EMC */
-            /* Changing EMC volt parameters in mtc table will not make any difference to real voltage
-            constexpr u32 EmcVolatageOffsets[VERS][2] = {
+#ifdef EMC_OVERVOLT
+            /*
+             * EMC: Work in progress
+             *
+             * References:
+             * [1] https://nv-tegra.nvidia.com/gitweb/?p=linux-4.9.git;a=blob;f=drivers/regulator/max77812-regulator.c;h=015f90b297b5f58bac6ac3c92c72be878542c667
+             * [2] https://github.com/CTCaer/hekate/blob/master/bdk/power/max77812.h
+             * [3] https://github.com/CTCaer/hekate/blob/master/bdk/power/max7762x.c
+             */
+
+            constexpr u32 EmcVoltageMax = 1525000;
+
+            constexpr u32 EmcVoltageMinOffsets[VERS][2] = {
+                { 0x145FD8, 0x144B98, },
+                { 0x143A78, 0x144EB8, },
+                { 0x143AB8, 0x144EF8, },
+            }
+
+            constexpr u32 EmcVoltageDefOffsets[VERS][2] = {
                 { 0x145FE4, 0x144BA4, },
                 { 0x143A84, 0x144EC4, },
                 { 0x143AC4, 0x144F04, },
             };
-            constexpr u32 NewEmcVoltage = 650000;
-            static_assert(NewEmcVoltage <= 750000);
-            */
+
+            constexpr u32 EmcVoltageMin = 300000; // 250000mV
+            constexpr u32 EmcVoltageDef = 650000; // 600000mV
+            static_assert(sizeof(EmcVoltageMinOffsets) == sizeof(EmcVoltageDefOffsets));
+            static_assert(EmcVoltageMin <= EmcVoltageDef && NewEmcVoltageDef <= EmcVoltageMax);
+#endif
         };
 
     }
@@ -248,19 +268,19 @@ namespace ams::ldr {
         if constexpr(EMC_OVERVOLT) {
 #ifdef ERISTA_SUPPORT
             if(spl::GetSocType() == spl::SocType_Erista) {
-                for(u32 j = 0; j < sizeof(Erista::EmcVolatageOffsets[i])/sizeof(u32); j++) {
-                    AMS_ABORT_UNLESS(Erista::EmcVolatageOffsets[i][j] <= mapped_size);
-                    std::memcpy(mapped_module + Erista::EmcVolatageOffsets[i][j], &Erista::NewEmcVoltage, sizeof(Erista::NewEmcVoltage));
+                for(u32 j = 0; j < sizeof(Erista::EmcVoltageOffsets[i])/sizeof(u32); j++) {
+                    AMS_ABORT_UNLESS(Erista::EmcVoltageOffsets[i][j] <= mapped_size);
+                    std::memcpy(mapped_module + Erista::EmcVoltageOffsets[i][j], &Erista::NewEmcVoltage, sizeof(Erista::NewEmcVoltage));
                 }
             }
 #endif
-            // Not available on Mariko
-            /*else if(spl::GetSocType() == spl::SocType_Mariko) {
-                for(u32 j = 0; j < sizeof(Mariko::EmcVolatageOffsets[i])/sizeof(u32); j++) {
-                    AMS_ABORT_UNLESS(Mariko::EmcVolatageOffsets[i][j] <= mapped_size);
-                    std::memcpy(mapped_module + Mariko::EmcVolatageOffsets[i][j], &Mariko::NewEmcVoltage, sizeof(Mariko::NewEmcVoltage));
+            else if(spl::GetSocType() == spl::SocType_Mariko) {
+                for(u32 j = 0; j < sizeof(Mariko::EmcVoltageMinOffsets[i])/sizeof(u32); j++) {
+                    AMS_ABORT_UNLESS(Mariko::EmcVoltageMinOffsets[i][j] <= mapped_size);
+                    std::memcpy(mapped_module + Mariko::EmcVoltageMinOffsets[i][j], &Mariko::EmcVoltageMin, sizeof(Mariko::EmcVoltageMin));
+                    std::memcpy(mapped_module + Mariko::EmcVoltageDefOffsets[i][j], &Mariko::EmcVoltageDef, sizeof(Mariko::EmcVoltageDef));
                 }
-            }*/
+            }
         }
 
         return;
