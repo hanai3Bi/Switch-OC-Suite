@@ -23,7 +23,7 @@
 
 #ifdef __aarch64__
 
-    .cpu cortex-a53+fp+simd
+    .cpu cortex-a57+fp+simd
     .text
     .align 2
 
@@ -39,6 +39,18 @@
     SIZE        .req x2
 .endm
 
+asm_function aligned_block_read_ldp_x_aarch64
+0:
+    ldp         x3,  x4, [DST, #(0 * 16)]
+    ldp         x5,  x6, [DST, #(1 * 16)]
+    ldp         x7,  x8, [DST, #(2 * 16)]
+    ldp         x9, x10, [DST, #(3 * 16)]
+    add         DST, DST, #64
+    subs        SIZE, SIZE, #64
+    bgt         0b
+    ret
+.endfunc
+
 asm_function aligned_block_copy_ldpstp_x_aarch64
 0:
     ldp         x3,  x4, [SRC, #(0 * 16)]
@@ -50,6 +62,16 @@ asm_function aligned_block_copy_ldpstp_x_aarch64
     stp         x5,  x6, [DST, #(1 * 16)]
     stp         x7,  x8, [DST, #(2 * 16)]
     stp         x9, x10, [DST, #(3 * 16)]
+    add         DST, DST, #64
+    subs        SIZE, SIZE, #64
+    bgt         0b
+    ret
+.endfunc
+
+asm_function aligned_block_read_ldp_q_aarch64
+0:
+    ldp         q0,  q1, [DST, #(0 * 32)]
+    ldp         q2,  q3, [DST, #(1 * 32)]
     add         DST, DST, #64
     subs        SIZE, SIZE, #64
     bgt         0b

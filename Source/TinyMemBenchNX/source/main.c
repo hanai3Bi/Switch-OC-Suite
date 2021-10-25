@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  * 
+ * pthread fork by sun409 (https://github.com/sun409/tinymembench-pthread)
+ *
  * Switch port by Kazushi and built with libnx.
  */
 
@@ -30,8 +32,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <limits>
 #include <sys/time.h>
+
+// Multi-thread support
+#include <pthread.h>
+#include <sched.h>
+#include <semaphore.h>
 
 #define __ASM_OPT_H__
 #define SIZE             (32 * 1024 * 1024)
@@ -49,9 +55,78 @@
 #include "aarch64-asm.h"
 #include <switch.h>
 
-using namespace std;
-
 PadState pad;
+
+struct f_data
+{
+    void (*func)(int64_t *, int64_t *, int);
+    int64_t *arg1;
+    int64_t *arg2;
+    int      arg3;
+};
+
+pthread_cond_t p_ready, p_start;
+pthread_mutex_t p_lock;
+pthread_t *p_worker = NULL;
+struct f_data *worker_data = NULL;
+int p_worker_not_ready, p_workers_ready;
+
+void *thread_func(void *data)
+{
+    struct f_data *data_ptr = data;
+
+    pthread_mutex_lock(&p_lock);
+    p_worker_not_ready--;
+
+    if (!p_worker_not_ready)
+        pthread_cond_signal(&p_ready);
+
+    while (p_workers_ready != 1)
+        pthread_cond_wait(&p_start, &p_lock);
+
+    pthread_mutex_unlock(&p_lock);
+
+    (data_ptr->func)(data_ptr->arg1, data_ptr->arg2, data_ptr->arg3);
+
+    pthread_exit(NULL);
+}
+
+static void parallel_run(void)
+{
+    pthread_mutex_lock(&p_lock);
+    p_workers_ready = 1;
+    pthread_mutex_unlock(&p_lock);
+    pthread_cond_broadcast(&p_start);
+}
+
+static void parallel_init(int threads)
+{
+    pthread_attr_t attr;
+
+    pthread_cond_init(&p_ready, NULL);
+    pthread_cond_init(&p_start, NULL);
+    pthread_mutex_init(&p_lock, NULL);
+    p_worker_not_ready = threads;
+    p_workers_ready = 0;
+    pthread_attr_init(&attr);
+
+    if (!p_worker || !worker_data)
+    {
+        p_worker = (pthread_t *)malloc(threads * sizeof(pthread_t));
+        worker_data = (struct f_data *)malloc(threads * sizeof(struct f_data));
+    }
+
+    for (int i = 0; i < threads; i++)
+    {
+        pthread_create(p_worker + i, &attr, thread_func, worker_data + i);
+    }
+
+    pthread_mutex_lock(&p_lock);
+    while (p_worker_not_ready != 0)
+        pthread_cond_wait(&p_ready, &p_lock);
+
+    pthread_mutex_unlock(&p_lock);
+}
 
 typedef struct
 {
@@ -240,6 +315,24 @@ void aligned_block_copy_pf64(int64_t * __restrict dst_,
     }
 }
 
+void aligned_block_fetch(int64_t * __restrict dst,
+                         int64_t * __restrict src_,
+                         int                  size)
+{
+    volatile int64_t *src = src_;
+    while ((size -= 64) >= 0)
+    {
+        *src++;
+        *src++;
+        *src++;
+        *src++;
+        *src++;
+        *src++;
+        *src++;
+        *src++;
+    }
+}
+
 void aligned_block_fill(int64_t * __restrict dst_,
                         int64_t * __restrict src,
                         int                  size)
@@ -326,7 +419,8 @@ double gettime(void)
     return (double)((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) / 1000000.;
 }
 
-static double bandwidth_bench_helper(int64_t *dstbuf, int64_t *srcbuf,
+static double bandwidth_bench_helper(int threads,
+                                     int64_t *dstbuf, int64_t *srcbuf,
                                      int64_t *tmpbuf,
                                      int size, int blocksize,
                                      const char *indent_prefix,
@@ -335,19 +429,30 @@ static double bandwidth_bench_helper(int64_t *dstbuf, int64_t *srcbuf,
                                      const char *description)
 {
     int i, j, loopcount, innerloopcount, n;
-    double t1, t2;
+    double t, t1, t2;
     double speed, maxspeed;
     double s, s0, s1, s2;
 
     /* do up to MAXREPEATS measurements */
-    s = s0 = s1 = s2 = 0;
-    maxspeed = 0;
+    s = s0 = s1 = s2 = 0.;
+    maxspeed = 0.;
     for (n = 0; n < MAXREPEATS; n++)
     {
-        f(dstbuf, srcbuf, size);
+        parallel_init(threads);
+        for (int pt = 0; pt < threads; pt++)
+        {
+            (worker_data + pt)->func = f;
+            (worker_data + pt)->arg1 = dstbuf + size * pt / sizeof(int64_t);
+            (worker_data + pt)->arg2 = srcbuf + size * pt / sizeof(int64_t);
+            (worker_data + pt)->arg3 = size;
+        }
+        parallel_run();
+        for (int pt = 0; pt < threads; pt++)
+            pthread_join(p_worker[pt], NULL);
+
         loopcount = 0;
         innerloopcount = 1;
-        t1 = gettime();
+        t = 0.;
         do
         {
             loopcount += innerloopcount;
@@ -355,33 +460,49 @@ static double bandwidth_bench_helper(int64_t *dstbuf, int64_t *srcbuf,
             {
                 for (i = 0; i < innerloopcount; i++)
                 {
+                    t1 = gettime();
                     for (j = 0; j < size; j += blocksize)
-                        {
+                    {
                         f(tmpbuf, srcbuf + j / sizeof(int64_t), blocksize);
                         f(dstbuf + j / sizeof(int64_t), tmpbuf, blocksize);
                     }
+                    t2 = gettime();
+                    t += t2 - t1;
                 }
             }
             else
             {
                 for (i = 0; i < innerloopcount; i++)
                 {
-                    f(dstbuf, srcbuf, size);
+                    parallel_init(threads);
+                    for (int pt = 0; pt < threads; ++pt)
+                    {
+                        (worker_data + pt)->func = f;
+                        (worker_data + pt)->arg1 = dstbuf + size * pt / sizeof(int64_t);
+                        (worker_data + pt)->arg2 = srcbuf + size * pt / sizeof(int64_t);
+                        (worker_data + pt)->arg3 = size;
+                    }
+
+                    t1 = gettime();
+                    parallel_run();
+                    for (int pt = 0; pt < threads; ++pt)
+                        pthread_join(p_worker[pt], NULL);
+                    t2 = gettime();
+                    t += t2 - t1;
                 }
             }
             innerloopcount *= 2;
-            t2 = gettime();
-        } while (t2 - t1 < 0.5);
-        speed = (double)size * loopcount / (t2 - t1) / 1000000.;
+        } while (t < 0.5);
+        speed = (double)size * (use_tmpbuf ? 1 : threads) * loopcount / t / 1000000.;
 
-        s0 += 1;
+        s0 += 1.;
         s1 += speed;
         s2 += speed * speed;
 
         if (speed > maxspeed)
             maxspeed = speed;
 
-        if (s0 > 2)
+        if (s0 > 2.)
         {
             s = sqrt((s0 * s2 - s1 * s1) / (s0 * (s0 - 1)));
             if (s < maxspeed / 1000.)
@@ -391,24 +512,27 @@ static double bandwidth_bench_helper(int64_t *dstbuf, int64_t *srcbuf,
 
     if (maxspeed > 0 && s / maxspeed * 100. >= 0.1)
     {
-        printf("%s%-52s : %8.1f MB/s (%.1f%%)\n", indent_prefix, description,
+        printf("%s%-40s : %8.1f MB/s (%.1f%%)\n", indent_prefix, description,
                                                maxspeed, s / maxspeed * 100.);
     }
     else
     {
-        printf("%s%-52s : %8.1f MB/s\n", indent_prefix, description, maxspeed);
+        printf("%s%-40s : %8.1f MB/s\n", indent_prefix, description, maxspeed);
     }
+
     consoleUpdate(NULL);
     return maxspeed;
 }
 
-void bandwidth_bench(int64_t *dstbuf, int64_t *srcbuf, int64_t *tmpbuf,
+void bandwidth_bench(int threads,
+                     int64_t *dstbuf, int64_t *srcbuf, int64_t *tmpbuf,
                      int size, int blocksize, const char *indent_prefix,
                      bench_info *bi)
 {
     while (bi->f)
     {
-        bandwidth_bench_helper(dstbuf, srcbuf, tmpbuf, size, blocksize,
+        bandwidth_bench_helper(threads,
+                               dstbuf, srcbuf, tmpbuf, size, blocksize,
                                indent_prefix, bi->use_tmpbuf,
                                bi->f,
                                bi->description);
@@ -428,14 +552,16 @@ void memset_wrapper(int64_t *dst, int64_t *src, int size)
 
 static bench_info aarch64_neon[] =
 {
+    { "NEON LDP", 0, aligned_block_read_ldp_q_aarch64 },
     { "NEON LDP/STP copy", 0, aligned_block_copy_ldpstp_q_aarch64 },
-    { "NEON LDP/STP copy pldl2strm (32 bytes step)", 0, aligned_block_copy_ldpstp_q_pf32_l2strm_aarch64 },
-    { "NEON LDP/STP copy pldl2strm (64 bytes step)", 0, aligned_block_copy_ldpstp_q_pf64_l2strm_aarch64 },
-    { "NEON LDP/STP copy pldl1keep (32 bytes step)", 0, aligned_block_copy_ldpstp_q_pf32_l1keep_aarch64 },
-    { "NEON LDP/STP copy pldl1keep (64 bytes step)", 0, aligned_block_copy_ldpstp_q_pf64_l1keep_aarch64 },
+    { "NEON LDP/STP copy pldl2strm (32B step)", 0, aligned_block_copy_ldpstp_q_pf32_l2strm_aarch64 },
+    { "NEON LDP/STP copy pldl2strm (64B step)", 0, aligned_block_copy_ldpstp_q_pf64_l2strm_aarch64 },
+    { "NEON LDP/STP copy pldl1keep (32B step)", 0, aligned_block_copy_ldpstp_q_pf32_l1keep_aarch64 },
+    { "NEON LDP/STP copy pldl1keep (64B step)", 0, aligned_block_copy_ldpstp_q_pf64_l1keep_aarch64 },
     { "NEON LD1/ST1 copy", 0, aligned_block_copy_ld1st1_aarch64 },
     { "NEON STP fill", 0, aligned_block_fill_stp_q_aarch64 },
     { "NEON STNP fill", 0, aligned_block_fill_stnp_q_aarch64 },
+    { "ARM LDP", 0, aligned_block_read_ldp_x_aarch64 },
     { "ARM LDP/STP copy", 0, aligned_block_copy_ldpstp_x_aarch64 },
     { "ARM STP fill", 0, aligned_block_fill_stp_x_aarch64 },
     { "ARM STNP fill", 0, aligned_block_fill_stnp_x_aarch64 },
@@ -450,18 +576,19 @@ bench_info *get_asm_benchmarks(void)
 static bench_info c_benchmarks[] =
 {
     { "C copy backwards", 0, aligned_block_copy_backwards },
-    { "C copy backwards (32 byte blocks)", 0, aligned_block_copy_backwards_bs32 },
-    { "C copy backwards (64 byte blocks)", 0, aligned_block_copy_backwards_bs64 },
+    { "C copy backwards (32B blocks)", 0, aligned_block_copy_backwards_bs32 },
+    { "C copy backwards (64B blocks)", 0, aligned_block_copy_backwards_bs64 },
     { "C copy", 0, aligned_block_copy },
-    { "C copy prefetched (32 bytes step)", 0, aligned_block_copy_pf32 },
-    { "C copy prefetched (64 bytes step)", 0, aligned_block_copy_pf64 },
-    { "C 2-pass copy", 1, aligned_block_copy },
-    { "C 2-pass copy prefetched (32 bytes step)", 1, aligned_block_copy_pf32 },
-    { "C 2-pass copy prefetched (64 bytes step)", 1, aligned_block_copy_pf64 },
+    { "C copy prefetched (32B step)", 0, aligned_block_copy_pf32 },
+    { "C copy prefetched (64B step)", 0, aligned_block_copy_pf64 },
+    // { "C 2-pass copy", 1, aligned_block_copy },
+    // { "C 2-pass copy prefetched (32B step)", 1, aligned_block_copy_pf32 },
+    // { "C 2-pass copy prefetched (64B step)", 1, aligned_block_copy_pf64 },
+    { "C fetch", 0, aligned_block_fetch },
     { "C fill", 0, aligned_block_fill },
-    { "C fill (shuffle within 16 byte blocks)", 0, aligned_block_fill_shuffle16 },
-    { "C fill (shuffle within 32 byte blocks)", 0, aligned_block_fill_shuffle32 },
-    { "C fill (shuffle within 64 byte blocks)", 0, aligned_block_fill_shuffle64 },
+    { "C fill (shuffle within 16B blocks)", 0, aligned_block_fill_shuffle16 },
+    { "C fill (shuffle within 32B blocks)", 0, aligned_block_fill_shuffle32 },
+    { "C fill (shuffle within 64B blocks)", 0, aligned_block_fill_shuffle64 },
     { NULL, 0, NULL }
 };
 
@@ -525,41 +652,7 @@ static void __attribute__((noinline)) random_read_test(char *zerobuffer,
     uint32_t seed = 0;
     uintptr_t addrmask = (1 << nbits) - 1;
     uint32_t v;
-    static volatile uint32_t dummy;
 
-#ifdef __arm__
-    uint32_t tmp;
-    __asm__ volatile (
-        "subs %[count], %[count],       #16\n"
-        "blt  1f\n"
-    "0:\n"
-        "subs %[count], %[count],       #16\n"
-    ".rept 16\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "and  %[v],     %[xFF],         %[seed],        lsr #16\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "and  %[tmp],   %[xFF00],       %[seed],        lsr #8\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "orr  %[v],     %[v],           %[tmp]\n"
-        "and  %[tmp],   %[x7FFF0000],   %[seed]\n"
-        "orr  %[v],     %[v],           %[tmp]\n"
-        "and  %[v],     %[v],           %[addrmask]\n"
-        "ldrb %[v],     [%[zerobuffer], %[v]]\n"
-        "orr  %[seed],  %[seed],        %[v]\n"
-    ".endr\n"
-        "bge  0b\n"
-    "1:\n"
-        "add  %[count], %[count],       #16\n"
-        : [count] "+&r" (count),
-          [seed] "+&r" (seed), [v] "=&r" (v),
-          [tmp] "=&r" (tmp)
-        : [c1103515245] "r" (1103515245), [c12345] "r" (12345),
-          [xFF00] "r" (0xFF00), [xFF] "r" (0xFF),
-          [x7FFF0000] "r" (0x7FFF0000),
-          [zerobuffer] "r" (zerobuffer),
-          [addrmask] "r" (addrmask)
-        : "cc");
-#else
     #define RANDOM_MEM_ACCESS()                 \
         seed = seed * 1103515245 + 12345;       \
         v = (seed >> 16) & 0xFF;                \
@@ -588,8 +681,6 @@ static void __attribute__((noinline)) random_read_test(char *zerobuffer,
         RANDOM_MEM_ACCESS();
         count -= 16;
     }
-#endif
-    dummy = seed;
     #undef RANDOM_MEM_ACCESS
 }
 
@@ -599,51 +690,6 @@ static void __attribute__((noinline)) random_dual_read_test(char *zerobuffer,
     uint32_t seed = 0;
     uintptr_t addrmask = (1 << nbits) - 1;
     uint32_t v1, v2;
-    static volatile uint32_t dummy;
-
-#ifdef __arm__
-    uint32_t tmp;
-    __asm__ volatile (
-        "subs %[count], %[count],       #16\n"
-        "blt  1f\n"
-    "0:\n"
-        "subs %[count], %[count],       #16\n"
-    ".rept 16\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "and  %[v1],    %[xFF00],       %[seed],        lsr #8\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "and  %[v2],    %[xFF00],       %[seed],        lsr #8\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "and  %[tmp],   %[x7FFF0000],   %[seed]\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "orr  %[v1],    %[v1],          %[tmp]\n"
-        "and  %[tmp],   %[x7FFF0000],   %[seed]\n"
-        "mla  %[seed],  %[c1103515245], %[seed],        %[c12345]\n"
-        "orr  %[v2],    %[v2],          %[tmp]\n"
-        "and  %[tmp],   %[xFF],         %[seed],        lsr #16\n"
-        "orr  %[v2],    %[v2],          %[seed],        lsr #24\n"
-        "orr  %[v1],    %[v1],          %[tmp]\n"
-        "and  %[v2],    %[v2],          %[addrmask]\n"
-        "eor  %[v1],    %[v1],          %[v2]\n"
-        "and  %[v1],    %[v1],          %[addrmask]\n"
-        "ldrb %[v2],    [%[zerobuffer], %[v2]]\n"
-        "ldrb %[v1],    [%[zerobuffer], %[v1]]\n"
-        "orr  %[seed],  %[seed],        %[v2]\n"
-        "add  %[seed],  %[seed],        %[v1]\n"
-    ".endr\n"
-        "bge  0b\n"
-    "1:\n"
-        "add  %[count], %[count],       #16\n"
-        : [count] "+&r" (count),
-          [seed] "+&r" (seed), [v1] "=&r" (v1), [v2] "=&r" (v2),
-          [tmp] "=&r" (tmp)
-        : [c1103515245] "r" (1103515245), [c12345] "r" (12345),
-          [xFF00] "r" (0xFF00), [xFF] "r" (0xFF),
-          [x7FFF0000] "r" (0x7FFF0000),
-          [zerobuffer] "r" (zerobuffer),
-          [addrmask] "r" (addrmask)
-        : "cc");
-#else
     #define RANDOM_MEM_ACCESS()                 \
         seed = seed * 1103515245 + 12345;       \
         v1 = (seed >> 8) & 0xFF00;              \
@@ -680,8 +726,6 @@ static void __attribute__((noinline)) random_dual_read_test(char *zerobuffer,
         RANDOM_MEM_ACCESS();
         count -= 16;
     }
-#endif
-    dummy = seed;
     #undef RANDOM_MEM_ACCESS
 }
 
@@ -697,8 +741,8 @@ static uint32_t rand32()
 int latency_bench(int size, int count, int use_hugepage)
 {
     double t, t2, t_before, t_after, t_noaccess, t_noaccess2 = 0;
-    double xs, xs0, xs1, xs2;
-    double ys, ys0, ys1, ys2;
+    double xs, xs1, xs2;
+    double ys, ys1, ys2;
     double min_t, min_t2;
     int nbits, n;
     char *buffer, *buffer_alloc;
@@ -852,13 +896,14 @@ int main(int argc, char* argv[])
     int64_t *srcbuf, *dstbuf, *tmpbuf;
     void *poolbuf;
     size_t bufsize = SIZE;
+    int threads = 2;
 
-    printf("tinymembench v0.4.9 (simple benchmark for memory throughput and latency)\n");
+    printf("TinyMemBenchNX v0.4.10\n\
+(based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n");
 
-
-    poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize,
-                                            (void **)&dstbuf, bufsize,
-                                            (void **)&tmpbuf, BLOCKSIZE,
+    poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize * threads,
+                                            (void **)&dstbuf, bufsize * threads,
+                                            (void **)&tmpbuf, BLOCKSIZE * threads,
                                             NULL, 0);
     printf("\n");
     printf("==========================================================================\n");
@@ -875,21 +920,49 @@ int main(int argc, char* argv[])
     printf("==         brackets                                                     ==\n");
     printf("==========================================================================\n\n");
 
+    printf("!!! Memory bandwidth heavily depends on CPU clock. !!!\n\n");
+    printf("\
+Press A to start bandwidth test @ 1 thread.\n\
+Press B to start bandwidth test @ 2 threads.\n\
+Press any other key to exit.\n\n");
+
     consoleUpdate(NULL);
 
-    printf("!!! Memory bandwidth heavily depends on CPU clock. !!!\n\n");
-    printClock();
-    printf("Press A to start bandwidth test, any other key to exit.\n\n");
-    waitForKeyA();
+    while (appletMainLoop())
+    {
+        padUpdate(&pad);
 
-    bandwidth_bench(dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", c_benchmarks);
+        u64 kDown = padGetButtonsDown(&pad);
+
+        if (kDown & HidNpadButton_A)
+        {
+            threads = 1;
+            break;
+        }
+        else if (kDown & HidNpadButton_B)
+        {
+            threads = 2;
+            break;
+        }
+        else if (kDown)
+        {
+            consoleExit(NULL);
+            exit(0);
+        }
+    }
+
+    printClock();
+    printf("== Thread: %d ==\n", threads);
+    consoleUpdate(NULL);
+
+    bandwidth_bench(threads, dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", c_benchmarks);
     printf(" ---\n");
 
-    bandwidth_bench(dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", libc_benchmarks);
+    bandwidth_bench(threads, dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", libc_benchmarks);
     bench_info *bi = get_asm_benchmarks();
     if (bi->f) {
         printf(" ---\n");
-        bandwidth_bench(dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", bi);
+        bandwidth_bench(threads, dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE, " ", bi);
     }
 
     free(poolbuf);

@@ -30,6 +30,12 @@
 extern "C" {
 #endif
 
+void aligned_block_read_ldp_x_aarch64(int64_t * __restrict dst,
+                                      int64_t * __restrict src,
+                                      int                  size);
+void aligned_block_read_ldp_q_aarch64(int64_t * __restrict dst,
+                                      int64_t * __restrict src,
+                                      int                  size);
 void aligned_block_copy_ldpstp_x_aarch64(int64_t * __restrict dst,
                                          int64_t * __restrict src,
                                          int                  size);

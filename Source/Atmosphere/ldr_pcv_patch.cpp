@@ -214,10 +214,10 @@ namespace ams::ldr {
                 { 0x143AC4, 0x144F04, },
             };
 
-            constexpr u32 EmcVoltageMin = 300000; // 250000mV
+            /* constexpr u32 EmcVoltageMin = 250000; */
             constexpr u32 EmcVoltageDef = 650000; // 600000mV
             static_assert(sizeof(EmcVoltageMinOffsets) == sizeof(EmcVoltageDefOffsets));
-            static_assert(EmcVoltageMin <= EmcVoltageDef && NewEmcVoltageDef <= EmcVoltageMax);
+            static_assert(NewEmcVoltageDef <= EmcVoltageMax);
 #endif
         };
 
@@ -277,7 +277,7 @@ namespace ams::ldr {
             else if(spl::GetSocType() == spl::SocType_Mariko) {
                 for(u32 j = 0; j < sizeof(Mariko::EmcVoltageMinOffsets[i])/sizeof(u32); j++) {
                     AMS_ABORT_UNLESS(Mariko::EmcVoltageMinOffsets[i][j] <= mapped_size);
-                    std::memcpy(mapped_module + Mariko::EmcVoltageMinOffsets[i][j], &Mariko::EmcVoltageMin, sizeof(Mariko::EmcVoltageMin));
+                    //std::memcpy(mapped_module + Mariko::EmcVoltageMinOffsets[i][j], &Mariko::EmcVoltageMin, sizeof(Mariko::EmcVoltageMin));
                     std::memcpy(mapped_module + Mariko::EmcVoltageDefOffsets[i][j], &Mariko::EmcVoltageDef, sizeof(Mariko::EmcVoltageDef));
                 }
             }
