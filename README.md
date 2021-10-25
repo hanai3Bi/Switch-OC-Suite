@@ -28,6 +28,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - Option to change the threshold for chargers providing enough power
 - Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
+- **MemTesterNX**: A userspace utility for testing memory faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
 
 #### Details
 
