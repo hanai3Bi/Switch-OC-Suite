@@ -12,7 +12,7 @@ namespace ams::ldr {
 
     namespace {
 
-        constexpr u32 CopyrightIPSOffset[VERS] = { 0xC6128, 0xCA414, 0xCB90C }; //am_no_copyright port
+        constexpr u32 CopyrightIPSOffset[] = { 0xC6128, 0xCA414, 0xCB90C, 0xCBB8C }; //am_no_copyright port
 
         constexpr u8 RET0[8] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 };
         // MOV X0, XZR

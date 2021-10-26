@@ -121,9 +121,6 @@ namespace ams::ldr {
                 ApplyPcvPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
                 return; // Return here since pcv module loads before sd card can be mounted
             }
-            else if(memcmp(AmModuleId[i], module_id_data, sizeof(AmModuleId[i])) == 0) {
-                ApplyCopyrightPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
-            }
         }
 
         if (!EnsureSdCardMounted()) {

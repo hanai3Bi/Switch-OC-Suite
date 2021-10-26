@@ -1,7 +1,7 @@
 #REQUIRE VER 4.0.0
 #REQUIRE KEYS
 
-targetVer = "12.1.0/13.0.0"
+targetVer = "12.1.0/13.0.0/13.1.0"
 
 pcvModulePath13 = "bis:/Contents/registered/6b675f6f9c9ec3a4448d81fa2bbc895e.nca/00"
 OldBackupPath13 = "sd:/atmosphere/oc_patches/13-0-patch.bak"
