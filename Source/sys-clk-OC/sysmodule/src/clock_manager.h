@@ -20,7 +20,7 @@
 class ClockManager
 {
   public:
-    std::uint32_t MAX_CPU = 1963500000;
+    const std::uint32_t MAX_CPU = 1963500000;
 
     static ClockManager* GetInstance();
     static void Initialize();

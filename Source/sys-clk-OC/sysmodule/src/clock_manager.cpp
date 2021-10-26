@@ -444,13 +444,7 @@ bool ClockManager::RefreshContext()
 
     // restore clocks to stock values on app or profile change
     if(hasChanged)
-    {
-        if (profile == SysClkProfile_Handheld)
-            MAX_CPU = 1963'500'000;
-        else
-            MAX_CPU = 2295'000'000;
         Clocks::ResetToStock();
-    }
 
     std::uint32_t hz = 0;
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
