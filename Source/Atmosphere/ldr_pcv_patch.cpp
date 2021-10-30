@@ -2,8 +2,9 @@
 
 #include <stratosphere.hpp>
 
+#define VERS 3
 #define EMC_OVERCLOCK 1
-//#define EMC_OVERVOLT 1
+//#define EMC_OVERVOLT
 
 //I'm dropping support for Erista on >= HOS 13.0.0, you may port these offsets by yourself.
 //#define ERISTA_SUPPORT
@@ -12,7 +13,8 @@ namespace ams::ldr {
 
     namespace {
 
-        constexpr u32 CopyrightIPSOffset[] = { 0xC6128, 0xCA414, 0xCB90C, 0xCBB8C }; //am_no_copyright port
+        constexpr u32 CopyrightIPSOffset[] = { 0xC6128, 0xCA414, 0xCB90C, 0xCBB8C };
+        // am_no_copyright port, grab exefs patches instead
 
         constexpr u8 RET0[8] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 };
         // MOV X0, XZR
@@ -206,7 +208,7 @@ namespace ams::ldr {
                 { 0x145FD8, 0x144B98, },
                 { 0x143A78, 0x144EB8, },
                 { 0x143AB8, 0x144EF8, },
-            }
+            };
 
             constexpr u32 EmcVoltageDefOffsets[VERS][2] = {
                 { 0x145FE4, 0x144BA4, },
@@ -265,15 +267,14 @@ namespace ams::ldr {
             }
         }
 
-        if constexpr(EMC_OVERVOLT) {
-#ifdef ERISTA_SUPPORT
+#ifdef EMC_OVERVOLT
+    #ifdef ERISTA_SUPPORT
             if(spl::GetSocType() == spl::SocType_Erista) {
                 for(u32 j = 0; j < sizeof(Erista::EmcVoltageOffsets[i])/sizeof(u32); j++) {
                     AMS_ABORT_UNLESS(Erista::EmcVoltageOffsets[i][j] <= mapped_size);
                     std::memcpy(mapped_module + Erista::EmcVoltageOffsets[i][j], &Erista::NewEmcVoltage, sizeof(Erista::NewEmcVoltage));
                 }
-            }
-#endif
+    #endif
             else if(spl::GetSocType() == spl::SocType_Mariko) {
                 for(u32 j = 0; j < sizeof(Mariko::EmcVoltageMinOffsets[i])/sizeof(u32); j++) {
                     AMS_ABORT_UNLESS(Mariko::EmcVoltageMinOffsets[i][j] <= mapped_size);
@@ -281,7 +282,7 @@ namespace ams::ldr {
                     std::memcpy(mapped_module + Mariko::EmcVoltageDefOffsets[i][j], &Mariko::EmcVoltageDef, sizeof(Mariko::EmcVoltageDef));
                 }
             }
-        }
+#endif
 
         return;
     }

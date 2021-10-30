@@ -1,6 +1,6 @@
 // placed in Atmosphere/stratosphere/loader/source/
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -88,7 +88,7 @@ namespace ams::ldr {
                 AMS_ASSUME(ofs < sizeof(module_id));
                 AMS_ASSUME(str[1] != 0);
 
-                module_id.build_id[ofs] = (ParseNybble(str[0]) << 4) | (ParseNybble(str[1]) << 0);
+                module_id.data[ofs] = (ParseNybble(str[0]) << 4) | (ParseNybble(str[1]) << 0);
 
                 str += 2;
                 ofs++;
@@ -117,7 +117,7 @@ namespace ams::ldr {
     void LocateAndApplyIpsPatchesToModule(const u8 *module_id_data, uintptr_t mapped_nso, size_t mapped_size) {
         for(int i = 0; i < VERS; i++)
         {
-            if(memcmp(PcvModuleId[i], module_id_data, sizeof(PcvModuleId[i])) == 0) {
+            if(std::memcmp(PcvModuleId[i], module_id_data, sizeof(PcvModuleId[i])) == 0) {
                 ApplyPcvPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
                 return; // Return here since pcv module loads before sd card can be mounted
             }
@@ -128,15 +128,15 @@ namespace ams::ldr {
         }
 
         ro::ModuleId module_id;
-        std::memcpy(&module_id.data, module_id_data, sizeof(module_id.data));
-        ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
+        std::memcpy(std::addressof(module_id.data), module_id_data, sizeof(module_id.data));
+        ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, std::addressof(module_id), reinterpret_cast<u8 *>(mapped_nso), mapped_size);
     }
 
     /* Apply embedded patches. */
     void ApplyEmbeddedPatchesToModule(const u8 *module_id_data, uintptr_t mapped_nso, size_t mapped_size) {
         /* Make module id. */
         ro::ModuleId module_id;
-        std::memcpy(&module_id.data, module_id_data, sizeof(module_id.data));
+        std::memcpy(std::addressof(module_id.data), module_id_data, sizeof(module_id.data));
 
         if (IsUsb30ForceEnabled()) {
             for (const auto &patch : Usb30ForceEnablePatches) {
