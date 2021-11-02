@@ -646,12 +646,16 @@ void *alloc_four_nonaliased_buffers(void **buf1_, int size1,
     return buf;
 }
 
+#pragma GCC diagnostic push
 static void __attribute__((noinline)) random_read_test(char *zerobuffer,
                                                        int count, int nbits)
 {
     uint32_t seed = 0;
     uintptr_t addrmask = (1 << nbits) - 1;
     uint32_t v;
+
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    static volatile uint32_t dummy;
 
     #define RANDOM_MEM_ACCESS()                 \
         seed = seed * 1103515245 + 12345;       \
@@ -681,6 +685,7 @@ static void __attribute__((noinline)) random_read_test(char *zerobuffer,
         RANDOM_MEM_ACCESS();
         count -= 16;
     }
+    dummy = seed;
     #undef RANDOM_MEM_ACCESS
 }
 
@@ -690,6 +695,10 @@ static void __attribute__((noinline)) random_dual_read_test(char *zerobuffer,
     uint32_t seed = 0;
     uintptr_t addrmask = (1 << nbits) - 1;
     uint32_t v1, v2;
+
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    static volatile uint32_t dummy;
+
     #define RANDOM_MEM_ACCESS()                 \
         seed = seed * 1103515245 + 12345;       \
         v1 = (seed >> 8) & 0xFF00;              \
@@ -726,8 +735,10 @@ static void __attribute__((noinline)) random_dual_read_test(char *zerobuffer,
         RANDOM_MEM_ACCESS();
         count -= 16;
     }
+    dummy = seed;
     #undef RANDOM_MEM_ACCESS
 }
+#pragma GCC diagnostic pop
 
 static uint32_t rand32()
 {
