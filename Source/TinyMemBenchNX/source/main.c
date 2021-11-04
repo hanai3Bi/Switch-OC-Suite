@@ -888,7 +888,7 @@ void printClock()
     clkrstGetClockRate(&clkrstSession, &mem_hz);
     clkrstCloseSession(&clkrstSession);
 
-    printf("== CPU: %u.%u MHz == MEM: %u.%u MHz ==\n",
+    printf("== CPU: %u.%u MHz ==\n== MEM: %u.%u MHz ==\n",
         cpu_hz/1000000, cpu_hz/100000 - cpu_hz/1000000*10,
         mem_hz/1000000, mem_hz/100000 - mem_hz/1000000*10);
     consoleUpdate(NULL);
@@ -899,24 +899,20 @@ int main(int argc, char* argv[])
 {
     consoleInit(NULL);
 
+    printf("TinyMemBenchNX v0.4.10\n\
+(based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n");
+    printf("\n");
+    consoleUpdate(NULL);
+
     padConfigureInput(1, HidNpadStyleSet_NpadStandard);
 
     padInitializeDefault(&pad);
 
-    int latbench_size = SIZE * 2, latbench_count = LATBENCH_COUNT;
     int64_t *srcbuf, *dstbuf, *tmpbuf;
     void *poolbuf;
     size_t bufsize = SIZE;
-    int threads = 2;
+    int threads = 0;
 
-    printf("TinyMemBenchNX v0.4.10\n\
-(based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n");
-
-    poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize * threads,
-                                            (void **)&dstbuf, bufsize * threads,
-                                            (void **)&tmpbuf, BLOCKSIZE * threads,
-                                            NULL, 0);
-    printf("\n");
     printf("==========================================================================\n");
     printf("== Memory bandwidth tests                                               ==\n");
     printf("==                                                                      ==\n");
@@ -933,10 +929,10 @@ int main(int argc, char* argv[])
 
     printf("!!! Memory bandwidth heavily depends on CPU clock. !!!\n\n");
     printf("\
-Press A to start bandwidth test @ 1 thread.\n\
-Press B to start bandwidth test @ 2 threads.\n\
+Press A to start bandwidth test w/ 1 thread.\n\
+Press X to start bandwidth test w/ 2 threads.\n\
+Press Y to start bandwidth test w/ 3 threads.\n\
 Press any other key to exit.\n\n");
-
     consoleUpdate(NULL);
 
     while (appletMainLoop())
@@ -950,9 +946,14 @@ Press any other key to exit.\n\n");
             threads = 1;
             break;
         }
-        else if (kDown & HidNpadButton_B)
+        else if (kDown & HidNpadButton_X)
         {
             threads = 2;
+            break;
+        }
+        else if (kDown & HidNpadButton_Y)
+        {
+            threads = 3;
             break;
         }
         else if (kDown)
@@ -961,6 +962,11 @@ Press any other key to exit.\n\n");
             exit(0);
         }
     }
+
+    poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize * threads,
+                                            (void **)&dstbuf, bufsize * threads,
+                                            (void **)&tmpbuf, BLOCKSIZE * threads,
+                                            NULL, 0);
 
     printClock();
     printf("== Thread: %d ==\n", threads);
@@ -981,6 +987,8 @@ Press any other key to exit.\n\n");
     printf("\nPress A to continue, any other key to exit.\n\n");
     waitForKeyA();
     consoleClear();
+
+    int latbench_size = SIZE * 2, latbench_count = LATBENCH_COUNT;
 
     printf("\n");
     printf("==========================================================================\n");
