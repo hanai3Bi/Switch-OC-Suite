@@ -36,10 +36,10 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - **Safe CPU/GPU OC clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module and are all wild guess.
     - Max clock(2397.0/1344.0 MHz) may not work on some SoCs.
-  - **Recommended RAM clock: 1862.4 MHz** for most DRAM chips, **except Hynix ones** (1795.2/1728.0 MHz).
-    - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk, considering the ability to select other clocks than the max one is lost if RAM OC takes into effect, and the impact of added power consumption is negligible.
+  - **Recommended RAM clock: 1862.4 MHz**.
+    - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
-    - Choose RAM clock with care, or your eMMC filesystem will be **corrupted**.
+    - Proper EM shielding for RAM chips and testing with emuNAND before long-term usage is preferred.
     - Once RAM overvolting is available on Mariko, we may gain more stability and reach higher clock.
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
   - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
@@ -47,8 +47,9 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
     - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz for ~10 seconds or until the loading screen ends.
     - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
     - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
-- **Fan Control Optimization** at high load for IcosaMariko/Hoag
+- **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
+  - Replace crappy factory thermal paste is preferred.
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX    
     - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
@@ -84,10 +85,6 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 ## Installation
 
-### Method A: AIO Package
-
-**Contains:**
-
 - Patches for pcv and ptm modules
 - Patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
   [hactoolnet](https://github.com/Thealexbarney/LibHac/), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
@@ -95,7 +92,6 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - `system-settings.ini` with some QoL improvements
 
 **Notice**:
-
 - **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch.
 - **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
 - **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.
@@ -122,14 +118,10 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 9. In TegraExplorer, `Browse SD` -> `patcher.te` -> `Launch Script` and then `Apply Patched PCV Module`.
 10. Wait for `Done!` and then reboot to enjoy.
 
-
-
-### Method B: For Pro-users
+## Build
 
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere with devkitpro.
 Simply build `loader.kip` from Atmosphere and load it with hekate if you don't feel like wasting time.
-
-
 
 ## Acknowledgement
 
