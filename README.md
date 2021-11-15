@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 12.1.0/13.0.0/13.1.0.
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 11.0.0-13.1.0.
 
 
 
@@ -85,43 +85,31 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 ## Installation
 
-- Patches for pcv and ptm modules
-- Patch tools for pcv module (only for amd64 Windows, build yourself otherwise):
-  [hactoolnet](https://github.com/Thealexbarney/LibHac/), [nx2elf](https://github.com/shuffle2/nx2elf), elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/), [hacPack](https://github.com/The-4n/hacPack), [bsdiff-win](https://github.com/cnSchwarzer/bsdiff-win/) ([bsdiff](http://www.daemonology.net/bsdiff/))
+- Modded `loader.kip` with embedded pcv, ptm, am-no-copyright, ValidateAcidSignature patches
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
 - `system-settings.ini` with some QoL improvements
 
-**Notice**:
-- **Patching SysNAND is NOT recommended**. Since system files are directly altered, you could **NOT** boot to stock(OFW) until you revert the patch.
-- **Restoring pcv backup is required before updating** Horizon OS and booting OFW. Launch the `patcher.te` script to restore your backup.
-- **Do NOT forget to reapply ptm-patch** after changing RAM OC clock.
+1. **Restoring pcv backup if you have patched pcv module manually:** Launch the `patcher.te` script via TegraExplorer to restore your backup. Ptm and am-no-copyright patches can be removed.
 
-**Steps:**
-1. Make sure you are running targeted HOS, and have `prod.keys` *with latest master key* (`_0c`) dumped by [Lockpick_RCM](https://github.com/shchmue/Lockpick_RCM).
-2. Loader patches for Atmosphere: Grab from the web and apply. I won't provide them here. (Or build AMS with `ValidateAcidSignature()` stubbed.)
-3. Place all the files in `SdOut` into SD card.
-   **See [Details](#details) section for more info.**
-   - Be careful of `/atmosphere/config/system_settings.ini`, **you may want to edit it manually.**
-   - Remove all the files in previous OC Suite version before updating to avoid conflicts.
-4. Dump your pcv module.
-   If you already have the pcv backup of targeted HOS version, jump to Step 5. Otherwise, redump is required.
-   - Load [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer/releases/latest) (*v4.0.0 or later*) in hekate.
-   - Choose `PCVPatcher.te` in Scripts section.
-   - Select the MMC you'd like to mount and `Dump PCV Module Backup`
-   - Wait for `Done!` showing up and transfer the backup `/atmosphere/oc_patches/pcv-backup` to your PC.
-5. Extract `PatchTools` folder from the AIO package, put  `pcv-backup` and  `prod.keys` in.
-6. Select RAM frequency and prepare the patches: 
-   - Copy the `/atmosphere/oc_patches/xx-xxxx.x/ptm-patch` folder ->`/atmosphere/exefs_patches/` on your SD card.
-   - Copy `/atmosphere/oc_patches/xx-xxxx.x/pcv-bspatch` -> `PatchTools` on your PC.
-7. Run `Patcher.bat` in PatchTools (NOT with admin privileges).
-8. Move the patched `pcv-module` to `/atmosphere/oc_patches/`.
-9. In TegraExplorer, `Browse SD` -> `patcher.te` -> `Launch Script` and then `Apply Patched PCV Module`.
-10. Wait for `Done!` and then reboot to enjoy.
+2. Copy all the files in `SdOut` to the root of SD card.
+
+3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+
+4. **Hekate-ipl bootloader:**
+
+   - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
+
+   **Atmosphere Fusee bootloader:**
+
+   - Fusee will load any kips in `/atmosphere/kips/` automatically.
+
+
 
 ## Build
 
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere with devkitpro.
-Simply build `loader.kip` from Atmosphere and load it with hekate if you don't feel like wasting time.
+
+
 
 ## Acknowledgement
 

@@ -1,4 +1,3 @@
-// placed in Atmosphere/stratosphere/loader/source/
 /*
  * Copyright (c) Atmosphère-NX
  *
@@ -16,7 +15,6 @@
  */
 #include <stratosphere.hpp>
 #include "ldr_patcher.hpp"
-#include "ldr_pcv_patch.hpp"
 
 namespace ams::ldr {
 
@@ -68,6 +66,17 @@ namespace ams::ldr {
             return g_force_enable_usb30;
         }
 
+        u32 GetEmcClock() {
+            // RAM freqs to choose: 1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
+            // RAM overclock could be UNSTABLE on some RAM without bumping up voltage,
+            // and therefore show graphical glitches, hang randomly or even worse, corrupt your NAND
+            return 1862400;
+        }
+
+        u32 GetCpuBoostClock() {
+            return 1963500;
+        }
+
         consteval u8 ParseNybble(char c) {
             AMS_ASSUME(('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'));
             if ('0' <= c && c <= '9') {
@@ -113,16 +122,10 @@ namespace ams::ldr {
 
     }
 
+    #include "ldr_oc_patch.inc"
+
     /* Apply IPS patches. */
     void LocateAndApplyIpsPatchesToModule(const u8 *module_id_data, uintptr_t mapped_nso, size_t mapped_size) {
-        for(int i = 0; i < VERS; i++)
-        {
-            if(std::memcmp(PcvModuleId[i], module_id_data, sizeof(PcvModuleId[i])) == 0) {
-                ApplyPcvPatch(reinterpret_cast<u8 *>(mapped_nso), mapped_size, i);
-                return; // Return here since pcv module loads before sd card can be mounted
-            }
-        }
-
         if (!EnsureSdCardMounted()) {
             return;
         }
@@ -148,6 +151,58 @@ namespace ams::ldr {
                         }
                     }
                 }
+            }
+        }
+
+        u32 EmcClock = GetEmcClock();
+        if (spl::GetSocType() == spl::SocType_Mariko && EmcClock) {
+            for (u32 i = 0; i < sizeof(PcvModuleId)/sizeof(ro::ModuleId); i++) {
+                if (std::memcmp(std::addressof(PcvModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
+                    /* Add new CPU and GPU clock tables for Mariko */
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuTablesFreeSpace[i]), NewCpuTables, sizeof(NewCpuTables));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + GpuTablesFreeSpace[i]), NewGpuTables, sizeof(NewGpuTables));
+
+                    /* Patch Mariko max CPU and GPU clockrates */
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + MaxCpuClockOffset[i]), &NewMaxCpuClock, sizeof(NewMaxCpuClock));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + Reg1MaxGpuOffset[i]), Reg1NewMaxGpuClock, sizeof(Reg1NewMaxGpuClock[i]));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + Reg2MaxGpuOffset[i]), Reg2NewMaxGpuClock, sizeof(Reg2NewMaxGpuClock[i]));
+
+                    /* Patch max cpu voltage on Mariko */
+                    for (u32 j = 0; j < sizeof(CpuVoltageLimitOffsets[i])/sizeof(u32); j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuVoltageLimitOffsets[i][j]), &NewCpuVoltageLimit, sizeof(NewCpuVoltageLimit));
+                    }
+                    for (u32 j = 0; j < sizeof(CpuVoltageOldTableCoeff[i])/sizeof(u32); j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuVoltageOldTableCoeff[i][j]), &NewCpuVoltageCoeff, sizeof(NewCpuVoltageCoeff));
+                    }
+
+                    /* Patch RAM Clock */
+                    for (u32 j = 0; j < sizeof(EmcFreqOffsets[i])/sizeof(u32); j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
+                    }
+                }
+            }
+
+            EmcClock = GetEmcClock() * 1000;
+
+            u32 CpuBoostClock = GetCpuBoostClock() * 1000;
+
+            for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
+                if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
+                    for (u32 j = 0; j < 16; j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmOffsetInterval * j), &EmcClock, sizeof(EmcClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmOffsetInterval * j + 0x4), &EmcClock, sizeof(EmcClock));
+                    }
+                    for (u32 j = 0; j < 2; j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmCpuBoostOffset + PtmOffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmCpuBoostOffset + PtmOffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
+                    }
+                }
+            }
+        }
+
+        for (u32 i = 0; i < sizeof(AmModuleId)/sizeof(ro::ModuleId); i++) {
+            if(std::memcmp(std::addressof(AmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
+                std::memcpy(reinterpret_cast<void *>(mapped_nso + AmCopyrightOffset[i]), AmCopyrightPatch, sizeof(AmCopyrightPatch));
             }
         }
     }
