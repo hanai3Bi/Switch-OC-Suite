@@ -36,7 +36,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - **Safe CPU/GPU OC clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module and are all wild guess.
     - Max clock(2397.0/1344.0 MHz) may not work on some SoCs.
-  - **Recommended RAM clock: 1862.4 MHz**.
+  - **Recommended RAM clock: 1862.4 MHz**, **1795.2 MHz for Hynix** ones.
     - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
     - Proper EM shielding for RAM chips and testing with emuNAND before long-term usage is preferred.
