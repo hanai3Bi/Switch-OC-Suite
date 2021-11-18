@@ -159,26 +159,30 @@ namespace ams::ldr {
             for (u32 i = 0; i < sizeof(PcvModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PcvModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
                     /* Add new CPU and GPU clock tables for Mariko */
-                    std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuTablesFreeSpace[i]), NewCpuTables, sizeof(NewCpuTables));
-                    std::memcpy(reinterpret_cast<void *>(mapped_nso + GpuTablesFreeSpace[i]), NewGpuTables, sizeof(NewGpuTables));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuTablesFreeSpace[i]), pcv::NewCpuTables, sizeof(pcv::NewCpuTables));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::GpuTablesFreeSpace[i]), pcv::NewGpuTables, sizeof(pcv::NewGpuTables));
 
                     /* Patch Mariko max CPU and GPU clockrates */
-                    std::memcpy(reinterpret_cast<void *>(mapped_nso + MaxCpuClockOffset[i]), &NewMaxCpuClock, sizeof(NewMaxCpuClock));
-                    std::memcpy(reinterpret_cast<void *>(mapped_nso + Reg1MaxGpuOffset[i]), Reg1NewMaxGpuClock, sizeof(Reg1NewMaxGpuClock[i]));
-                    std::memcpy(reinterpret_cast<void *>(mapped_nso + Reg2MaxGpuOffset[i]), Reg2NewMaxGpuClock, sizeof(Reg2NewMaxGpuClock[i]));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::MaxCpuClockOffset[i]), &pcv::NewMaxCpuClock, sizeof(pcv::NewMaxCpuClock));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::Reg1MaxGpuOffset[i]), pcv::Reg1NewMaxGpuClock, sizeof(pcv::Reg1NewMaxGpuClock[i]));
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::Reg2MaxGpuOffset[i]), pcv::Reg2NewMaxGpuClock, sizeof(pcv::Reg2NewMaxGpuClock[i]));
 
                     /* Patch max cpu voltage on Mariko */
                     for (u32 j = 0; j < sizeof(CpuVoltageLimitOffsets[i])/sizeof(u32); j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuVoltageLimitOffsets[i][j]), &NewCpuVoltageLimit, sizeof(NewCpuVoltageLimit));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageLimitOffsets[i][j]), &pcv::NewCpuVoltageLimit, sizeof(pcv::NewCpuVoltageLimit));
                     }
                     for (u32 j = 0; j < sizeof(CpuVoltageOldTableCoeff[i])/sizeof(u32); j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + CpuVoltageOldTableCoeff[i][j]), &NewCpuVoltageCoeff, sizeof(NewCpuVoltageCoeff));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageOldTableCoeff[i][j]), &pcv::NewCpuVoltageCoeff, sizeof(pcv::NewCpuVoltageCoeff));
                     }
 
                     /* Patch RAM Clock */
                     for (u32 j = 0; j < sizeof(EmcFreqOffsets[i])/sizeof(u32); j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
                     }
+
+                    /* Patch RAM DVB table */
+                    //if (i == 2)
+                    //    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcDvbTableOffsets[2]), pcv::EmcDvbTable, sizeof(pcv::EmcDvbTable));
                 }
             }
 
@@ -189,12 +193,12 @@ namespace ams::ldr {
             for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
                     for (u32 j = 0; j < 16; j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmOffsetInterval * j), &EmcClock, sizeof(EmcClock));
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmOffsetInterval * j + 0x4), &EmcClock, sizeof(EmcClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + Ptm::OffsetInterval * j), &EmcClock, sizeof(EmcClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + Ptm::OffsetInterval * j + 0x4), &EmcClock, sizeof(EmcClock));
                     }
                     for (u32 j = 0; j < 2; j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmCpuBoostOffset + PtmOffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + PtmEmcOffsetStart[i] + PtmCpuBoostOffset + PtmOffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + Ptm::CpuBoostOffset + Ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + Ptm::CpuBoostOffset + Ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
                     }
                 }
             }
@@ -202,7 +206,7 @@ namespace ams::ldr {
 
         for (u32 i = 0; i < sizeof(AmModuleId)/sizeof(ro::ModuleId); i++) {
             if(std::memcmp(std::addressof(AmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                std::memcpy(reinterpret_cast<void *>(mapped_nso + AmCopyrightOffset[i]), AmCopyrightPatch, sizeof(AmCopyrightPatch));
+                std::memcpy(reinterpret_cast<void *>(mapped_nso + am::CopyrightOffset[i]), am::CopyrightPatch, sizeof(Am::CopyrightPatch));
             }
         }
     }
