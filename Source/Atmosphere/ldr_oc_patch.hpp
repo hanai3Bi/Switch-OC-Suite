@@ -10,22 +10,6 @@ constexpr ro::ModuleId PtmModuleId[] = {
     ParseModuleId("2CA78D4066C1C11317CC2705EBADA9A51D3AC981"), //13.0.0-13.1.0
 };
 
-constexpr ro::ModuleId AmModuleId[] = {
-    ParseModuleId("5E5F1CC24D374591AFC2A2336C9453CCFA3961C1"), //12.x
-    ParseModuleId("2C1AD224328D2AF8B2C1A240D0175A108916AC8C"), //13.0.0
-    ParseModuleId("75A273B296056EAC7A453C4C5B38C257EA9F4A6E"), //13.1.0
-};
-
-namespace am {
-    constexpr u32 CopyrightOffset[] = {
-        0xCA314,
-        0xCB80C,
-        0xCBA8C,
-    };
-
-    constexpr u8 CopyrightPatch[] = { 0xE0, 0x03, 0x1F, 0xAA, 0xC0, 0x03, 0x5F, 0xD6 };
-}
-
 namespace pcv {
     typedef struct {
         u32 freq = 0;
@@ -157,6 +141,13 @@ namespace pcv {
     //     { 1065600, {  637,  637,  637, } },
     //     { 1331200, {  650,  637,  637, } },
     //     { 1600000, {  675,  650,  637, } },
+    // };
+
+    // constexpr u32 EmcVoltOffsets[][] =
+    // {
+    //     {},
+    //     {},
+    //     { 0x143AB8, 0x143ABC, 0x144EF8, 0x144EFC },
     // };
 
     // Sourced from 13.x pcv module

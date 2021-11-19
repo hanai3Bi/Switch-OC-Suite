@@ -26,7 +26,6 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - Disable background services, less heat and power consumption in standby mode
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
   - Option to change the threshold for chargers providing enough power
-- Remove copyright watermark in screenshots/recordings, courtesy of [HookedBehemoth](https://github.com/HookedBehemoth/exefs_patches)
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
 - **MemTesterNX**: A userspace utility for testing memory faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
 
@@ -72,7 +71,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
 - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
-  - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow recording in any games.
+  - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
   - For optimal streaming experience, SysDVR via USB interface is recommended.
   - Known Issues (won't fix)
     - Game recordings may be less than 30 seconds if higher bitrate is used.
@@ -115,10 +114,8 @@ Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atm
 
 - CTCaer for [Hekate-ipl](https://github.com/CTCaer/hekate) bootloader, RE and hardware research
 - [devkitPro](https://devkitpro.org/) for All-In-One homebrew toolchains
-- HookedBehemoth for am_no_copyright [patch](https://github.com/HookedBehemoth/exefs_patches)
 - masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT) and [BatteryChargeInfoNX](https://github.com/masagrator/BatteryChargeInfoNX)
 - RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch
-- suchmememanyskill for [TegraExplorer](https://github.com/suchmememanyskill/TegraExplorer) and [TegraScript](https://github.com/suchmememanyskill/TegraScript)
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere

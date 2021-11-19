@@ -175,14 +175,21 @@ namespace ams::ldr {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageOldTableCoeff[i][j]), &pcv::NewCpuVoltageCoeff, sizeof(pcv::NewCpuVoltageCoeff));
                     }
 
+                    /* Patch RAM DVB table */
+                    //if (i == 2)
+                    //    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcDvbTableOffsets[2]), pcv::EmcDvbTable, sizeof(pcv::EmcDvbTable));
+
+                    /* Patch RAM volt */
+                    //u32 EmcVolt = 650'000;
+                    //if (i == 2)
+                    //    for (u32 j = 0; j < sizeof(pcv::EmcVoltOffsets[i])/sizeof(u32); j++) {
+                    //        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcVoltOffsets[i][j]), &EmcVolt, sizeof(EmcVolt));
+                    //    }
+
                     /* Patch RAM Clock */
                     for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
                     }
-
-                    /* Patch RAM DVB table */
-                    //if (i == 2)
-                    //    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcDvbTableOffsets[2]), pcv::EmcDvbTable, sizeof(pcv::EmcDvbTable));
                 }
             }
 
@@ -204,11 +211,6 @@ namespace ams::ldr {
             }
         }
 
-        for (u32 i = 0; i < sizeof(AmModuleId)/sizeof(ro::ModuleId); i++) {
-            if(std::memcmp(std::addressof(AmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                std::memcpy(reinterpret_cast<void *>(mapped_nso + am::CopyrightOffset[i]), am::CopyrightPatch, sizeof(am::CopyrightPatch));
-            }
-        }
     }
 
 }
