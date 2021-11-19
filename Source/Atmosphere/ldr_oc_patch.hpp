@@ -143,13 +143,6 @@ namespace pcv {
     //     { 1600000, {  675,  650,  637, } },
     // };
 
-    // constexpr u32 EmcVoltOffsets[][] =
-    // {
-    //     {},
-    //     {},
-    //     { 0x143AB8, 0x143ABC, 0x144EF8, 0x144EFC },
-    // };
-
     // Sourced from 13.x pcv module
     // 1st regulator table, 0x142778 - 0x143BB4, if mask = 0b0110101
     // 2nd regulator table, 0x143BB8 - 0x144FF4, if mask = 0b1010011
@@ -173,7 +166,7 @@ namespace pcv {
     // 0x143AB8    250000          #0x20 // min voltage
     // 0x143ABC    1525000         #0x24 // max voltage
     // 0x143AC0    0               #0x28 // voltage multiplier ( * step )
-    // 0x143AC4    600000          #0x2C // default voltage (not likely)
+    // 0x143AC4    600000          #0x2C
 
     // 0x142898    1               #0x0
     // 0x14289C    0               #0x4
@@ -187,30 +180,23 @@ namespace pcv {
     // 0x1428C0    0               #0x28
     // 0x1428C4    0               #0x2C
 
-    // 0x143858    0               #0x0
-    // 0x14385C    0               #0x4
-    // 0x143860    "max77812_cpu"  #0x8
-    // 0x143868    3               #0x10 // maxim regulator identifier ( 1 = max77620, 2 = max77621, 3 = max77812)
-    // 0x14386C    0               #0x14
-    // 0x143870    5000            #0x18 // voltage step
-    // 0x143874    0               #0x1C
-    // 0x143878    250000          #0x20 // min voltage
-    // 0x14387C    1525000         #0x24 // max voltage
-    // 0x143880    0               #0x28 // voltage multiplier ( * step )
-    // 0x143884    1000000         #0x2C
+    // HOS does not seem to change DRAM voltage on Mariko (validate only)
 
-    // 0x143978    2               #0x0
-    // 0x14397C    0               #0x4
-    // 0x143980    "max77812_gpu"  #0x8
-    // 0x143988    3               #0x10 // maxim regulator identifier ( 1 = max77620, 2 = max77621, 3 = max77812)
-    // 0x14398C    0               #0x14
-    // 0x143990    5000            #0x18 // voltage step
-    // 0x143994    0               #0x1C
-    // 0x143998    250000          #0x20 // min voltage
-    // 0x14399C    1525000         #0x24 // max voltage
-    // 0x1439A0    0               #0x28 // voltage multiplier ( * step )
-    // 0x1439A4    800000          #0x2C
+    // void EnableVddMemory() in Atmosphere/libraries/libexosphere/source/pmic/pmic_api.cpp:
+    // /* On Erista, set Sd1 voltage. */
+    // if (soc_type == fuse::SocType_Erista) {
+    //     SetVoltage(Max77620RegisterSd1, 1100);
+    // }
 
+    // in hekate/bdk/power/max77812.h:
+    // #define MAX77812_REG_M3_VOUT     0x25 // DRAM on PHASE211.
+    // What about DRAM on PHASE31?
+
+    // max77812 document: https://datasheets.maximintegrated.com/en/ds/MAX77812.pdf
+
+    // See if we can read/query max77812 pmic via i2c for voltage info in fusee/hekate
+
+    // TODO: investigate why frequencies lower than 1331 MHz cannot be set
     constexpr u32 EmcFreqOffsets[][30] = {
         { 0xD7C60, 0xD7C68, 0xD7C70, 0xD7C78, 0xD7C80, 0xD7C88, 0xD7C90, 0xD7C98, 0xD7CA0, 0xD7CA8, 0xE1800, 0xEEFA0, 0xF2478, 0xFE284, 0x10A304, 0x10D7DC, 0x110A40, 0x113CA4, 0x116F08, 0x11A16C, 0x11D3D0, 0x120634, 0x123898, 0x126AFC, 0x129D60, 0x12CFC4, 0x130228, 0x13BFE0, 0x140D00, 0x140D50, },
         { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, },
