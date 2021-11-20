@@ -27,7 +27,8 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
   - Option to change the threshold for chargers providing enough power
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
-- **MemTesterNX**: A userspace utility for testing memory faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
+- **MemTesterNX**: A userspace utility for testing memory faults ~~and stability~~ based on [memtester](https://pyropus.ca/software/memtester/)
+  - For testing stability, DRAM-heavy games like BotW/MHR will do better jobs as it's easier to spot framebuffer corruption/freeze
 
 #### Details
 
@@ -35,11 +36,17 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - **Safe CPU/GPU OC clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module and are all wild guess.
     - Max clock(2397.0/1344.0 MHz) may not work on some SoCs.
-  - **Recommended RAM clock: 1862.4 MHz**, **1795.2 MHz for Hynix** ones.
+  - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones).
     - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
-    - Proper EM shielding for RAM chips and testing with emuNAND before long-term usage is preferred.
-    - Once RAM overvolting is available on Mariko, we may gain more stability and reach higher clock.
+    - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
+    - [WIP] Mariko RAM overvolting: rebuilding hekate is required.
+      - Let me know if you get stable 1996.8/2131.2MHz to work. Open an issue or Discord: Hirochi_6831(replace _ with #)
+      - ```shell
+        cd $hekate_repo
+        curl https://github.com/KazushiMe/Switch-OC-Suite/raw/master/Source/hekate.diff | git apply
+        ```
+      - change voltage (600000) and `make -j`
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
   - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 - **Auto-Boost CPU for faster game loading**
@@ -49,6 +56,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
   - Replace crappy factory thermal paste is preferred.
+  - Place a thermal pad onto Wi-Fi/BT module (shielded, adjacent to antennas) to lower tskin temperature.
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX    
     - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
