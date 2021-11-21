@@ -33,20 +33,21 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 #### Details
 
 - **Overclock**
-  - **Safe CPU/GPU OC clock: 1963.5/1267.2 MHz**.
+  - **Official X1+ CPU/GPU OC clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module and are all wild guess.
-    - Max clock(2397.0/1344.0 MHz) may not work on some SoCs.
+    - Coefficients are not correctly calculated, so max clock(2397.0/1344.0 MHz) may not work on some devices. ([#4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
   - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones).
     - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
     - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
-    - [WIP] Mariko RAM overvolting: rebuilding hekate is required.
-      - Let me know if you get stable 1996.8/2131.2MHz to work. Open an issue or Discord: Hirochi_6831(replace _ with #)
+  - [WIP] [Mariko RAM overvolting](https://github.com/KazushiMe/Switch-OC-Suite/issues/5): hekate bootloader is required
+    - Let me know if you get stable 1996.8-2131.2MHz to work. Reply in the issue, or DM me in Discord: Hirochi_6831(replace _ with #)
+    - Testing voltage > 650mV (not recommended):
       - ```shell
         cd $hekate_repo
         curl https://github.com/KazushiMe/Switch-OC-Suite/raw/master/Source/hekate.diff | git apply
         ```
-      - change voltage (600000) and `make -j`
+      - change Vddq voltage (600000) and `make -j`
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
   - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 - **Auto-Boost CPU for faster game loading**
@@ -96,9 +97,9 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
 - `system-settings.ini` with some QoL improvements
 
-1. **Restoring pcv backup if you have patched pcv module manually:** Launch the `patcher.te` script via TegraExplorer to restore your backup. Ptm and am-no-copyright patches can be removed.
+1. **Restoring pcv backup if you have patched pcv module manually:** Launch the `patcher.te` script via TegraExplorer to restore your backup. Separated **ptm patches should be removed** to avoid conflicts.
 
-2. Copy all the files in `SdOut` to the root of SD card.
+2. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
 3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 

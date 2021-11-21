@@ -126,6 +126,9 @@ namespace pcv {
     };
 
     /* EMC */
+
+    // DvbTable is all about frequency scaling along with CPU core voltage, no need to care about this for now.
+
     // constexpr u32 EmcDvbTableOffsets[] =
     // {
     //     0xFFFFFFFF,
@@ -175,8 +178,8 @@ namespace pcv {
     // 0x1428AC    23              #0x14
     // 0x1428B0    12500           #0x18 // voltage step
     // 0x1428B4    600000          #0x1C
-    // 0x1428B8    1125000         #0x20 // min voltage, default voltage for Erista EMC
-    // 0x1428BC    1125000         #0x24 // max voltage, default voltage for Erista EMC
+    // 0x1428B8    1125000         #0x20 // min voltage, default Vddq for Erista EMC
+    // 0x1428BC    1125000         #0x24 // max voltage, default Vddq for Erista EMC
     // 0x1428C0    0               #0x28
     // 0x1428C4    0               #0x2C
 
@@ -190,11 +193,9 @@ namespace pcv {
 
     // in hekate/bdk/power/max77812.h:
     // #define MAX77812_REG_M3_VOUT     0x25 // DRAM on PHASE211.
-    // What about DRAM on PHASE31?
-
+    // 3 outputs (CPU/GPU/DRAM) from max77812. Does PHASE31 mode exist?
+    // If so, read/query max77812 pmic via i2c for voltage info in hekate and get DRAM reg on PHASE31.
     // max77812 document: https://datasheets.maximintegrated.com/en/ds/MAX77812.pdf
-
-    // See if we can read/query max77812 pmic via i2c for voltage info in fusee/hekate
 
     // TODO: investigate why frequencies lower than 1331 MHz cannot be set
     constexpr u32 EmcFreqOffsets[][30] = {

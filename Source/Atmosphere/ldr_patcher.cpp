@@ -175,17 +175,6 @@ namespace ams::ldr {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageOldTableCoeff[i][j]), &pcv::NewCpuVoltageCoeff, sizeof(pcv::NewCpuVoltageCoeff));
                     }
 
-                    /* Patch RAM DVB table */
-                    //if (i == 2)
-                    //    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcDvbTableOffsets[2]), pcv::EmcDvbTable, sizeof(pcv::EmcDvbTable));
-
-                    /* Patch RAM volt */
-                    //u32 EmcVolt = 650'000;
-                    //if (i == 2)
-                    //    for (u32 j = 0; j < sizeof(pcv::EmcVoltOffsets[i])/sizeof(u32); j++) {
-                    //        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcVoltOffsets[i][j]), &EmcVolt, sizeof(EmcVolt));
-                    //    }
-
                     /* Patch RAM Clock */
                     for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
@@ -210,7 +199,6 @@ namespace ams::ldr {
                 }
             }
         }
-
     }
 
 }
