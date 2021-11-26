@@ -40,14 +40,15 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
     - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
     - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
-  - [WIP] [Mariko RAM overvolting](https://github.com/KazushiMe/Switch-OC-Suite/issues/5): hekate bootloader is required
-    - Let me know if you get stable 1996.8-2131.2MHz to work. Reply in the issue, or DM me in Discord: Hirochi_6831(replace _ with #)
-    - Testing voltage > 650mV (not recommended):
-      - ```shell
-        cd $hekate_repo
-        curl https://github.com/KazushiMe/Switch-OC-Suite/raw/master/Source/hekate.diff | git apply
-        ```
-      - change Vddq voltage (600000) and `make -j`
+  - RAM overvolting: precompiled hekate bootloader is provided
+    - Edit `oc.ini` to change Vddq voltage values:
+      ```ini
+      [emc]
+      volt=600000
+      ```
+    - Overvolting beyond 650mV is not recommend and it might fry your DRAM.
+    - > Even though Tegra X1+ supports LPDDR4/LPDDR4X, LPDDR4X DRAM chips are not required to be backward-compatible with, or resistant to LPDDR4 1.1V Vddq voltage.
+    - For more info on DRAM overvolting and timings, see [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5)
   - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
   - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 - **Auto-Boost CPU for faster game loading**
