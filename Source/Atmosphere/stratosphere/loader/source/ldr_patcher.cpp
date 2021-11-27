@@ -172,8 +172,11 @@ namespace ams::ldr {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageLimitOffsets[i][j]), &pcv::NewCpuVoltageLimit, sizeof(pcv::NewCpuVoltageLimit));
                     }
                     for (u32 j = 0; j < sizeof(pcv::CpuVoltageOldTableCoeff[i])/sizeof(u32); j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageOldTableCoeff[i][j]), &pcv::NewCpuVoltageCoeff, sizeof(pcv::NewCpuVoltageCoeff));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::CpuVoltageOldTableCoeff[i][j]), &pcv::NewCpuVoltageScaled, sizeof(pcv::NewCpuVoltageScaled));
                     }
+
+                    /* Patch max GPU voltage on Mariko */
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::GpuVoltageLimitOffsets[i]), &pcv::NewGpuVoltageLimit, sizeof(pcv::NewGpuVoltageLimit));
 
                     /* Patch RAM Clock */
                     for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {

@@ -12,18 +12,26 @@ constexpr ro::ModuleId PtmModuleId[] = {
 
 namespace pcv {
     typedef struct {
+        int c0 = 0;
+        int c1 = 0;
+        int c2 = 0;
+        int c3 = 0;
+        int c4 = 0;
+        int c5 = 0;
+    } cvb_coefficients;
+
+    typedef struct {
         u32 freq = 0;
-        u32 unk1 = 0;
-        s32 coeffs[6] = {0};
-        u32 volt = 0;
-        u32 unk3[5] = {0};
+        u32 padding = 0;
+        cvb_coefficients cvb_dfll_param;
+        cvb_coefficients cvb_pll_param;  // only c0 is reserved
     } cpu_freq_cvb_table_t;
 
     typedef struct {
         u32 freq = 0;
-        u32 volt = 0;
-        u32 unk[6] = {0};
-        s32 coeffs[6] = {0};
+        u32 padding = 0;
+        cvb_coefficients cvb_dfll_param; // empty, dfll clock source not selected
+        cvb_coefficients cvb_pll_param;
     } gpu_cvb_pll_table_t;
 
     typedef struct {
@@ -45,19 +53,39 @@ namespace pcv {
         { 0xF0F90, 0xF0FC8, 0xF1000, 0xF1038, 0xF1070, 0xF10A8, 0xF10E0, 0xF1118, 0xF1150, 0xF1188 },
         { 0xF0FE0, 0xF1018, 0xF1050, 0xF1088, 0xF10C0, 0xF10F8, 0xF1130, 0xF1168, 0xF11A0, 0xF11D8 },
     };
-    constexpr u32 NewCpuVoltageCoeff = NewCpuVoltageLimit * 1000;
+    constexpr u32 CpuVoltageScale = 1000;
+    constexpr u32 NewCpuVoltageScaled = NewCpuVoltageLimit * CpuVoltageScale;
 
     constexpr u32 CpuTablesFreeSpace[] = {
         0xE2350,
         0xF11A0,
         0xF11F0,
     };
-    // TODO: correctly derive c0-c2 coefficients
+    // TODO: correctly derive c0-c1 dfll coefficients
     constexpr cpu_freq_cvb_table_t NewCpuTables[] = {
-        { 2091000, 0, {1719782, -40440, 27}, NewCpuVoltageCoeff, {} },
-        { 2193000, 0, {1809766, -41939, 27}, NewCpuVoltageCoeff, {} },
-        { 2295000, 0, {1904458, -43439, 27}, NewCpuVoltageCoeff, {} },
-        { 2397000, 0, {2004105, -44938, 27}, NewCpuVoltageCoeff, {} },
+     // OldCpuTables
+     // {  204000, 0, {  721589, -12695, 27 }, { 1120000 } },
+     // {  306000, 0, {  747134, -14195, 27 }, { 1120000 } },
+     // {  408000, 0, {  776324, -15705, 27 }, { 1120000 } },
+     // {  510000, 0, {  809160, -17205, 27 }, { 1120000 } },
+     // {  612000, 0, {  845641, -18715, 27 }, { 1120000 } },
+     // {  714000, 0, {  885768, -20215, 27 }, { 1120000 } },
+     // {  816000, 0, {  929540, -21725, 27 }, { 1120000 } },
+     // {  918000, 0, {  976958, -23225, 27 }, { 1120000 } },
+     // { 1020000, 0, { 1028021, -24725, 27 }, { 1120000 } },
+     // { 1122000, 0, { 1082730, -26235, 27 }, { 1120000 } },
+     // { 1224000, 0, { 1141084, -27735, 27 }, { 1120000 } },
+     // { 1326000, 0, { 1203084, -29245, 27 }, { 1120000 } },
+     // { 1428000, 0, { 1268729, -30745, 27 }, { 1120000 } },
+     // { 1581000, 0, { 1374032, -33005, 27 }, { 1120000 } },
+     // { 1683000, 0, { 1448791, -34505, 27 }, { 1120000 } },
+     // { 1785000, 0, { 1527196, -36015, 27 }, { 1120000 } },
+     // { 1887000, 0, { 1609246, -37515, 27 }, { 1120000 } },
+     // { 1963500, 0, { 1675751, -38635, 27 }, { 1120000 } },
+        { 2091000, 0, { 1719782, -40440, 27 }, { NewCpuVoltageScaled } },
+        { 2193000, 0, { 1809766, -41939, 27 }, { NewCpuVoltageScaled } },
+        { 2295000, 0, { 1904458, -43439, 27 }, { NewCpuVoltageScaled } },
+        { 2397000, 0, { 2004105, -44938, 27 }, { NewCpuVoltageScaled } },
     };
     static_assert(sizeof(NewCpuTables) <= sizeof(cpu_freq_cvb_table_t)*14);
 
@@ -69,6 +97,13 @@ namespace pcv {
     constexpr u32 NewMaxCpuClock = 2397000;
 
     /* GPU */
+    constexpr u32 GpuVoltageLimitOffsets[] = {
+        0xE3044,
+        0xF1E94,
+        0xF1EE4,
+    };
+    constexpr u32 NewGpuVoltageLimit = 1050; // default max 1050mV
+
     constexpr u32 GpuTablesFreeSpace[] = {
         0xE3410,
         0xF2260,
@@ -76,8 +111,20 @@ namespace pcv {
     };
     // TODO: correctly derive c0-c5 coefficients
     constexpr gpu_cvb_pll_table_t NewGpuTables[] = {
-        { 1305600, 0, {}, {1380113, -13465, -874, 0, 2580, 648} },
-        { 1344000, 0, {}, {1420000, -14000, -870, 0, 2193, 824} },
+     // OldGpuTables
+     // {  537600, 0, {}, {  801688, -10900, -163,  298, -10599, 162 } },
+     // {  614400, 0, {}, {  824214,  -5743, -452,  238,  -6325,  81 } },
+     // {  691200, 0, {}, {  848830,  -3903, -552,  119,  -4030,  -2 } },
+     // {  768000, 0, {}, {  891575,  -4409, -584,    0,  -2849,  39 } },
+     // {  844800, 0, {}, {  940071,  -5367, -602,  -60,    -63, -93 } },
+     // {  921600, 0, {}, {  986765,  -6637, -614, -179,   1905, -13 } },
+     // {  998400, 0, {}, { 1098475, -13529, -497, -179,   3626,   9 } },
+     // { 1075200, 0, {}, { 1163644, -12688, -648,    0,   1077,  40 } },
+     // { 1152000, 0, {}, { 1204812,  -9908, -830,    0,   1469, 110 } },
+     // { 1228800, 0, {}, { 1277303, -11675, -859,    0,   3722, 313 } },
+     // { 1267200, 0, {}, { 1335531, -12567, -867,    0,   3681, 559 } },
+        { 1305600, 0, {}, { 1380113, -13465, -874,    0,   2580, 648 } },
+        { 1344000, 0, {}, { 1420000, -14000, -870,    0,   2193, 824 } },
     };
     static_assert(sizeof(NewGpuTables) <= sizeof(gpu_cvb_pll_table_t)*15);
 
