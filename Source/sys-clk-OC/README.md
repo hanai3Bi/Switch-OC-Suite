@@ -5,16 +5,16 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 ### Notes:
 
 - **No GPU capping on Mariko** (Hoag/Iowa/Aula)
-- Ability to **set RAM clocks is removed**, please use sys-clk-OC with **[ptm patch](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/Patch/12-ptm.pchtxt)**
+- Ability to **set RAM clocks is removed**, please use sys-clk-OC with **[ptm patch](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/Patch/13-ptm.pchtxt)** or prebuilt loader.kip
 
 ## Clock table (MHz)
 
 ### CPU clocks
 
-* 2397 → max for Mariko
-* 2295 → max for Mariko (stable)
+* 2397 → approx. max for Mariko
+* 2295
 * 2193
-* 2091
+* 2091 → max for Mariko (without overvolting – capped at 1120 mV)
 * 1963 → official max for Mariko
 * 1887
 * 1785 → official boost mode
@@ -32,8 +32,9 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### GPU clocks
 
-* 1344 → max for Mariko
-* 1305 → max for Mariko (stable)
+* 1??? → unknown max for Mariko
+* 1344
+* 1305
 * 1267 → official max for Mariko
 * 1228
 * 1152
@@ -56,13 +57,13 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 
-- 2131 → max for Erista (with over-voltage)
+- 2131 → max for Erista & Mariko (with overvolting)
 - 2099
 - 2064
-- 1996 → max for Mariko
+- 1996
 - 1932
 - 1894
-- 1862 → stable max for Mariko (stable on most DRAM chips except Hynix ones), max for Erista (without over-voltage)
+- 1862 → stable max for Mariko (stable on most DRAM chips except Hynix ones) (without overvolting – capped at 600 mV)
 - 1795
 - 1728
 - 1600 → official docked & official boost mode

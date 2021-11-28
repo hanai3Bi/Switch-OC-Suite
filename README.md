@@ -4,65 +4,76 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 
 
-## Notice
+## Disclaimer
 
-### Disclaimer
+### USE AT YOUR OWN RISK!
 
-**Proceed with caution!**
-
-**I AM NOT RESPONSIBLE (NOR IS ANYONE ELSE) FOR ANYTHING THAT MIGHT HAPPEN TO YOUR CONSOLE** (bans, internal component failure, etc.) by installing OC Suite or tinkering software/hardware with any info from this repo.
+**I AM NOT RESPONSIBLE FOR ANYTHING BAD THAT MIGHT HAPPEN TO YOUR CONSOLE** (bans, internal component failure, etc.) by installing OC Suite or tinkering software/hardware with any info from this repo.
 
 
 
 ## Features
 
 - **CPU/GPU/RAM Overclock** up to **2397.0/1344.0/2131.2 MHz**
-- **Auto-Boost CPU for faster game loading**
 - **Fan Control Optimization** at high load
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
+  - Auto-Boost CPU for faster game loading
   - Profile-aware clock override for all games
 - System Settings
   - Disable background services, less heat and power consumption in standby mode
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
   - Option to change the threshold for chargers providing enough power
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
-- **MemTesterNX**: A userspace utility for testing memory faults ~~and stability~~ based on [memtester](https://pyropus.ca/software/memtester/)
-  - For testing stability, DRAM-heavy games like BotW/MHR will do better jobs as it's easier to spot framebuffer corruption/freeze
+- MemTesterNX: A userspace utility for testing DRAM faults based on [memtester](https://pyropus.ca/software/memtester/)
+  - For testing stability, GPU/DRAM-heavy games like BotW/MHR will do better jobs as it's easier to spot framebuffer corruption/freeze
 
 #### Details
 
 - **Overclock**
+
   - **Official X1+ CPU/GPU OC clock: 1963.5/1267.2 MHz**.
-    - Anything above that are not in the table of official module and are all wild guess.
-    - Coefficients are not correctly calculated, so max clock(2397.0/1344.0 MHz) may not work on some devices. ([#4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
-  - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones).
-    - **RAM clock is set permanently** via **ptm-patch**, rather than sys-clk.
+    - Anything above that are not in the table of official module and are all wild guess – coefficients are not correctly calculated. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+
+  - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones @ 600mV).
+    - **RAM clock is set permanently** via patching ptm module, rather than sys-clk.
     - Use Hekate to check out the brand of your RAM chips.
     - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
+
+  - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
+
+  - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
+
+- **Overvolt and Extreme Overclock**
+
+  - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
+
+  - GPU overvolting: implemented but disabled, default 1050 mV. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+  > Although Tegra X1+ GPU has much more potential than X1, and overvolting is quite promising, its power draw is not tested at higher voltage and its performance is hinderded by low RAM bandwidth on most occasions.
+
   - RAM overvolting: precompiled hekate bootloader is provided
-    - Edit `oc.ini` to change Vddq voltage values:
+    - Edit `oc.ini` to change Vddq voltage value:
       ```ini
       [emc]
       volt=600000
       ```
-    - Overvolting beyond 650mV is not recommend and it might fry your DRAM.
-    - > Even though Tegra X1+ supports LPDDR4/LPDDR4X, LPDDR4X DRAM chips are not required to be backward-compatible with, or resistant to LPDDR4 1.1V Vddq voltage.
+    - Overvolting beyond 650mV is not safe.
+    > Even though Tegra X1+ supports LPDDR4/LPDDR4X, LPDDR4X DRAM chips are not required to be backward-compatible with, or resistant to LPDDR4 1.1V Vddq voltage.
     - For more info on DRAM overvolting and timings, see [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5)
-  - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
-  - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
-- **Auto-Boost CPU for faster game loading**
-    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz for ~10 seconds or until the loading screen ends.
-    - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
-    - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
+
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
   - Replace crappy factory thermal paste is preferred.
   - Place a thermal pad onto Wi-Fi/BT module (shielded, adjacent to antennas) to lower tskin temperature.
+
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
-  - **No need to change clocks manually** after toggling modes in ReverseNX    
+  - **No need to change clocks manually** after toggling modes in ReverseNX
     - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
     - To **disable this feature**, use original version of ReverseNX-RT and delete `/config/sys-clk/ReverseNX_sync.flag`.
+  - **Auto-Boost CPU for faster game loading**
+    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz for ~10 seconds or until the loading screen ends.
+    - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
+    - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
   - Profile-aware clock override for all games
     - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
       ```ini
@@ -78,8 +89,10 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
       handheld_cpu=
       handheld_gpu=
       ```
+
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
+
 - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
   - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
   - For optimal streaming experience, SysDVR via USB interface is recommended.
@@ -88,14 +101,18 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
     - It has noticeable performance impacts in demanding games.
     - Video duration shown in album will be twice than the actual value, while the playback speed is not affected.
   - To **disable** this feature, simply remove the `[am.debug]` section in `system_settings.ini`.
+
 - Option to change the threshold for chargers providing enough power
     - Find the string `enough_power_threshold_mw` in `system_settings.ini`. The default value is `0x9858` (39,000 mW).
     - To lower the threshold, you may change the value to `0x4268` (17,000 mW). Now the system and "sys-clk" will see typical Power Delivery chargers that only supply up to 18W (9V/2A) as "Official Chargers".
+
+
 
 ## Installation
 
 - Modded `loader.kip` with embedded pcv, ptm, am-no-copyright, ValidateAcidSignature patches
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
+- Hekate with DRAM overvolting patch
 - `system-settings.ini` with some QoL improvements
 
 1. **Restoring pcv backup if you have patched pcv module manually:** Launch the `patcher.te` script via TegraExplorer to restore your backup. Separated **ptm patches should be removed** to avoid conflicts.
@@ -107,6 +124,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 4. **Hekate-ipl bootloader:**
 
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
+   - Set DRAM voltage in `/oc.ini`
 
    **Atmosphere Fusee bootloader:**
 
@@ -116,7 +134,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 ## Build
 
-Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere with devkitpro.
+Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT, hekate and Atmosphere (or loader only) with devkitpro.
 
 
 
