@@ -2,12 +2,12 @@
 constexpr ro::ModuleId PcvModuleId[] = {
     ParseModuleId("91D61D59D7002378E35584FC0B38C7693A3ABAB5"), //11.0.0
     ParseModuleId("C503E96550F302E121873136B814A529863D949B"), //12.x
-    ParseModuleId("2058C97C551571506656AA04EC85E2B1B01B155C"), //13.0.0-13.1.0
+    ParseModuleId("2058C97C551571506656AA04EC85E2B1B01B155C"), //13.0.0-13.2.0
 };
 
 constexpr ro::ModuleId PtmModuleId[] = {
     ParseModuleId("A79706954C6C45568B0FFE610627E2E89D8FB0D4"), //12.x
-    ParseModuleId("2CA78D4066C1C11317CC2705EBADA9A51D3AC981"), //13.0.0-13.1.0
+    ParseModuleId("2CA78D4066C1C11317CC2705EBADA9A51D3AC981"), //13.0.0-13.2.0
 };
 
 namespace pcv {
@@ -253,6 +253,16 @@ namespace pcv {
         { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, },
         { 0xE1860, 0xE6580, 0xE65D0, 0xE6B00, 0xE6B08, 0xE6B10, 0xE6B18, 0xE6B20, 0xE6B28, 0xE6B30, 0xE6B38, 0xE6B40, 0xE6B48, 0xF06A0, 0xFDE40, 0x101318, 0x10D124, 0x1191A4, 0x11C67C, 0x11F8E0, 0x122B44, 0x125DA8, 0x12900C, 0x12C270, 0x12F4D4, 0x132738, 0x13599C, 0x138C00, 0x13BE64, 0x13F0C8, },
     };
+
+    // Mariko mtc tables starting from rev, see mtc_timing_table.hpp for parameters.
+    // All mariko mtc tables will be patched to simplify the procedure.
+    constexpr u32 MtcTable_1600[13] = {
+        0x1012D8, 0x11C63C, 0x11F8A0, 0x122B04, 0x125D68, 0x128FCC, 0x12C230, 0x12F494, 0x1326F8, 0x13595C, 0x138BC0, 0x13BE24, 0x13F088
+    };
+
+    constexpr u32 MtcTableOffset = 0x10CC;
+
+    #include "mtc_timing_table.hpp"
 }
 
 namespace ptm {

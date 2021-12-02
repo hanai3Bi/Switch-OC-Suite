@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "ldr_patcher.hpp"
+//#define ADJUST_TIMING
 
 namespace ams::ldr {
 
@@ -182,6 +183,108 @@ namespace ams::ldr {
                     for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
                     }
+
+                #ifdef ADJUST_TIMING
+                    /* Adjust timing parameters in 1600MHz mtc tables */
+                    u32 param_1331, param_1600;
+                    #define ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, PARAM)                                                \
+                        param_1331 = REF_TABLE->PARAM;                                                                         \
+                        param_1600 = TARGET_TABLE->PARAM;                                                                      \
+                        TARGET_TABLE->PARAM = param_1331 + ((GetEmcClock()-1331200)*(param_1600-param_1331))/(1600000-1331200);
+
+                    #define ADJUST_PROP_WITHIN_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)            \
+                        ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, burst_regs.PARAM)            \
+                        ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, shadow_regs_ca_train.PARAM)  \
+                        ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, shadow_regs_rdwr_train.PARAM)
+
+                    /* Calculate DIVM and DIVN */
+                    /* Assume oscillator (PLLMB_IN) is 38.4 MHz */
+                    /* PLLMB_OUT = PLLMB_IN / DIVM * DIVN */
+                    u32 divn = GetEmcClock() / 38400;
+                    u32 divm = 1;
+                    if (GetEmcClock() - divn * 38400 >= 38400 / 2) {
+                        divm = 2;
+                        divn = divn * 2 + 1;
+                    }
+
+                    if (i == 2) {
+                        for (u32 j = 0; j < sizeof(pcv::MtcTable_1600)/sizeof(u32); j++) {
+                            pcv::MarikoMtcTable* mtc_table_1600 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j]);
+                            pcv::MarikoMtcTable* mtc_table_1331 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j] - pcv::MtcTableOffset);
+
+                            /* Normal and reasonable values */
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rc);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rfc);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rfcpb);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_ras);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rp);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_w2r);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_r2p);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_w2p);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_trtm);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_twtm);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tratm);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_twatm);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rd_rcd);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wr_rcd);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rrd);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wdv);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wsv);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wev);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wdv_mask); //?
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_quse);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_quse_width);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_einput);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_einput_duration);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_qsafe);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_mask); //?
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_early);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_early_mask); //?
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_refresh);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pre_refresh_req_cnt);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2wr);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2rd);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_act2pden);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rw2pden);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_cke2pden);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2mrr);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_txsr);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_txsrdll);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tcke);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tckesr);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tpd);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tfaw);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_trpab);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tclkstop);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_trefbw);
+                          //ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pmacro_ddll_long_cmd_4); //?
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pmacro_dll_cfg_2);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_qpop);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_rdv);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_qpop);
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_rdv_mask); //?
+                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_qsafe);
+
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, dram_timings.rl);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rcd);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rp);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rc);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_ras);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_faw);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_wap2pre);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_r2w);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_w2r);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rfcpb);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, la_scale_regs.mc_mll_mpcorer_ptsa_rate);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, min_mrs_wait);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, latency);
+
+                            mtc_table_1600->pllmb_divm = divm;
+                            mtc_table_1600->pllmb_divn = divn;
+                        }
+                    }
+                #endif
                 }
             }
 
