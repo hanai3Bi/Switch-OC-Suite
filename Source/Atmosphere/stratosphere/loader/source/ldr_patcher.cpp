@@ -197,11 +197,11 @@ namespace ams::ldr {
                         ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, shadow_regs_ca_train.PARAM)  \
                         ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, shadow_regs_rdwr_train.PARAM)
 
-                    /* Calculate DIVM and DIVN */
+                    /* Calculate DIVM and DIVN (clock DIVisors) */
                     /* Assume oscillator (PLLMB_IN) is 38.4 MHz */
                     /* PLLMB_OUT = PLLMB_IN / DIVM * DIVN */
-                    u32 divn = GetEmcClock() / 38400;
                     u32 divm = 1;
+                    u32 divn = GetEmcClock() / 38400;
                     if (GetEmcClock() - divn * 38400 >= 38400 / 2) {
                         divm = 2;
                         divn = divn * 2 + 1;
@@ -212,7 +212,7 @@ namespace ams::ldr {
                             pcv::MarikoMtcTable* mtc_table_1600 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j]);
                             pcv::MarikoMtcTable* mtc_table_1331 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j] - pcv::MtcTableOffset);
 
-                            /* Normal and reasonable values */
+                            /* Patch parameters that seem like timings */
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rc);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rfc);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rfcpb);
@@ -280,6 +280,7 @@ namespace ams::ldr {
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, min_mrs_wait);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, latency);
 
+                            /* Patch clock divisors */
                             mtc_table_1600->pllmb_divm = divm;
                             mtc_table_1600->pllmb_divn = divn;
                         }
@@ -288,16 +289,16 @@ namespace ams::ldr {
                 }
             }
 
-            EmcClock = GetEmcClock() * 1000;
+            // u32 PtmEmcClock = GetEmcClock() * 1000;
 
             u32 CpuBoostClock = GetCpuBoostClock() * 1000;
 
             for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                    for (u32 j = 0; j < 16; j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &EmcClock, sizeof(EmcClock));
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &EmcClock, sizeof(EmcClock));
-                    }
+                    // for (u32 j = 0; j < 16; j++) {
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
+                    // }
                     for (u32 j = 0; j < 2; j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));

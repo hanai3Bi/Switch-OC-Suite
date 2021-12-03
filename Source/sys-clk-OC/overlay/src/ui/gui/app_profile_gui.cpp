@@ -62,7 +62,7 @@ void AppProfileGui::addProfileUI(SysClkProfile profile)
     this->listElement->addItem(new tsl::elm::CategoryHeader(sysclkFormatProfile(profile, true)));
     this->addModuleListItem(profile, SysClkModule_CPU, &sysclk_g_freq_table_cpu_hz[0]);
     this->addModuleListItem(profile, SysClkModule_GPU, &sysclk_g_freq_table_gpu_hz[0]);
-    //this->addModuleListItem(profile, SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
+    this->addModuleListItem(profile, SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
 }
 
 void AppProfileGui::listUI()

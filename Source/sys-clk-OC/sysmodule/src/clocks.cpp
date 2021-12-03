@@ -179,8 +179,10 @@ void Clocks::ResetToStock(unsigned int module)
         {
             Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
         }
-        // We don't need to set MEM freqs any more
-        //Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
+        if (module == SysClkModule_EnumMax || module == SysClkModule_MEM)
+        {
+            Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
+        }
     }
     else
     {
@@ -223,10 +225,6 @@ SysClkProfile Clocks::GetCurrentProfile()
 
 void Clocks::SetHz(SysClkModule module, std::uint32_t hz)
 {
-    // We don't need to set MEM freqs any more
-    if (module == SysClkModule_MEM)
-        return;
-
     Result rc = 0;
 
     if(hosversionAtLeast(8,0,0))
@@ -292,11 +290,11 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
     {
         if(profile < SysClkProfile_HandheldCharging)
         {
-            return isMariko ? 1536000000 : SYSCLK_GPU_HANDHELD_MAX_HZ;
+            return isMariko ? 1344000000 : SYSCLK_GPU_HANDHELD_MAX_HZ;
         }
         else if(profile <= SysClkProfile_HandheldChargingUSB)
         {
-            return isMariko ? 1536000000 : SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ;
+            return isMariko ? 1344000000 : SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ;
         }
     }
 
@@ -305,7 +303,7 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
 
 std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
 {
-    // Hardcoded values to return, I don't know why it will bump to max when excessive OC
+    // Hardcoded values to return, or the frequency will ramp up to max as dvfs table is not correct
     if(module == SysClkModule_MEM)
     {
         switch(inHz)
@@ -381,6 +379,10 @@ std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
                 return 1382400000;
             case 1420000000:
                 return 1420800000;
+            case 1459000000:
+                return 1459200000;
+            case 1497000000:
+                return 1497600000;
             default:
                 return inHz;
         }

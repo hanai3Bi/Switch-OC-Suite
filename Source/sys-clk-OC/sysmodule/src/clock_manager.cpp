@@ -247,34 +247,29 @@ void ClockManager::Tick()
                 if (hz)
                 {
                     hz = Clocks::GetNearestHz((SysClkModule)module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
+                    if (module == SysClkModule_MEM && hz == 1600'000'000 && this->context->freqs[module] >= hz)
+                    {
+                        continue;
+                    }
 
                     if (hz != this->context->freqs[module] && this->context->enabled)
                     {
                         if (cpuBoost)
                         {
+                            // Skip setting CPU or GPU clocks in CpuBoostMode if CPU < 1963.5MHz or GPU > 76.8MHz
                             if (module == SysClkModule_CPU && hz < MAX_CPU)
                             {
-                                hz = MAX_CPU;
-                                FileUtils::LogLine("[mgr] CpuBoostMode detected, bump CPU to max");
+                                continue;
+                            }
+                            if (module == SysClkModule_GPU && hz > 76'800'000)
+                            {
+                                continue;
                             }
                         }
                         FileUtils::LogLine("[mgr] %s clock set : %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                         Clocks::SetHz((SysClkModule)module, hz);
                         this->context->freqs[module] = hz;
                     }
-                }
-            }
-        }
-        else if (FileUtils::IsBoostEnabled())
-        {
-            // If user doesn't set any freq but with sys-clk enabled, then boost CPU in CpuBoostMode
-            if(cpuBoost && this->GetConfig()->Enabled())
-            {
-                if(this->context->freqs[SysClkModule_CPU] != MAX_CPU)
-                {
-                    FileUtils::LogLine("[mgr] CpuBoostMode detected, bump CPU to max");
-                    Clocks::SetHz(SysClkModule_CPU, MAX_CPU);
-                    this->context->freqs[SysClkModule_CPU] = MAX_CPU;
                 }
             }
         }
@@ -450,13 +445,6 @@ bool ClockManager::RefreshContext()
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
     {
         hz = Clocks::GetCurrentHz((SysClkModule)module);
-        
-        // Skip MEM freq check
-        if (module == SysClkModule_MEM)
-        {
-            this->context->freqs[module] = hz;
-            break;
-        }
 
         // Round to MHz
         uint32_t cur_mhz = hz/1000'000;

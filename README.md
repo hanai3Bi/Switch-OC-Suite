@@ -14,7 +14,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 ## Features
 
-- **CPU/GPU/RAM Overclock** up to **2397.0/1344.0/2131.2 MHz**
+- **CPU/GPU/RAM Overclock** up to **2397.0/1497.6/2131.2 MHz**
 - **Fan Control Optimization** at high load
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
@@ -32,34 +32,33 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 - **Overclock**
 
-  - **Official X1+ CPU/GPU OC clock: 1963.5/1267.2 MHz**.
-    - Anything above that are not in the table of official module and are all wild guess – coefficients are not correctly calculated. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+  - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
+    - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
 
   - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones @ 600mV).
-    - **RAM clock is set permanently** via patching ptm module, rather than sys-clk.
-    - Use Hekate to check out the brand of your RAM chips.
+    - Only 1331.2 MHz and Max MHz are available in sys-clk-OC settings.
+    - Use Hekate to check out the brand and of your RAM chips.
     - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
 
-  - Mariko variants have much lower power consumption compared to Erista, therefore **GPU clock capping is lifted for Mariko**.
-
-  - For more info, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
+  - For more info on available clock rates, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 
 - **Overvolt and Extreme Overclock**
 
   - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
 
-  - GPU overvolting: implemented but disabled, default 1050 mV. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
-  > Although Tegra X1+ GPU has much more potential than X1, and overvolting is quite promising, its power draw is not tested at higher voltage and its performance is hinderded by low RAM bandwidth on most occasions.
+  - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 Mhz trigger overvolting. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+    - You cannot set ≥ 1344 MHz without official chargers.
 
-  - RAM overvolting: precompiled hekate bootloader is provided
-    - Edit `oc.ini` to change Vddq voltage value:
+  - RAM
+    - Overvolting: precompiled hekate bootloader is provided
+      - Edit `oc.ini` to change Vddq voltage value:
       ```ini
       [emc]
       volt=600000
       ```
-    - Overvolting beyond 650mV is not safe.
-    > Even though Tegra X1+ supports LPDDR4/LPDDR4X, LPDDR4X DRAM chips are not required to be backward-compatible with, or resistant to LPDDR4 1.1V Vddq voltage.
-    - For more info on DRAM overvolting and timings, see [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5)
+      - Overvolting beyond 650mV is not safe and proved to be not much helpful.
+    - Timings: [EXPERIMENTAL] source codes, definitions and examples are provided.
+  - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
 
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
@@ -119,7 +118,7 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 2. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
-3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency (according to DRAM manufacturer), rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
 4. **Hekate-ipl bootloader:**
 

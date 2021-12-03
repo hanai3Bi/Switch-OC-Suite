@@ -30,7 +30,7 @@ CheatSheetTab::CheatSheetTab()
     this->addView(new brls::Header("CPU Clocks"));
     brls::Table *cpuTable = new brls::Table();
 
-    cpuTable->addRow(brls::TableRowType::BODY, "OC Suite Maximum", "2397.0 MHz");
+    cpuTable->addRow(brls::TableRowType::BODY, "Tegra X1+ Official Max", "1963.5 MHz");
     cpuTable->addRow(brls::TableRowType::BODY, "Official Boost", "1785.0 MHz");
     cpuTable->addRow(brls::TableRowType::BODY, "Official Docked and Handheld", "1020.0 MHz");
 
@@ -40,7 +40,7 @@ CheatSheetTab::CheatSheetTab()
     this->addView(new brls::Header("GPU Clocks"));
     brls::Table *gpuTable = new brls::Table();
 
-    gpuTable->addRow(brls::TableRowType::BODY, "OC Suite Maximum", "1344.0 MHz");
+    gpuTable->addRow(brls::TableRowType::BODY, "Tegra X1+ Official Max", "1267.2 MHz");
     gpuTable->addRow(brls::TableRowType::BODY, "Official Maximum", "921.6 MHz");
     gpuTable->addRow(brls::TableRowType::BODY, "Official Docked", "768.0 MHz");
     gpuTable->addRow(brls::TableRowType::BODY, "Official Handheld", "384.0/460.8 MHz");
@@ -63,7 +63,7 @@ CheatSheetTab::CheatSheetTab()
         return;
     }
 
-    memTable->addRow(brls::TableRowType::BODY, "OC Suite", formatFreq(context.freqs[SysClkModule_MEM]));
+    memTable->addRow(brls::TableRowType::BODY, "Tegra X1+ Official Max", "2131.2 MHz");
     memTable->addRow(brls::TableRowType::BODY, "Official", "1331.2/1600.0 MHz");
 
     this->addView(memTable);

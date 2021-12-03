@@ -2,10 +2,6 @@
 
 Switch sysmodule allowing you to set cpu/gpu clocks according to the running application and docked state.
 
-### Notes:
-
-- **No GPU capping on Mariko** (Hoag/Iowa/Aula)
-- Ability to **set RAM clocks is removed**, please use sys-clk-OC with **[ptm patch](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/Patch/13-ptm.pchtxt)** or prebuilt loader.kip
 
 ## Clock table (MHz)
 
@@ -33,6 +29,10 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 ### GPU clocks
 
 * 1??? → unknown max for Mariko
+* 1497
+* 1459
+* 1420
+* 1382
 * 1344
 * 1305
 * 1267 → official max for Mariko
@@ -53,17 +53,19 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 * 153
 * 76 → boost mode
 
-### MEM clocks (only for reference)
+### MEM clocks
+
+**Only 1331 and Max could be set in sys-clk-OC.**
 
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 
-- 2131 → max for Erista & Mariko (with overvolting)
+- 2131 → max for Erista (requires I/O bus overvolting); official max for Mariko (requires proper timings)
 - 2099
 - 2064
 - 1996
 - 1932
 - 1894
-- 1862 → stable max for Mariko (stable on most DRAM chips except Hynix ones) (without overvolting – capped at 600 mV)
+- 1862 → official max for Erista; Mariko (stable on most DRAM chips except Hynix ones) (with timings for 1600MHz and no overvolting – capped at 600 mV)
 - 1795
 - 1728
 - 1600 → official docked & official boost mode
@@ -71,6 +73,17 @@ From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blo
 - 1065
 - 800
 - 665
+
+## Capping
+
+To protect the battery from excessive strain, clocks requested from config may be capped before applying, depending on your current profile:
+
+|         | Handheld | Charging (USB) | Charging (Official) | Docked |
+|:-------:|:--------:|:--------------:|:-------------------:|:------:|
+| **MEM** | -        | -              | -                   | -      |
+| **CPU** | -        | -              | -                   | -      |
+| **GPU** | 1344     | 1344           | -                   | -      |
+
 
 ## Installation
 
@@ -118,14 +131,19 @@ Presets can be customized by adding them to the ini config file located at `/con
 [Application Title ID]
 docked_cpu=
 docked_gpu=
+docked_mem=
 handheld_charging_cpu=
 handheld_charging_gpu=
+handheld_charging_mem=
 handheld_charging_usb_cpu=
 handheld_charging_usb_gpu=
+handheld_charging_usb_mem=
 handheld_charging_official_cpu=
 handheld_charging_official_gpu=
+handheld_charging_official_mem=
 handheld_cpu=
 handheld_gpu=
+handheld_mem=
 ```
 
 * Replace `Application Title ID` with the title id of the game/application you're interested in customizing.
@@ -147,6 +165,7 @@ Leads to a smoother framerate overall (ex: in the korok forest)
 [01007EF00011E000]
 docked_cpu=1224
 handheld_charging_cpu=1224
+handheld_mem=1600
 ```
 
 ### Example 2: Picross
