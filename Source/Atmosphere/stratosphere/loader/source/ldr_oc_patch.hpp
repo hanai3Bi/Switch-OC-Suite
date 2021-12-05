@@ -256,8 +256,8 @@ namespace pcv {
 
     // Mariko mtc tables starting from rev, see mtc_timing_table.hpp for parameters.
     // All mariko mtc tables will be patched to simplify the procedure.
-    constexpr u32 MtcTable_1600[13] = {
-        0x1012D8, 0x11C63C, 0x11F8A0, 0x122B04, 0x125D68, 0x128FCC, 0x12C230, 0x12F494, 0x1326F8, 0x13595C, 0x138BC0, 0x13BE24, 0x13F088
+    constexpr u32 MtcTable_1600[][13] = {
+        { 0x1012D8, 0x11C63C, 0x11F8A0, 0x122B04, 0x125D68, 0x128FCC, 0x12C230, 0x12F494, 0x1326F8, 0x13595C, 0x138BC0, 0x13BE24, 0x13F088 }, // 13.x
     };
 
     constexpr u32 MtcTableOffset = 0x10CC;

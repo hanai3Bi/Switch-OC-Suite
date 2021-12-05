@@ -116,7 +116,7 @@ void AppProfileFrame::addFreqs(brls::List* list, SysClkProfile profile)
     list->addView(gpuListItem);
 
     // MEM
-    brls::SelectListItem* memListItem = createFreqListItem(SysClkModule_MEM, this->profiles.mhzMap[profile][SysClkModule_MEM]);
+    /*brls::SelectListItem* memListItem = createFreqListItem(SysClkModule_MEM, this->profiles.mhzMap[profile][SysClkModule_MEM]);
 
     this->profiles.mhzMap[profile][SysClkModule_MEM] *= 1000000;
 
@@ -126,7 +126,7 @@ void AppProfileFrame::addFreqs(brls::List* list, SysClkProfile profile)
 
         brls::Logger::debug("Caching freq for module %d and profile %d to %" PRIu32, SysClkModule_MEM, profile, this->profiles.mhzMap[profile][SysClkModule_MEM]);
     });
-    list->addView(memListItem);
+    list->addView(memListItem);*/
 }
 
 void AppProfileFrame::onProfileChanged()

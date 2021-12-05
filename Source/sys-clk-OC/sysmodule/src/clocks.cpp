@@ -179,10 +179,10 @@ void Clocks::ResetToStock(unsigned int module)
         {
             Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
         }
-        if (module == SysClkModule_EnumMax || module == SysClkModule_MEM)
-        {
-            Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
-        }
+        // if (module == SysClkModule_EnumMax || module == SysClkModule_MEM)
+        // {
+        //     Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
+        // }
     }
     else
     {
@@ -225,6 +225,9 @@ SysClkProfile Clocks::GetCurrentProfile()
 
 void Clocks::SetHz(SysClkModule module, std::uint32_t hz)
 {
+    if (module == SysClkModule_MEM)
+        return;
+
     Result rc = 0;
 
     if(hosversionAtLeast(8,0,0))

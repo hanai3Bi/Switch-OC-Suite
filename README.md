@@ -2,6 +2,8 @@
 
 Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 11.0.0-13.2.0.
 
+This project will not be actively maintained by me and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
+
 
 
 ## Disclaimer
@@ -35,30 +37,31 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
   - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
 
-  - **Recommended RAM clock: 1862.4 MHz** @ 600mV, (**1795.2 MHz for Hynix** ones @ 600mV).
-    - Only 1331.2 MHz and Max MHz are available in sys-clk-OC settings.
-    - Use Hekate to check out the brand and of your RAM chips.
-    - EM shielding & thermal paste for RAM chips and testing with emuNAND before long-term usage.
+  - **Recommended RAM clock: 1862.4 MHz**.
+    - **RAM clock is set permanently** via patching ptm module, rather than sys-clk.
+    - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
+    - DRAM Timing Table Adjustment:
+      - 2131.2 MHz should be usable and stable for all, with throughput reached about 24.7GiB/s. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
+
+  - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
 
   - For more info on available clock rates, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
 
-- **Overvolt and Extreme Overclock**
+- **Overvolt**
 
   - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
 
   - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 Mhz trigger overvolting. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
     - You cannot set ≥ 1344 MHz without official chargers.
 
-  - RAM
-    - Overvolting: precompiled hekate bootloader is provided
-      - Edit `oc.ini` to change Vddq voltage value:
-      ```ini
-      [emc]
-      volt=600000
-      ```
-      - Overvolting beyond 650mV is not safe and proved to be not much helpful.
-    - Timings: [EXPERIMENTAL] source codes, definitions and examples are provided.
-  - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
+  - RAM [NOT RECOMMENDED]
+    - Only diff patch for hekate bootloader is provided.
+    - Edit `oc.ini` to change Vddq voltage value:
+    ```ini
+    [emc]
+    volt=600000
+    ```
+    - Overvolting beyond 650mV is not safe and proved to be not much helpful.
 
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
@@ -118,12 +121,11 @@ Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Suppo
 
 2. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
-3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency (according to DRAM manufacturer), rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
 4. **Hekate-ipl bootloader:**
 
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
-   - Set DRAM voltage in `/oc.ini`
 
    **Atmosphere Fusee bootloader:**
 

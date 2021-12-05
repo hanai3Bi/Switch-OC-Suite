@@ -65,7 +65,7 @@ From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blo
 - 1996
 - 1932
 - 1894
-- 1862 → official max for Erista; Mariko (stable on most DRAM chips except Hynix ones) (with timings for 1600MHz and no overvolting – capped at 600 mV)
+- 1862 → official max for Erista; Mariko without timing adjustment (stable on most DRAM chips except Hynix ones)
 - 1795
 - 1728
 - 1600 → official docked & official boost mode
@@ -131,19 +131,14 @@ Presets can be customized by adding them to the ini config file located at `/con
 [Application Title ID]
 docked_cpu=
 docked_gpu=
-docked_mem=
 handheld_charging_cpu=
 handheld_charging_gpu=
-handheld_charging_mem=
 handheld_charging_usb_cpu=
 handheld_charging_usb_gpu=
-handheld_charging_usb_mem=
 handheld_charging_official_cpu=
 handheld_charging_official_gpu=
-handheld_charging_official_mem=
 handheld_cpu=
 handheld_gpu=
-handheld_mem=
 ```
 
 * Replace `Application Title ID` with the title id of the game/application you're interested in customizing.
@@ -165,7 +160,6 @@ Leads to a smoother framerate overall (ex: in the korok forest)
 [01007EF00011E000]
 docked_cpu=1224
 handheld_charging_cpu=1224
-handheld_mem=1600
 ```
 
 ### Example 2: Picross

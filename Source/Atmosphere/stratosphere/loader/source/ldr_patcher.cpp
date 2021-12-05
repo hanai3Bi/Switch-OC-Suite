@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "ldr_patcher.hpp"
-//#define ADJUST_TIMING
+#define ADJUST_TIMING
 
 namespace ams::ldr {
 
@@ -68,10 +68,11 @@ namespace ams::ldr {
         }
 
         u32 GetEmcClock() {
-            // RAM freqs to choose: 1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
-            // RAM overclock could be UNSTABLE on some RAM without bumping up voltage,
-            // and therefore show graphical glitches, hang randomly or even worse, corrupt your NAND
-            return 1862400;
+            // RAM freqs from Hekate:
+            //   1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
+            // Other values might work as well
+            // RAM overclock could be UNSTABLE and generate graphical glitches / instabilities / NAND corruption
+            return 2131200;
         }
 
         u32 GetCpuBoostClock() {
@@ -185,8 +186,8 @@ namespace ams::ldr {
                     }
 
                 #ifdef ADJUST_TIMING
-                    /* Adjust timing parameters in 1600MHz mtc tables */
                     u32 param_1331, param_1600;
+
                     #define ADJUST_PROPORTIONAL(TARGET_TABLE, REF_TABLE, PARAM)                                                \
                         param_1331 = REF_TABLE->PARAM;                                                                         \
                         param_1600 = TARGET_TABLE->PARAM;                                                                      \
@@ -207,10 +208,10 @@ namespace ams::ldr {
                         divn = divn * 2 + 1;
                     }
 
-                    if (i == 2) {
-                        for (u32 j = 0; j < sizeof(pcv::MtcTable_1600)/sizeof(u32); j++) {
-                            pcv::MarikoMtcTable* mtc_table_1600 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j]);
-                            pcv::MarikoMtcTable* mtc_table_1331 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[j] - pcv::MtcTableOffset);
+                    if (i >= 2) {
+                        for (u32 j = 0; j < sizeof(pcv::MtcTable_1600[i-2])/sizeof(u32); j++) {
+                            pcv::MarikoMtcTable* mtc_table_1600 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j]);
+                            pcv::MarikoMtcTable* mtc_table_1331 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j] - pcv::MtcTableOffset);
 
                             /* Patch parameters that seem like timings */
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rc);
@@ -228,27 +229,17 @@ namespace ams::ldr {
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rd_rcd);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wr_rcd);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rrd);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wdv);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wsv);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wev);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_wdv_mask); //?
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_quse);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_quse_width);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_einput);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_einput_duration);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_qsafe);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_mask); //?
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_early);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rdv_early_mask); //?
+
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_refresh);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pre_refresh_req_cnt);
+
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2wr);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2rd);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_act2pden);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_rw2pden);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_cke2pden);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pdex2mrr);
+
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_txsr);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_txsrdll);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tcke);
@@ -258,15 +249,11 @@ namespace ams::ldr {
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_trpab);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tclkstop);
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_trefbw);
-                          //ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pmacro_ddll_long_cmd_4); //?
+
                             ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_pmacro_dll_cfg_2);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_qpop);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_rdv);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_qpop);
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_rdv_mask); //?
-                            ADJUST_PROP_WITHIN_ALL_REG(mtc_table_1600, mtc_table_1331, emc_tr_qsafe);
 
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, dram_timings.rl);
+
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rcd);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rp);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rc);
@@ -276,7 +263,10 @@ namespace ams::ldr {
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_r2w);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_w2r);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, burst_mc_regs.mc_emem_arb_timing_rfcpb);
+
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, la_scale_regs.mc_mll_mpcorer_ptsa_rate);
+                            ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, la_scale_regs.mc_ptsa_grant_decrement);
+
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, min_mrs_wait);
                             ADJUST_PROPORTIONAL(mtc_table_1600, mtc_table_1331, latency);
 
@@ -289,16 +279,16 @@ namespace ams::ldr {
                 }
             }
 
-            // u32 PtmEmcClock = GetEmcClock() * 1000;
+            u32 PtmEmcClock = GetEmcClock() * 1000;
 
             u32 CpuBoostClock = GetCpuBoostClock() * 1000;
 
             for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                    // for (u32 j = 0; j < 16; j++) {
-                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
-                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
-                    // }
+                    for (u32 j = 0; j < 16; j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
+                    }
                     for (u32 j = 0; j < 2; j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));

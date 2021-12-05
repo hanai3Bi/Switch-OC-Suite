@@ -77,7 +77,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     });
 
     // MEM
-    brls::SelectListItem *memFreqListItem = createFreqListItem(SysClkModule_MEM, context.overrideFreqs[SysClkModule_MEM] / 1000000);
+    /*brls::SelectListItem *memFreqListItem = createFreqListItem(SysClkModule_MEM, context.overrideFreqs[SysClkModule_MEM] / 1000000);
     memFreqListItem->getValueSelectedEvent()->subscribe([](int result)
     {
         Result rc = result == 0 ?
@@ -90,7 +90,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
             errorResult(result == 0 ? "sysclkIpcRemoveOverride" : "sysclkIpcSetOverride",  rc);
             // TODO: Reset selected value
         }
-    });
+    });*/
 
     this->addView(cpuFreqListItem);
     this->addView(gpuFreqListItem);

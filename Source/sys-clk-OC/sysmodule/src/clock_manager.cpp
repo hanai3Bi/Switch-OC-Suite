@@ -247,10 +247,6 @@ void ClockManager::Tick()
                 if (hz)
                 {
                     hz = Clocks::GetNearestHz((SysClkModule)module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
-                    if (module == SysClkModule_MEM && hz == 1600'000'000 && this->context->freqs[module] >= hz)
-                    {
-                        continue;
-                    }
 
                     if (hz != this->context->freqs[module] && this->context->enabled)
                     {
@@ -445,6 +441,13 @@ bool ClockManager::RefreshContext()
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
     {
         hz = Clocks::GetCurrentHz((SysClkModule)module);
+
+        // Skip MEM freq check
+        if (module == SysClkModule_MEM)
+        {
+            this->context->freqs[module] = hz;
+            break;
+        }
 
         // Round to MHz
         uint32_t cur_mhz = hz/1000'000;
