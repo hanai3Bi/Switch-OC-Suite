@@ -131,14 +131,19 @@ Presets can be customized by adding them to the ini config file located at `/con
 [Application Title ID]
 docked_cpu=
 docked_gpu=
+docked_mem=
 handheld_charging_cpu=
 handheld_charging_gpu=
+handheld_charging_mem=
 handheld_charging_usb_cpu=
 handheld_charging_usb_gpu=
+handheld_charging_usb_mem=
 handheld_charging_official_cpu=
 handheld_charging_official_gpu=
+handheld_charging_official_mem=
 handheld_cpu=
 handheld_gpu=
+handheld_mem=
 ```
 
 * Replace `Application Title ID` with the title id of the game/application you're interested in customizing.
@@ -160,6 +165,7 @@ Leads to a smoother framerate overall (ex: in the korok forest)
 [01007EF00011E000]
 docked_cpu=1224
 handheld_charging_cpu=1224
+handheld_mem=1600
 ```
 
 ### Example 2: Picross

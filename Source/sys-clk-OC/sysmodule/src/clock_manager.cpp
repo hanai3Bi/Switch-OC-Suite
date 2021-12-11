@@ -214,7 +214,7 @@ void ClockManager::Tick()
         {
             std::uint32_t hz = 0;
             std::uint32_t hzForceOverride = 0;
-            for (unsigned int module = 0; module < SysClkModule_EnumMax - 1; module++)
+            for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
             {
                 hz = this->context->overrideFreqs[module];
 
@@ -239,6 +239,13 @@ void ClockManager::Tick()
                                 else
                                     hz = 768'000'000;
                                 break;
+                            case SysClkModule_MEM:
+                                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
+                                                        || RealProfile != SysClkProfile_Docked))
+                                    hz = 1331'200'000;
+                                else
+                                    hz = 1600'000'000;
+                                break;
                         }
                     }
 
@@ -247,6 +254,10 @@ void ClockManager::Tick()
                 if (hz)
                 {
                     hz = Clocks::GetNearestHz((SysClkModule)module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
+                    if (module == SysClkModule_MEM && hz == 1600'000'000 && this->context->freqs[module] >= hz)
+                    {
+                        continue;
+                    }
 
                     if (hz != this->context->freqs[module] && this->context->enabled)
                     {
@@ -441,13 +452,6 @@ bool ClockManager::RefreshContext()
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
     {
         hz = Clocks::GetCurrentHz((SysClkModule)module);
-
-        // Skip MEM freq check
-        if (module == SysClkModule_MEM)
-        {
-            this->context->freqs[module] = hz;
-            break;
-        }
 
         // Round to MHz
         uint32_t cur_mhz = hz/1000'000;

@@ -38,7 +38,7 @@ This project will not be actively maintained by me and I'm looking for collabora
     - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
 
   - **Recommended RAM clock: 1862.4 MHz**.
-    - **RAM clock is set permanently** via patching ptm module, rather than sys-clk.
+    - Only 1331.2 and MAX MHz could be selected in sys-clk.
     - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
     - DRAM Timing Table Adjustment:
       - 2131.2 MHz should be usable and stable for all, with throughput reached about 24.7GiB/s. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
@@ -82,14 +82,19 @@ This project will not be actively maintained by me and I'm looking for collabora
       [A111111111111111]
       docked_cpu=
       docked_gpu=
+      docked_mem=
       handheld_charging_cpu=
       handheld_charging_gpu=
+      handheld_charging_mem=
       handheld_charging_usb_cpu=
       handheld_charging_usb_gpu=
+      handheld_charging_usb_mem=
       handheld_charging_official_cpu=
       handheld_charging_official_gpu=
+      handheld_charging_official_mem=
       handheld_cpu=
       handheld_gpu=
+      handheld_mem=
       ```
 
 - Disable background services, less heat and power consumption in standby mode

@@ -20,6 +20,10 @@ static inline std::string formatListFreqMhz(std::uint32_t mhz)
     {
         return FREQ_DEFAULT_TEXT;
     }
+    else if (mhz == 1600)
+    {
+        return "Max MHz";
+    }
 
     char buf[10];
     return std::string(buf, snprintf(buf, sizeof(buf), "%u MHz", mhz));

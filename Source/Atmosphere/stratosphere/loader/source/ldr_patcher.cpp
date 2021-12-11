@@ -279,16 +279,16 @@ namespace ams::ldr {
                 }
             }
 
-            u32 PtmEmcClock = GetEmcClock() * 1000;
+            // u32 PtmEmcClock = GetEmcClock() * 1000;
 
             u32 CpuBoostClock = GetCpuBoostClock() * 1000;
 
             for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                    for (u32 j = 0; j < 16; j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
-                    }
+                    // for (u32 j = 0; j < 16; j++) {
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
+                    // }
                     for (u32 j = 0; j < 2; j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
