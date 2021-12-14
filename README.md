@@ -41,7 +41,8 @@ This project will not be actively maintained by me and I'm looking for collabora
     - Only 1331.2 and MAX MHz could be selected in sys-clk.
     - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
     - DRAM Timing Table Adjustment:
-      - 2131.2 MHz should be usable and stable for all, with throughput reached about 24.7GiB/s. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
+      - 2131.2 MHz is stable for Micron chips with ~24.8GiB/s throughput. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
+      - 1862.4 MHz is stable for all. (~23.0 GB/s)
 
   - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
 
@@ -149,6 +150,7 @@ Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT, hekate
 - CTCaer for [Hekate-ipl](https://github.com/CTCaer/hekate) bootloader, RE and hardware research
 - [devkitPro](https://devkitpro.org/) for All-In-One homebrew toolchains
 - masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT) and [BatteryChargeInfoNX](https://github.com/masagrator/BatteryChargeInfoNX)
+- Nvidia for [Tegra X1 Technical Reference Manual](https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual)
 - RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info

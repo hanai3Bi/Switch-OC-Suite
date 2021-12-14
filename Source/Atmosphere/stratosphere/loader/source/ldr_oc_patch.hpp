@@ -137,11 +137,11 @@ namespace pcv {
         0x3F12C,
     };
     constexpr u8 Reg1NewMaxGpuClock[][0xC] = {
-        /* Original: 1267MHz
+        /* Original: 1228.8MHz
          *
-         * MOV   W13,#0x5600
-         * MOVK  W13,#0x13,LSL #16
-         * NOP
+         * MOV   W13,#0x1000
+         * MOVK  W13,#0xE,LSL #16
+         * ADD   X13, X13, #0x4B,LSL#12
          *
          * Bump to 1536MHz
          *
@@ -160,10 +160,10 @@ namespace pcv {
         0x3F190,
     };
     constexpr u8 Reg2NewMaxGpuClock[][0x8] = {
-        /* Original: 1267MHz
+        /* Original: 921.6MHz
          *
-         * MOV   W13,#0x5600
-         * MOVK  W13,#0x13,LSL #16
+         * MOV   W13,#0x1000
+         * MOVK  W13,#0xE,LSL #16
          *
          * Bump to 1536MHz
          *
@@ -263,6 +263,226 @@ namespace pcv {
     constexpr u32 MtcTableOffset = 0x10CC;
 
     #include "mtc_timing_table.hpp"
+
+    #define ADJUST_PROP(TARGET, REF) (REF + ((GetEmcClock()-1331200)*(TARGET-REF))/(1600000-1331200))
+
+    #define ADJUST_PARAM(TARGET_PARAM, REF_PARAM)           \
+        TARGET_PARAM = ADJUST_PROP(TARGET_PARAM, REF_PARAM);
+
+    #define ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, PARAM) \
+        ADJUST_PARAM(TARGET_TABLE->PARAM, REF_TABLE->PARAM)
+
+    #define ADJUST_PARAM_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)                 \
+        ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, burst_regs.PARAM)            \
+        ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, shadow_regs_ca_train.PARAM)  \
+        ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, shadow_regs_rdwr_train.PARAM)
+
+    #define TRIM_BIT(IN_BITS, HIGH, LOW)                       \
+        ((IN_BITS >> LOW) & ( (1u << (HIGH - LOW + 1u)) - 1u ))
+
+    #define ADJUST_BIT(TARGET_PARAM, REF_PARAM, HIGH, LOW)                            \
+        ADJUST_PROP(TRIM_BIT(TARGET_PARAM, HIGH, LOW), TRIM_BIT(REF_PARAM, HIGH, LOW))
+
+    #define CLEAR_BIT(BITS, HIGH, LOW)                        \
+        BITS = BITS & ~( ((1u << HIGH) << 1u) - (1u << LOW) );
+
+    /* For latency allowance */
+    #define ADJUST_INVERSE(TARGET) ((TARGET*1000) / (GetEmcClock()/1600))
+
+    void AdjustMtcTable(MarikoMtcTable* target_table, MarikoMtcTable* ref_table)
+    {
+        /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download: */
+        /*     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual */
+        /* Section 18.11: MC Registers */
+
+        /* Apparent timing parameters, simply adjust proportionally. */
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rc);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rfc);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rfcpb);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_ras);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rp);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_r2w);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_w2r);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_r2p);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_w2p);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_trtm);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_twtm);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tratm);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_twatm);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rd_rcd);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_wr_rcd);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rrd);
+
+        /* emc_wdv, emc_wsv, emc_wev, emc_wdv_mask,
+           emc_quse, emc_quse_width, emc_ibdly, emc_obdly,
+           emc_einput, emc_einput_duration, emc_qrst, emc_qsafe,
+           emc_rdv, emc_rdv_mask, emc_rdv_early, emc_rdv_early_mask */
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_refresh);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pre_refresh_req_cnt);
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pdex2wr);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pdex2rd);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_act2pden);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rw2pden);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_cke2pden);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pdex2mrr);
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_txsr);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_txsrdll);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tcke);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tckesr);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tpd);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tfaw);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_trpab);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tclkstop);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_trefbw);
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pmacro_dll_cfg_2);
+
+        /* emc_pmacro_...,
+           emc_zcal_wait_cnt, emc_mrs_wait_cnt(2),
+           emc_pmacro_autocal_cfg_common, emc_dyn_self_ref_control, emc_qpop, emc_pmacro_cmd_pad_tx_ctrl,
+           emc_tr_timing_0, emc_tr_rdv, emc_tr_qpop, emc_tr_rdv_mask, emc_tr_qsafe, emc_tr_qrst,
+           emc_training_vref_settle, emc_pmacro_ob_..._rank?_? */
+
+        ADJUST_PARAM_TABLE(target_table, ref_table, dram_timings.rl);
+
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_rcd);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_rp);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_rc);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_ras);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_faw);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_wap2pre);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_r2w);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_w2r);
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_timing_rfcpb);
+
+        ADJUST_PARAM_TABLE(target_table, ref_table, la_scale_regs.mc_mll_mpcorer_ptsa_rate);
+        ADJUST_PARAM_TABLE(target_table, ref_table, la_scale_regs.mc_ptsa_grant_decrement);
+
+        ADJUST_PARAM_TABLE(target_table, ref_table, min_mrs_wait);
+        ADJUST_PARAM_TABLE(target_table, ref_table, latency);
+
+        #ifdef EXPERIMENTAL
+        /* External Memory Arbitration Configuration */
+        /* BIT 20:16 - EXTRA_TICKS_PER_UPDATE: 0 */
+        /* BIT 8:0   - CYCLES_PER_UPDATE: 12(1600MHz), 10(1331.2MHz) */
+        ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_cfg);
+
+        /* External Memory Arbitration Configuration: Direction Arbiter: Turns */
+        /* BIT 31:24 - W2R_TURN: approx. mc_emem_arb_timing_w2r */
+        /* BIT 23:16 - R2W_TURN: approx. mc_emem_arb_timing_r2w */
+        /* BIT 15:8  - W2W_TURN: 0 */
+        /* BIT 7:0   - R2R_TURN: 0 */
+        {
+            uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_da_turns;
+            uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_da_turns;
+            uint8_t w2r_turn = ADJUST_BIT(param_1600, param_1331, 31,24);
+            uint8_t r2w_turn = ADJUST_BIT(param_1600, param_1331, 23,16);
+            target_table->burst_mc_regs.mc_emem_arb_da_turns = w2r_turn << 24 | r2w_turn << 16;
+        }
+
+        /* External Memory Arbitration Configuration: Direction Arbiter: Covers */
+        /* BIT 23:16 - RCD_W_COVER: 13(1600MHz), 11(1331.2MHz) */
+        /* BIT 15:8  - RCD_R_COVER: 8(1600MHz), 7(1331.2MHz) */
+        /* BIT 7:0   - RC_COVER: approx. mc_emem_arb_timing_rc, 12(1600MHz), 9(1331.2MHz) */
+        {
+            uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_da_covers;
+            uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_da_covers;
+            uint8_t rcd_w_cover = ADJUST_BIT(param_1600, param_1331, 23,16);
+            uint8_t rcd_r_cover = ADJUST_BIT(param_1600, param_1331, 15,8);
+            uint8_t rc_cover    = ADJUST_BIT(param_1600, param_1331, 7,0);
+            target_table->burst_mc_regs.mc_emem_arb_da_covers = rcd_w_cover << 16 | rcd_r_cover << 8 | rc_cover;
+        }
+
+        /* External Memory Arbitration Configuration: Miscellaneous Thresholds (0) */
+        /* BIT 20:16 - PRIORITY_INVERSION_ISO_THRESHOLD: 12(1600MHz), 10(1331.2MHz) */
+        /* BIT 14:8  - PRIORITY_INVERSION_THRESHOLD: 36(1600MHz), 30(1331.2MHz) */
+        /* BIT 7:0   - BC2AA_HOLDOFF_THRESHOLD: set to mc_emem_arb_timing_rc */
+        {
+            uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_misc0;
+            uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_misc0;
+            uint8_t priority_inversion_iso_threshold = ADJUST_BIT(param_1600, param_1331, 20,16);
+            uint8_t priority_inversion_threshold     = ADJUST_BIT(param_1600, param_1331, 14,8);
+            uint8_t bc2aa_holdoff_threshold          = target_table->burst_mc_regs.mc_emem_arb_timing_rc;
+            CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 20,16)
+            CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 14,8)
+            CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 7,0)
+            target_table->burst_mc_regs.mc_emem_arb_misc0 |=
+                (priority_inversion_iso_threshold << 16 | priority_inversion_threshold << 8 | bc2aa_holdoff_threshold);
+        }
+
+        /* Latency allowance settings */
+        {
+            /* Section 1: adjust write latency */
+            /* BIT 23:16 - ALLOWANCE_WRITE: 128(1600MHz), 153(1331.2MHz) */
+            const uint32_t latency_write_offset[] = {
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_xusb_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_xusb_1),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_tsec_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_sdmmca_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_sdmmcaa_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_sdmmc_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_sdmmcab_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_ppcs_1),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_mpcore_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_avpc_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_gpu_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_gpu2_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_nvenc_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_nvdec_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_vic_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_isp2_1),
+            };
+            for (uint32_t i = 0; i < sizeof(latency_write_offset)/sizeof(uint32_t); i++)
+            {
+                uint32_t *latency = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + latency_write_offset[i]);
+                CLEAR_BIT(*latency, 23,16)
+                *latency |= ADJUST_INVERSE(128) << 16;
+            }
+
+            /* Section 2: adjust read latency */
+            /* BIT 7:0   - ALLOWANCE_READ */
+            const uint32_t latency_read_offset[] = {
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_hc_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_hc_1),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_gpu_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_gpu2_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_vic_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_vi2_0),
+                offsetof(MarikoMtcTable, la_scale_regs.mc_latency_allowance_isp2_1),
+            };
+            for (uint32_t i = 0; i < sizeof(latency_read_offset)/sizeof(uint32_t); i++)
+            {
+                uint32_t *latency = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + latency_read_offset[i]);
+                uint8_t adjusted_latency = ADJUST_INVERSE(TRIM_BIT(*latency, 7,0));
+                CLEAR_BIT(*latency, 7,0)
+                *latency |= adjusted_latency;
+            }
+        }
+
+        /* ? PLLM and PLLMB control ? */
+        {
+
+        }
+
+        /* EMC misc. configuration */
+        {
+            /* ? Command Trigger: MRW, MRW2: MRW_OP - [PMC] data to be written ? */
+            {
+
+            }
+
+            /* EMC_CFG_2 */
+            /* BIT 5:3  - ZQ_EXTRA_DELAY: 6(1600MHz), 5(1331.2MHz), max possible value: 7 */
+            {
+                CLEAR_BIT(target_table->emc_cfg_2, 5,3)
+                target_table->emc_cfg_2 |= 7 << 3;
+            }
+        }
+        #endif
+    }
 }
 
 namespace ptm {
