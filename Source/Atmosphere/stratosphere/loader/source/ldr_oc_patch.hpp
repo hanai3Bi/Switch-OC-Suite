@@ -1,4 +1,4 @@
-
+//#define EXPERIMENTAL
 constexpr ro::ModuleId PcvModuleId[] = {
     ParseModuleId("91D61D59D7002378E35584FC0B38C7693A3ABAB5"), //11.0.0
     ParseModuleId("C503E96550F302E121873136B814A529863D949B"), //12.x
@@ -266,6 +266,14 @@ namespace pcv {
 
     #define ADJUST_PROP(TARGET, REF) (REF + ((GetEmcClock()-1331200)*(TARGET-REF))/(1600000-1331200))
 
+    #define ADJUST_PARAM_ROUND2_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)                                                        \
+        TARGET_TABLE->burst_regs.PARAM =                                                                                       \
+            ((ADJUST_PROP(TARGET_TABLE->burst_regs.PARAM, REF_TABLE->burst_regs.PARAM) + 1) >> 1) << 1;                        \
+        TARGET_TABLE->shadow_regs_ca_train.PARAM =                                                                             \
+            ((ADJUST_PROP(TARGET_TABLE->shadow_regs_ca_train.PARAM, REF_TABLE->shadow_regs_ca_train.PARAM) + 1) >> 1) << 1;    \
+        TARGET_TABLE->shadow_regs_rdwr_train.PARAM =                                                                           \
+            ((ADJUST_PROP(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM) + 1) >> 1) << 1;
+
     #define ADJUST_PARAM(TARGET_PARAM, REF_PARAM)           \
         TARGET_PARAM = ADJUST_PROP(TARGET_PARAM, REF_PARAM);
 
@@ -285,6 +293,25 @@ namespace pcv {
 
     #define CLEAR_BIT(BITS, HIGH, LOW)                        \
         BITS = BITS & ~( ((1u << HIGH) << 1u) - (1u << LOW) );
+
+    #define ADJUST_BIT_ALL_REG_SINGLE_OP(TARGET_TABLE, REF_TABLE, PARAM, HIGH, LOW, OPERATION)                                            \
+        TARGET_TABLE->burst_regs.PARAM =                                                                                                  \
+            (ADJUST_BIT(TARGET_TABLE->burst_regs.PARAM, REF_TABLE->burst_regs.PARAM, HIGH, LOW) << LOW) OPERATION;                        \
+        TARGET_TABLE->shadow_regs_ca_train.PARAM =                                                                                        \
+            (ADJUST_BIT(TARGET_TABLE->shadow_regs_ca_train.PARAM, REF_TABLE->shadow_regs_ca_train.PARAM, HIGH, LOW)) << LOW OPERATION;    \
+        TARGET_TABLE->shadow_regs_rdwr_train.PARAM =                                                                                      \
+            (ADJUST_BIT(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM, HIGH, LOW)) << LOW OPERATION;
+
+    #define ADJUST_BIT_ALL_REG_PAIR(TARGET_TABLE, REF_TABLE, PARAM, HIGH1, LOW1, HIGH2, LOW2)                                      \
+        TARGET_TABLE->burst_regs.PARAM =                                                                                           \
+            ADJUST_BIT(TARGET_TABLE->burst_regs.PARAM, REF_TABLE->burst_regs.PARAM, HIGH1, LOW1) << LOW1                           \
+            | ADJUST_BIT(TARGET_TABLE->burst_regs.PARAM, REF_TABLE->burst_regs.PARAM, HIGH2, LOW2) << LOW2;                        \
+        TARGET_TABLE->shadow_regs_ca_train.PARAM =                                                                                 \
+            ADJUST_BIT(TARGET_TABLE->shadow_regs_ca_train.PARAM, REF_TABLE->shadow_regs_ca_train.PARAM, HIGH1, LOW1) << LOW1       \
+            | ADJUST_BIT(TARGET_TABLE->shadow_regs_ca_train.PARAM, REF_TABLE->shadow_regs_ca_train.PARAM, HIGH2, LOW2) << LOW2;    \
+        TARGET_TABLE->shadow_regs_rdwr_train.PARAM =                                                                               \
+            ADJUST_BIT(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM, HIGH1, LOW1) << LOW1   \
+            | ADJUST_BIT(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM, HIGH2, LOW2) << LOW2;
 
     /* For latency allowance */
     #define ADJUST_INVERSE(TARGET) ((TARGET*1000) / (GetEmcClock()/1600))
@@ -317,6 +344,34 @@ namespace pcv {
            emc_quse, emc_quse_width, emc_ibdly, emc_obdly,
            emc_einput, emc_einput_duration, emc_qrst, emc_qsafe,
            emc_rdv, emc_rdv_mask, emc_rdv_early, emc_rdv_early_mask */
+        #ifdef EXPERIMENTAL
+        ADJUST_PARAM_ROUND2_ALL_REG(target_table, ref_table, emc_wdv);
+        ADJUST_PARAM_ROUND2_ALL_REG(target_table, ref_table, emc_wsv);
+        ADJUST_PARAM_ROUND2_ALL_REG(target_table, ref_table, emc_wev);
+        ADJUST_PARAM_ROUND2_ALL_REG(target_table, ref_table, emc_wdv_mask);
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_quse);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_quse_width);
+
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_ibdly, 6,0, | (1 << 28));
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_obdly, 5,0, | (1 << 28));
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_einput);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_einput_duration);
+
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_qrst, 6,0, | (6 << 16));
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_qsafe);
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rdv);
+        target_table->burst_regs.emc_rdv_mask = target_table->burst_regs.emc_rdv + 2;
+        target_table->shadow_regs_ca_train.emc_rdv_mask = target_table->shadow_regs_ca_train.emc_rdv + 2;
+        target_table->shadow_regs_rdwr_train.emc_rdv_mask = target_table->shadow_regs_rdwr_train.emc_rdv + 2;
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_rdv_early);
+        target_table->burst_regs.emc_rdv_early_mask = target_table->burst_regs.emc_rdv_early + 2;
+        target_table->shadow_regs_ca_train.emc_rdv_early_mask = target_table->shadow_regs_ca_train.emc_rdv_early + 2;
+        target_table->shadow_regs_rdwr_train.emc_rdv_early_mask = target_table->shadow_regs_rdwr_train.emc_rdv_early + 2;
+        #endif
 
         ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_refresh);
         ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_pre_refresh_req_cnt);
@@ -344,7 +399,111 @@ namespace pcv {
            emc_zcal_wait_cnt, emc_mrs_wait_cnt(2),
            emc_pmacro_autocal_cfg_common, emc_dyn_self_ref_control, emc_qpop, emc_pmacro_cmd_pad_tx_ctrl,
            emc_tr_timing_0, emc_tr_rdv, emc_tr_qpop, emc_tr_rdv_mask, emc_tr_qsafe, emc_tr_qrst,
-           emc_training_vref_settle, emc_pmacro_ob_..._rank?_? */
+           emc_training_vref_settle */
+        #ifdef EXPERIMENTAL
+        /* DDLL values */
+        {
+            #define OFFSET_ALL_REG(PARAM)                               \
+                offsetof(MarikoMtcTable, burst_regs.PARAM),             \
+                offsetof(MarikoMtcTable, shadow_regs_ca_train.PARAM),   \
+                offsetof(MarikoMtcTable, shadow_regs_rdwr_train.PARAM)  \
+
+            /* Section 1: adjust HI bits: BIT 26:16 */
+            const uint32_t ddll_high[] = {
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_4),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_5),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_4),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_5),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_4),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_5),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_0),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_1),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_2),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_3),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_4),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_0),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_1),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_2),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_3),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_4),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_5),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_0),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_1),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_2),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_3),
+            };
+            for (uint32_t i = 0; i < sizeof(ddll_high)/sizeof(uint32_t); i++)
+            {
+                uint32_t *ddll = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + ddll_high[i]);
+                uint32_t *ddll_ref = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(ref_table) + ddll_high[i]);
+                uint16_t adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 26,16) & ((1 << 10) - 1);
+                CLEAR_BIT(*ddll, 26,16)
+                *ddll |= adjusted_ddll << 16;
+            }
+
+            /* Section 2: adjust LOW bits: BIT 10:0 */
+            const uint32_t ddll_low[] = {
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_4),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_5),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_0),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_1),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_3),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_4),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_0),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_1),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_3),
+                OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank1_4),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_0),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_1),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_2),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_3),
+                OFFSET_ALL_REG(emc_pmacro_ddll_long_cmd_4),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_0),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_1),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_2),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_3),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_4),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_5),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_0),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_1),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_2),
+                offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_3),
+            };
+            for (uint32_t i = 0; i < sizeof(ddll_low)/sizeof(uint32_t); i++)
+            {
+                uint32_t *ddll = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + ddll_low[i]);
+                uint32_t *ddll_ref = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(ref_table) + ddll_low[i]);
+                uint16_t adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 10,0) & ((1 << 10) - 1);
+                CLEAR_BIT(*ddll, 10,0)
+                *ddll |= adjusted_ddll;
+            }
+        }
+
+        ADJUST_BIT_ALL_REG_PAIR(target_table, ref_table, emc_zcal_wait_cnt, 21,16, 10,0)
+        ADJUST_BIT_ALL_REG_PAIR(target_table, ref_table, emc_mrs_wait_cnt, 21,16, 10,0)
+        ADJUST_BIT_ALL_REG_PAIR(target_table, ref_table, emc_mrs_wait_cnt2, 21,16, 10,0)
+
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_auto_cal_channel, 5,0, | 0xC1E00300)
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_pmacro_autocal_cfg_common, 5,0, | 8 << 8)
+
+        ADJUST_BIT_ALL_REG_PAIR(target_table, ref_table, emc_dyn_self_ref_control, 31,31, 15,0)
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_qpop);
+
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_tr_timing_0, 9,0, | 0x1186100)
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tr_rdv);
+        target_table->burst_regs.emc_tr_rdv_mask = target_table->burst_regs.emc_tr_rdv + 2;
+        target_table->shadow_regs_ca_train.emc_tr_rdv_mask = target_table->shadow_regs_ca_train.emc_tr_rdv + 2;
+        target_table->shadow_regs_rdwr_train.emc_tr_rdv_mask = target_table->shadow_regs_rdwr_train.emc_tr_rdv + 2;
+
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tr_qpop);
+        ADJUST_PARAM_ALL_REG(target_table, ref_table, emc_tr_qsafe);
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_tr_qrst, 6,0, | (6 << 16));
+
+        ADJUST_BIT_ALL_REG_SINGLE_OP(target_table, ref_table, emc_training_vref_settle, 15,0, | (4 << 16));
+
+        #endif
 
         ADJUST_PARAM_TABLE(target_table, ref_table, dram_timings.rl);
 
@@ -462,9 +621,25 @@ namespace pcv {
             }
         }
 
-        /* ? PLLM and PLLMB control ? */
+        /* PLLM and PLLMB control */
         {
-
+            /*
+             * CLK_RST_CONTROLLER_PLLM_SS_CTRL1:
+             * BIT 31:16 : PLLM_SDM_SSC_MAX
+             * BIT 15:0  : PLLM_SDM_SSC_MIN
+             *
+             * CLK_RST_CONTROLLER_PLLM_SS_CTRL2:
+             * BIT 31:16 : PLLM_SDM_SSC_STEP
+             * BIT 15:0  : PLLM_SDM_DIN
+             *
+             * pllm(b)_ss_ctrl1:
+             *   1365,    342 (1600MHz)
+             * 0xFAAB, 0xF404 (1331MHz)
+             *
+             * pllm(b)_ss_ctrl2:
+             *      2,   1365 (1600MHz)
+             *      6, 0xFAAB (1331MHz)
+             */
         }
 
         /* EMC misc. configuration */
@@ -481,8 +656,35 @@ namespace pcv {
                 target_table->emc_cfg_2 |= 7 << 3;
             }
         }
+
         #endif
     }
+
+    /* Unlock the second sub-partition for retail Mariko, and double the bandwidth (~60GB/s)
+     * https://github.com/CTCaer/hekate/blob/01b6e645b3cb69ddf28cc9eff40c4b35bf03dbd4/bdk/mem/sdram.h#L30
+     *
+     * Sub-partition related parameters in sdram_params:
+     * EMC_ADR_CFG, MC_EMEM_ADR_CFG:
+     *  |- Number of populated DRAM devices, 0x0: one, 0x1: two
+     * EMC_MRW1, EMC_MRW2, EMC_MR3, EMC_MRW6, EMC_MRW8, EMC_MRW9,
+     * EMC_MRW10, EMC_MRW12, EMC_MRW13, EMC_MRW14, EMC_MRW15,
+     * EMC_ZCAL_MRW_CMD, EMC_ZCAL_INIT_DEV1:
+     *  |- BIT 31:30: DEV_SELECTN, 0x0: both, 0x2: dev0, 0x1: dev1
+     *  |- EMC_MRW4 is not used (BIT 31:30: 0b11)
+     * EMC_DEV_SELECT:
+     *  |- Same as DEV_SELECTN
+     * EMC_PMACRO_TX_PWRD4, EMC_PMACRO_TX_PWRD5 ?
+     * MC_EMEM_ADR_CFG_DEV0, MC_EMEM_ADR_CFG_DEV1:
+     *  |- BIT 19:16: DEVSIZE(density), 8 = 1GB, 7 = 512MB (ineffective?)
+     *  |- BIT  9:8 : BANKWIDTH, 2 / 3 : W2 / W3,  W3(default)
+     *  |- BIT  2:0 : COLWIDTH,  1 - 5 : W8 - W12, W9(default)
+     * MC_EMEM_ARB_TIMING_R2R, MC_EMEM_ARB_DA_TURNS:
+     *  |- With 2 DRAM devices on, timing should be adjusted.
+     *
+     * With all these above changed, 2 sub-partitions seem to be on
+     * But RAM density is off (before: 2x1GB+2x1GB, after: 4x1GB + 4x1GB)
+     * and it fails before splash screen in ams fusee
+     */
 }
 
 namespace ptm {
