@@ -19,7 +19,6 @@ static LockableMutex g_csv_mutex;
 static std::atomic_bool g_has_initialized = false;
 static bool g_log_enabled = false;
 static bool g_boost_enabled = false;
-static bool g_downclock_dock_enabled = false;
 static bool g_reversenx_tool_exist = false;
 static bool g_reversenx_sync_enabled = false;
 static std::uint64_t g_last_flag_check = 0;
@@ -136,42 +135,11 @@ void FileUtils::RefreshFlags(bool force)
 
 void FileUtils::InitCheckFlags()
 {
-    // Check if it's Mariko
-    u64 hardware_type = 0;
-    splInitialize();
-    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
-    splExit();
-
-    switch(hardware_type) {
-        case 0: //Icosa
-        case 1: //Copper
-            break;
-        case 2: //Hoag
-        case 3: //Iowa
-        case 4: //Calcio
-        case 5: //Aula
-            Clocks::isMariko = true;
-            break;
-        default:
-            break;
-    }
-
     FILE *file;
-    // Only Enable Boost for Mariko
-    if (Clocks::isMariko)
-    {
-        file = fopen(FILE_BOOST_FLAG_PATH, "r");
-        if (file)
-        {
-            g_boost_enabled = true;
-            fclose(file);
-        }
-    }
-
-    file = fopen(FILE_DOWNCLOCK_DOCK_FLAG_PATH, "r");
+    file = fopen(FILE_BOOST_FLAG_PATH, "r");
     if (file)
     {
-        g_downclock_dock_enabled = true;
+        g_boost_enabled = true;
         fclose(file);
     }
 
@@ -195,12 +163,7 @@ bool FileUtils::IsBoostEnabled()
     return g_boost_enabled;
 }
 
-bool FileUtils::IsDownclockDockEnabled()
-{
-    return g_downclock_dock_enabled;
-}
-
-bool FileUtils::IsReverseNXToolExist()
+bool FileUtils::ExistReverseNXTool()
 {
     return g_reversenx_tool_exist;
 }
@@ -242,11 +205,10 @@ Result FileUtils::Initialize()
     if (R_SUCCEEDED(rc))
     {
         FileUtils::RefreshFlags(true);
+        FileUtils::InitCheckFlags();
         g_has_initialized = true;
         FileUtils::LogLine("=== " TARGET " " TARGET_VERSION " ===");
     }
-
-    FileUtils::InitCheckFlags();
 
     return rc;
 }

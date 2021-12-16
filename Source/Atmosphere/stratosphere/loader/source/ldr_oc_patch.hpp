@@ -247,7 +247,7 @@ namespace pcv {
     // If so, read/query max77812 pmic via i2c for voltage info in hekate and get DRAM reg on PHASE31.
     // max77812 document: https://datasheets.maximintegrated.com/en/ds/MAX77812.pdf
 
-    // TODO: investigate why frequencies lower than 1331 MHz cannot be set
+    // Mariko have 3 mtc tables (204/1331/1600 MHz), only these 3 frequencies could be set.
     constexpr u32 EmcFreqOffsets[][30] = {
         { 0xD7C60, 0xD7C68, 0xD7C70, 0xD7C78, 0xD7C80, 0xD7C88, 0xD7C90, 0xD7C98, 0xD7CA0, 0xD7CA8, 0xE1800, 0xEEFA0, 0xF2478, 0xFE284, 0x10A304, 0x10D7DC, 0x110A40, 0x113CA4, 0x116F08, 0x11A16C, 0x11D3D0, 0x120634, 0x123898, 0x126AFC, 0x129D60, 0x12CFC4, 0x130228, 0x13BFE0, 0x140D00, 0x140D50, },
         { 0xE1810, 0xE6530, 0xE6580, 0xE6AB0, 0xE6AB8, 0xE6AC0, 0xE6AC8, 0xE6AD0, 0xE6AD8, 0xE6AE0, 0xE6AE8, 0xE6AF0, 0xE6AF8, 0xF0650, 0xFDDF0, 0x1012C8, 0x10D0D4, 0x119154, 0x11C62C, 0x11F890, 0x122AF4, 0x125D58, 0x128FBC, 0x12C220, 0x12F484, 0x1326E8, 0x13594C, 0x138BB0, 0x13BE14, 0x13F078, },
@@ -663,27 +663,7 @@ namespace pcv {
     /* Unlock the second sub-partition for retail Mariko, and double the bandwidth (~60GB/s)
      * https://github.com/CTCaer/hekate/blob/01b6e645b3cb69ddf28cc9eff40c4b35bf03dbd4/bdk/mem/sdram.h#L30
      *
-     * Sub-partition related parameters in sdram_params:
-     * EMC_ADR_CFG, MC_EMEM_ADR_CFG:
-     *  |- Number of populated DRAM devices, 0x0: one, 0x1: two
-     * EMC_MRW1, EMC_MRW2, EMC_MR3, EMC_MRW6, EMC_MRW8, EMC_MRW9,
-     * EMC_MRW10, EMC_MRW12, EMC_MRW13, EMC_MRW14, EMC_MRW15,
-     * EMC_ZCAL_MRW_CMD, EMC_ZCAL_INIT_DEV1:
-     *  |- BIT 31:30: DEV_SELECTN, 0x0: both, 0x2: dev0, 0x1: dev1
-     *  |- EMC_MRW4 is not used (BIT 31:30: 0b11)
-     * EMC_DEV_SELECT:
-     *  |- Same as DEV_SELECTN
-     * EMC_PMACRO_TX_PWRD4, EMC_PMACRO_TX_PWRD5 ?
-     * MC_EMEM_ADR_CFG_DEV0, MC_EMEM_ADR_CFG_DEV1:
-     *  |- BIT 19:16: DEVSIZE(density), 8 = 1GB, 7 = 512MB (ineffective?)
-     *  |- BIT  9:8 : BANKWIDTH, 2 / 3 : W2 / W3,  W3(default)
-     *  |- BIT  2:0 : COLWIDTH,  1 - 5 : W8 - W12, W9(default)
-     * MC_EMEM_ARB_TIMING_R2R, MC_EMEM_ARB_DA_TURNS:
-     *  |- With 2 DRAM devices on, timing should be adjusted.
-     *
-     * With all these above changed, 2 sub-partitions seem to be on
-     * But RAM density is off (before: 2x1GB+2x1GB, after: 4x1GB + 4x1GB)
-     * and it fails before splash screen in ams fusee
+     * Sub-partitions are defined as ranks, so there is no other way than replacing DRAM chips.
      */
 }
 

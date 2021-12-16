@@ -7,22 +7,35 @@ index 3e35c18..6b42bc5 100644
  
  *.nro
 +*.DS_Store
+diff --git a/Overlay/Makefile b/Overlay/Makefile
+index f881ed9..88fca31 100644
+--- a/Overlay/Makefile
++++ b/Overlay/Makefile
+@@ -38,7 +38,7 @@ include $(DEVKITPRO)/libnx/switch_rules
+ #   NACP building is skipped as well.
+ #---------------------------------------------------------------------------------
+ APP_TITLE	:=	ReverseNX-RT
+-APP_VERSION	:=	1.0.1
++APP_VERSION	:=	1.0.1-OC
+ 
+ TARGET		:=	ReverseNX-RT-ovl
+ BUILD		:=	build
 diff --git a/Overlay/libs/Atmosphere-libs b/Overlay/libs/Atmosphere-libs
-index 2d522dc..bc08912 160000
+index 2d522dc..c4d0335 160000
 --- a/Overlay/libs/Atmosphere-libs
 +++ b/Overlay/libs/Atmosphere-libs
 @@ -1 +1 @@
 -Subproject commit 2d522dc6a12b2eb5eb3f103a8c5b5126ca301b1a
-+Subproject commit bc08912dd31bb172467add8e24b4f0adac431939
++Subproject commit c4d0335b79da7207b49abf1988f45b0168b692f0-dirty
 diff --git a/Overlay/libs/libtesla b/Overlay/libs/libtesla
-index 6628524..a5ce77d 160000
+index 6628524..640629f 160000
 --- a/Overlay/libs/libtesla
 +++ b/Overlay/libs/libtesla
 @@ -1 +1 @@
 -Subproject commit 66285245361a02e5480c7bb7dac9ef6449ae6181
-+Subproject commit a5ce77d14f144a24c21684128ae79ef1e808734c
++Subproject commit 640629f49f9e8997ef0769b21b26f4fc177c736f
 diff --git a/Overlay/source/main.cpp b/Overlay/source/main.cpp
-index cec060c..7b7d8b1 100644
+index cec060c..1a6080e 100644
 --- a/Overlay/source/main.cpp
 +++ b/Overlay/source/main.cpp
 @@ -2,8 +2,12 @@
@@ -38,15 +51,24 @@ index cec060c..7b7d8b1 100644
  bool PluginRunning = false;
  bool closed = false;
  Handle debug;
-@@ -17,6 +21,7 @@ bool dmntcht = false;
+@@ -17,9 +21,16 @@ bool dmntcht = false;
  bool SaltySD = false;
  bool bak = false;
  bool plugin = false;
 +bool sysclkComm = false;
++uint8_t sysclkSyncInfoShowTick = 0;
++constexpr uint8_t sysclkSyncChecksPerSec = 10;
++constexpr uint8_t sysclkSyncFramesPerCheck = 60 / sysclkSyncChecksPerSec;
++constexpr uint8_t sysclkSyncInfoShowInitTick = 3 * sysclkSyncFramesPerCheck;
++uint8_t sysclkSyncRetry = 0;
  char DockedChar[32];
  char SystemChar[32];
  char PluginChar[36];
-@@ -54,6 +59,29 @@ bool isServiceRunning(const char *serviceName) {
++char SysclkChar[36];
+ 
+ bool CheckPort () {
+ 	Handle saltysd;
+@@ -54,6 +65,29 @@ bool isServiceRunning(const char *serviceName) {
  	}
  }
  
@@ -76,7 +98,15 @@ index cec060c..7b7d8b1 100644
  class GuiTest : public tsl::Gui {
  public:
  	GuiTest(u8 arg1, u8 arg2, bool arg3) { }
-@@ -95,9 +123,10 @@ class GuiTest : public tsl::Gui {
+@@ -88,6 +122,7 @@ public:
+ 				else {
+ 					renderer->drawString(SystemChar, false, x, y+40, 20, renderer->a(0xFFFF));
+ 					renderer->drawString(DockedChar, false, x, y+60, 20, renderer->a(0xFFFF));
++					renderer->drawString(SysclkChar, false, x, y+80, 20, renderer->a(0xFFFF));
+ 				}
+ 			}
+ 	}), 100);
+@@ -95,9 +130,10 @@ public:
  		if (MAGIC == 0x06BA7E39) {
  			auto *clickableListItem = new tsl::elm::ListItem("Change system control");
  			clickableListItem->setClickListener([](u64 keys) { 
@@ -88,7 +118,7 @@ index cec060c..7b7d8b1 100644
  						if (dmntcht == true) {
  							dmntchtWriteCheatProcessMemory(def_address, &def, 0x1);
  							dmntchtReadCheatProcessMemory(def_address, &def, 0x1);
-@@ -120,9 +149,10 @@ class GuiTest : public tsl::Gui {
+@@ -120,9 +156,10 @@ public:
  			
  			auto *clickableListItem2 = new tsl::elm::ListItem("Change mode");
  			clickableListItem2->setClickListener([](u64 keys) { 
@@ -100,7 +130,7 @@ index cec060c..7b7d8b1 100644
  						if (dmntcht == true) {
  							dmntchtWriteCheatProcessMemory(docked_address, &isDocked, 0x1);
  							dmntchtReadCheatProcessMemory(docked_address, &isDocked, 0x1);
-@@ -145,7 +175,7 @@ class GuiTest : public tsl::Gui {
+@@ -145,7 +182,7 @@ public:
  		else if (SaltySD == true && plugin == true && check == false) {
  			auto *clickableListItem = new tsl::elm::ListItem("(De)activate plugin");
  			clickableListItem->setClickListener([](u64 keys) { 
@@ -109,46 +139,93 @@ index cec060c..7b7d8b1 100644
  					if (bak == false) {
  						rename("sdmc:/SaltySD/plugins/ReverseNX-RT.elf", "sdmc:/SaltySD/plugins/ReverseNX-RT.elf.bak");
  						bak = true;
-@@ -185,6 +215,38 @@ class GuiTest : public tsl::Gui {
+@@ -185,6 +222,40 @@ public:
  					svcReadDebugProcessMemory(&isDocked, debug, docked_address, 0x1);
  					svcCloseHandle(debug);
  				}
 +				if (sysclkComm && isDockedChanged && def == false && bak == false)
 +				{
-+					uint8_t sysclkConfArr[9];
 +					u64 currentTID = GetCurrentApplicationId();
 +					if (currentTID != PROCESS_MANAGEMENT_QLAUNCH_TID)
 +					{
-+						for(int i = 0; i < 8; i++) // TID to hex
-+							sysclkConfArr[i] = currentTID >> 8*(7-i);
-+						sysclkConfArr[8] = isDocked + 1;
-+
 +						FILE* sysclkConf = fopen("/config/sys-clk/ReverseNX-RT.conf", "wb+");
-+						fwrite(sysclkConfArr, sizeof(sysclkConfArr), 1, sysclkConf);
-+						fclose(sysclkConf);
++						if (sysclkConf)
++						{
++							uint8_t ctrlState = isDocked + 1;
++							fwrite(&currentTID, 1, sizeof(currentTID), sysclkConf);
++							fwrite(&ctrlState, 1, sizeof(ctrlState), sysclkConf);
++							fclose(sysclkConf);
++							sysclkSyncInfoShowTick = sysclkSyncInfoShowInitTick;
++						}
 +					}
 +					isDockedChanged = false;
 +				}
 +				if (sysclkComm && defChanged && def == true && bak == false) // change from force mode to system-controlled mode
 +				{
-+					uint8_t sysclkConfArr[9];
 +					u64 currentTID = GetCurrentApplicationId();
 +					if (currentTID != PROCESS_MANAGEMENT_QLAUNCH_TID)
 +					{
-+						for(int i = 0; i < 8; i++) // TID to hex
-+							sysclkConfArr[i] = currentTID >> 8*(7-i);
-+						sysclkConfArr[8] = 3;
-+
 +						FILE* sysclkConf = fopen("/config/sys-clk/ReverseNX-RT.conf", "wb+");
-+						fwrite(sysclkConfArr, sizeof(sysclkConfArr), 1, sysclkConf);
-+						fclose(sysclkConf);
++						if (sysclkConf)
++						{
++							uint8_t ctrlState = 3; // ReverseNX_RTResetToDefault
++							fwrite(&currentTID, 1, sizeof(currentTID), sysclkConf);
++							fwrite(&ctrlState, 1, sizeof(ctrlState), sysclkConf);
++							fclose(sysclkConf);
++							sysclkSyncInfoShowTick = sysclkSyncInfoShowInitTick;
++						}
 +					}
 +					defChanged = false;
 +				}
  				i = 0;
  			}
  			else i++;
-@@ -202,7 +264,7 @@ class GuiTest : public tsl::Gui {
+@@ -198,11 +269,51 @@ public:
+ 		
+ 		if (bak == false) sprintf(PluginChar, "ReverseNX-RT plugin is activated.");
+ 		else sprintf(PluginChar, "ReverseNX-RT plugin is deactivated.");
+-	
++
++		if (sysclkComm)
++		{
++			if (sysclkSyncInfoShowTick == sysclkSyncInfoShowInitTick)
++			{
++				if (sysclkSyncRetry >= sysclkSyncInfoShowInitTick)
++				{
++					sprintf(SysclkChar, "Sys-clk Profile Sync: Error!");
++				}
++				else if (i % sysclkSyncFramesPerCheck == 0)
++				{
++					/* Check if conf file is detected by sys-clk */
++					FILE* sysclkConf = fopen("/config/sys-clk/ReverseNX-RT.conf", "r");
++					if (sysclkConf)
++					{
++						fclose(sysclkConf);
++						sprintf(SysclkChar, "Sys-clk Profile Sync: Pending...");
++						sysclkSyncRetry++;
++					}
++					else
++					{
++						sprintf(SysclkChar, "Sys-clk Profile Sync: Success!");
++						sysclkSyncRetry = 0;
++						sysclkSyncInfoShowTick--;
++					}
++				}
++			}
++			else if (sysclkSyncInfoShowTick)
++			{
++				if (i % sysclkSyncFramesPerCheck == 0)
++					sysclkSyncInfoShowTick--;
++			}
++			else
++			{
++				sprintf(SysclkChar, "Sys-clk Profile Sync: ON");
++			}
++		}
++		else
++		{
++			sprintf(SysclkChar, "Sys-clk Profile Sync: OFF");
++		}
  	}
  
  	// Called once every frame to handle inputs not handled by other UI elements
@@ -157,7 +234,7 @@ index cec060c..7b7d8b1 100644
  		return false;   // Return true here to singal the inputs have been consumed
  	}
  };
-@@ -213,6 +275,7 @@ class OverlayTest : public tsl::Overlay {
+@@ -213,6 +324,7 @@ public:
  	virtual void initServices() override {
  		smInitialize();
  		fsdevMountSdmc();
@@ -165,22 +242,42 @@ index cec060c..7b7d8b1 100644
  		
  		SaltySD = CheckPort();
  		if (SaltySD == false) return;
-@@ -234,6 +297,14 @@ class OverlayTest : public tsl::Overlay {
+@@ -234,6 +346,19 @@ public:
  			else return;
  		}
  
 +		// Check if sys-clk exist
-+		temp = fopen("/atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag", "r");
++		temp = fopen("sdmc:/atmosphere/contents/00FF0000636C6BFF/exefs.nsp", "r");
 +		if (temp != NULL)
 +		{
-+			sysclkComm = true;
 +			fclose(temp);
++			temp = fopen("sdmc:/config/sys-clk/ReverseNX_sync.flag", "r");
++			if (temp)
++			{
++				sysclkComm = true;
++				fclose(temp);
++			}
 +		}
 +
  		if (R_FAILED(pmdmntGetApplicationProcessId(&PID))) remove("sdmc:/SaltySD/ReverseNX-RT.hex");
  		else {
  			check = true;
-@@ -284,6 +355,7 @@ class OverlayTest : public tsl::Overlay {
+@@ -278,12 +403,22 @@ public:
+ 		
+ 		if (def == true) sprintf(SystemChar, "Controlled by system: Yes");
+ 		else sprintf(SystemChar, "Controlled by system: No");
++
++		if (sysclkComm)
++		{
++			sprintf(SysclkChar, "Sys-clk Profile Sync: ON");
++		}
++		else
++		{
++			sprintf(SysclkChar, "Sys-clk Profile Sync: OFF");
++		}
+ 	
+ 	}  // Called at the start to initialize all services necessary for this Overlay
+ 	
  	virtual void exitServices() override {
  		dmntchtExit();
  		if (dmntcht == false) svcCloseHandle(debug);

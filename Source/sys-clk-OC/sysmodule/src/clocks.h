@@ -16,7 +16,6 @@
 class Clocks
 {
   public:
-    static bool isMariko;
     static void Exit();
     static void Initialize();
     static void ResetToStock(unsigned int module = SysClkModule_EnumMax);

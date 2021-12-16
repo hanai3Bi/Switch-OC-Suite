@@ -12,8 +12,6 @@
 #include "clocks.h"
 #include "errors.h"
 
-bool Clocks::isMariko = false;
-
 void Clocks::GetList(SysClkModule module, std::uint32_t **outClocks)
 {
     switch(module)
@@ -36,6 +34,19 @@ void Clocks::GetList(SysClkModule module, std::uint32_t **outClocks)
 void Clocks::Initialize()
 {
     Result rc = 0;
+
+    // Check if it's Mariko
+    u64 hardware_type = 0;
+    splInitialize();
+    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
+    splExit();
+
+    switch (hardware_type) {
+        case 0: //Icosa
+        case 1: //Copper
+            ERROR_THROW("[!] Erista is not supported!");
+            return;
+    }
 
     if(hosversionAtLeast(8,0,0))
     {
@@ -290,11 +301,7 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
     {
         if(profile < SysClkProfile_HandheldCharging)
         {
-            return isMariko ? 1344000000 : SYSCLK_GPU_HANDHELD_MAX_HZ;
-        }
-        else if(profile <= SysClkProfile_HandheldChargingUSB)
-        {
-            return isMariko ? 1344000000 : SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ;
+            return SYSCLK_GPU_HANDHELD_MAX_HZ;
         }
     }
 
@@ -303,92 +310,6 @@ std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile
 
 std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
 {
-    // Hardcoded values to return, or the frequency will ramp up to max as dvfs table is not correct
-    if(module == SysClkModule_MEM)
-    {
-        switch(inHz)
-        {
-            // From Hekate Minerva module
-            case 1331000000:
-                return 1331200000;
-            case 1795000000:
-                return 1795200000;
-            case 1862000000:
-                return 1862400000;
-            case 1894000000:
-                return 1894400000;
-            case 1932000000:
-                return 1932800000;
-            case 1996000000:
-                return 1996800000;
-            case 2099000000:
-                return 2099200000;
-            case 2131000000:
-                return 2131200000;
-            default:
-                return inHz;
-        }
-    }
-
-    if(module == SysClkModule_CPU)
-    {
-        switch(inHz)
-        {
-            case 1963000000:
-                return 1963500000;
-            default:
-                return inHz;
-        }
-    }
-
-    if(module == SysClkModule_GPU)
-    {
-        switch(inHz)
-        {
-            case 76000000:
-                return 76800000;
-            case 153000000:
-                return 153600000;
-            case 230000000:
-                return 230400000;
-            case 307000000:
-                return 307200000;
-            case 460000000:
-                return 460800000;
-            case 537000000:
-                return 537600000;
-            case 614000000:
-                return 614400000;
-            case 691000000:
-                return 691200000;
-            case 844000000:
-                return 844800000;
-            case 921000000:
-                return 921600000;
-            case 998000000:
-                return 998400000;
-            case 1075000000:
-                return 1075200000;
-            case 1228000000:
-                return 1228800000;
-            case 1267000000:
-                return 1267200000;
-            case 1305000000:
-                return 1305600000;
-            case 1382000000:
-                return 1382400000;
-            case 1420000000:
-                return 1420800000;
-            case 1459000000:
-                return 1459200000;
-            case 1497000000:
-                return 1497600000;
-            default:
-                return inHz;
-        }
-    }
-
-    return inHz;
     std::uint32_t *clockTable = NULL;
     GetList(module, &clockTable);
 
@@ -398,16 +319,19 @@ std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
     }
 
     int i = 0;
-    while(clockTable[i + 1])
+    while(clockTable[i])
     {
-        if (inHz <= (clockTable[i] + clockTable[i + 1]) / 2)
+        // if (inHz <= (clockTable[i] + clockTable[i + 1]) / 2)
+        if ((inHz / 1000'000) == (clockTable[i] / 1000'000))
         {
-            break;
+            return clockTable[i];
         }
+
         i++;
     }
 
-    return clockTable[i];
+    /* Freq not found in the table, return inHz regardlessly */
+    return inHz;
 }
 
 std::uint32_t Clocks::GetTemperatureMilli(SysClkThermalSensor sensor)

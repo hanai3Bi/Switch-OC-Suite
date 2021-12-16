@@ -20,7 +20,6 @@
 class ClockManager
 {
   public:
-    const std::uint32_t MAX_CPU = 1963500000;
 
     static ClockManager* GetInstance();
     static void Initialize();
@@ -47,23 +46,18 @@ class ClockManager
     std::uint64_t lastTempLogNs;
     std::uint64_t lastCsvWriteNs;
 
-    bool recheckReverseNX = false;
-    bool isEnabledReverseNX = false;
-    bool isEnabledReverseNXTool = false;
-    bool isDockedReverseNX = false;
-    uint16_t tickCheckReverseNXRT = 0;
-    uint8_t prevReverseNXRT = 0;
-    SysClkProfile RealProfile;
+    SysClkOcExtra *oc;
+    const uint32_t CPU_BOOST_FREQ = 1963'500'000;
 
     bool IsCpuBoostMode();
-    SysClkProfile ReverseNXProfile(bool);
-    void checkReverseNXTool();
+    bool IsReverseNXEnabled();
+    bool IsReverseNXDocked();
 
-    void checkReverseNXToolAsm(FILE*, uint8_t*);
-    void checkReverseNXRT(bool, uint8_t*);
-
-    SysClkOcExtra *oc;
     uint32_t GetHz(SysClkModule);
+    SysClkProfile ReverseNXProfileHandler();
+    ReverseNXMode ReverseNXFileHandler(bool, const char*);
+
+    void CheckReverseNXTool();
 
     // Thread t_CheckSystemCoreStuck_0, t_CheckSystemCoreStuck_1, t_CheckSystemCoreStuck_2;
 

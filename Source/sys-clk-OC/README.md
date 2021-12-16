@@ -82,7 +82,7 @@ To protect the battery from excessive strain, clocks requested from config may b
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
 | **CPU** | -        | -              | -                   | -      |
-| **GPU** | 1344     | 1344           | -                   | -      |
+| **GPU** | 1267     | -              | -                   | -      |
 
 
 ## Installation

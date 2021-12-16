@@ -208,12 +208,6 @@ void StatusTab::updateWarningForProfile(SysClkProfile profile, bool animated)
 
             this->warningLabel->setText("\uE140  Maximum GPU frequency is " + formatFreq(SYSCLK_GPU_HANDHELD_MAX_HZ) + " because you're in handheld mode.");
             break;
-        case SysClkProfile_HandheldChargingUSB:
-            if (this->warningLabel->isHidden())
-                this->warningLabel->show([](){});
-
-            this->warningLabel->setText("\uE140  Maximum GPU frequency is " + formatFreq(SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ) + " because you're using an unofficial charger type.");
-            break;
         default:
             if (!this->warningLabel->isHidden())
                 this->warningLabel->hide([](){}, animated);

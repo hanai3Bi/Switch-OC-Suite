@@ -42,23 +42,37 @@ typedef enum
 
 typedef struct
 {
-    uint8_t enabled;
+    uint8_t  enabled;
     uint64_t applicationId;
     SysClkProfile profile;
+    SysClkProfile realProfile;
     uint32_t freqs[SysClkModule_EnumMax];
     uint32_t overrideFreqs[SysClkModule_EnumMax];
     uint32_t temps[SysClkThermalSensor_EnumMax];
     uint32_t perfConfId;
 } SysClkContext;
 
+typedef enum
+{
+    ReverseNX_SystemDefault = 0,
+    ReverseNX_NotFound = 0,
+    ReverseNX_NotValid = 0,
+    ReverseNX_Handheld,
+    ReverseNX_Docked,
+    ReverseNX_RTResetToDefault,
+} ReverseNXMode;
+
 typedef struct
 {
-    bool     systemCoreBoostCPU;
-    bool     systemCoreBoostCPUReset;
-    bool     systemCoreCheckStuck;
+    bool systemCoreBoostCPU;
+    bool systemCoreCheckStuck;
+
+    ReverseNXMode  reverseNXToolMode;
+    ReverseNXMode  reverseNXRTMode;
+
     uint64_t tickWaitTimeMs;
-    uint8_t  systemCoreBoostThreshold;
     // int16_t  systemCoreStuckCount;
+    uint32_t maxMEMFreq;
 } SysClkOcExtra;
 
 typedef struct
@@ -69,8 +83,7 @@ typedef struct
     };
 } SysClkTitleProfileList;
 
-#define SYSCLK_GPU_HANDHELD_MAX_HZ 460800000
-#define SYSCLK_GPU_UNOFFICIAL_CHARGER_MAX_HZ 768000000
+#define SYSCLK_GPU_HANDHELD_MAX_HZ 1267200000
 
 extern uint32_t sysclk_g_freq_table_mem_hz[];
 extern uint32_t sysclk_g_freq_table_cpu_hz[];
