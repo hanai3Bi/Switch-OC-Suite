@@ -48,7 +48,18 @@ typedef struct
     uint32_t freqs[SysClkModule_EnumMax];
     uint32_t overrideFreqs[SysClkModule_EnumMax];
     uint32_t temps[SysClkThermalSensor_EnumMax];
+    uint32_t perfConfId;
 } SysClkContext;
+
+typedef struct
+{
+    bool     systemCoreBoostCPU;
+    bool     systemCoreBoostCPUReset;
+    bool     systemCoreCheckStuck;
+    uint64_t tickWaitTimeMs;
+    uint8_t  systemCoreBoostThreshold;
+    // int16_t  systemCoreStuckCount;
+} SysClkOcExtra;
 
 typedef struct
 {

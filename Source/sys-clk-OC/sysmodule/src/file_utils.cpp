@@ -19,7 +19,6 @@ static LockableMutex g_csv_mutex;
 static std::atomic_bool g_has_initialized = false;
 static bool g_log_enabled = false;
 static bool g_boost_enabled = false;
-static bool g_boost_start_enabled = false;
 static bool g_downclock_dock_enabled = false;
 static bool g_reversenx_tool_exist = false;
 static bool g_reversenx_sync_enabled = false;
@@ -167,13 +166,6 @@ void FileUtils::InitCheckFlags()
             g_boost_enabled = true;
             fclose(file);
         }
-
-        file = fopen(FILE_BOOST_START_FLAG_PATH, "r");
-        if (file)
-        {
-            g_boost_start_enabled = true;
-            fclose(file);
-        }
     }
 
     file = fopen(FILE_DOWNCLOCK_DOCK_FLAG_PATH, "r");
@@ -201,11 +193,6 @@ void FileUtils::InitCheckFlags()
 bool FileUtils::IsBoostEnabled()
 {
     return g_boost_enabled;
-}
-
-bool FileUtils::IsBoostStartEnabled()
-{
-    return g_boost_start_enabled;
 }
 
 bool FileUtils::IsDownclockDockEnabled()

@@ -74,9 +74,9 @@ This project will not be actively maintained by me and I'm looking for collabora
     - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
     - To **disable this feature**, use original version of ReverseNX-RT and delete `/config/sys-clk/ReverseNX_sync.flag`.
   - **Auto-Boost CPU for faster game loading**
-    - When a game launches or is in loading screen, sys-clk will boost CPU to 1963.5 MHz for ~10 seconds or until the loading screen ends.
-    - Some games don't utilize `SetCpuBoostMode` at all, e.g. Overcooked 2, so Auto-Boost will be unavailable to these games.
-    - To **disable this feature**, simply remove `boost_start.flag` and `boost.flag` in `/config/sys-clk/ `.
+    - Enable CPU Boost (1963.5 MHz) if CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
+    - Auto-Boost will be enabled only when charger is connected. (>90% w/ PD charger or >95% w/ unsupported charger)
+    - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/ `.
   - Profile-aware clock override for all games
     - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
       ```ini

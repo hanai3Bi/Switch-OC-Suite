@@ -52,23 +52,29 @@ ClockManager::ClockManager()
         this->context->freqs[i] = 0;
         this->context->overrideFreqs[i] = 0;
     }
+    this->context->perfConfId = 0;
     this->running = false;
     this->lastTempLogNs = 0;
     this->lastCsvWriteNs = 0;
+
+    this->oc = new SysClkOcExtra;
+    this->oc->systemCoreBoostCPU = false;
+    this->oc->systemCoreCheckStuck = false;
+    this->oc->tickWaitTimeMs = 500;
+    this->oc->systemCoreBoostThreshold = 100;
+    // this->oc->systemCoreStuckCount = 0;
 }
 
 ClockManager::~ClockManager()
 {
     delete this->config;
     delete this->context;
+    delete this->oc;
 }
 
 bool ClockManager::IsCpuBoostMode()
 {
-    std::uint32_t confId = 0;
-    Result rc = 0;
-    rc = apmExtGetCurrentPerformanceConfiguration(&confId);
-    ASSERT_RESULT_OK(rc, "apmExtGetCurrentPerformanceConfiguration");
+    std::uint32_t confId = this->context->perfConfId;
     if(confId == 0x92220009 || confId == 0x9222000A)
         return true;
     else
@@ -163,36 +169,6 @@ void ClockManager::checkReverseNXTool()
     }
 }
 
-bool ClockManager::GameStartBoost()
-{
-    if (tickStartBoost && this->GetConfig()->Enabled())
-    {
-        if (Clocks::GetCurrentHz(SysClkModule_CPU) != MAX_CPU)
-        {
-            Clocks::SetHz(SysClkModule_CPU, MAX_CPU);
-            this->context->freqs[SysClkModule_CPU] = MAX_CPU;
-        }
-
-        std::uint64_t applicationId = ProcessManagement::GetCurrentApplicationId();
-        // If user exit the game
-        if (applicationId != this->context->applicationId)
-        {
-            tickStartBoost = 0;
-            return false;
-        }
-
-        if (tickStartBoost == 1)
-        {
-            FileUtils::LogLine("[mgr] Boost done, reset to stock");
-            Clocks::ResetToStock();
-        }
-        tickStartBoost--;
-        return true;
-    }
-
-    return false;
-}
-
 void ClockManager::SetRunning(bool running)
 {
     this->running = running;
@@ -203,81 +179,93 @@ bool ClockManager::Running()
     return this->running;
 }
 
+uint32_t ClockManager::GetHz(SysClkModule module)
+{
+    uint32_t hz = 0;
+
+    /* Temp override setting */
+    hz = this->context->overrideFreqs[module];
+
+    /* Per-Game setting */
+    if (!hz)
+        hz = this->config->GetAutoClockHz(this->context->applicationId, module, this->context->profile);
+
+    /* Global setting */
+    if (!hz)
+        hz = this->config->GetAutoClockHz(0xA111111111111111, module, this->context->profile);
+
+    /* Adjust hz if ReverseNX is enabled */
+    if (!hz && isEnabledReverseNX)
+    {
+        switch(module)
+        {
+            case SysClkModule_CPU:
+                hz = 1020'000'000;
+                break;
+            case SysClkModule_GPU:
+                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
+                                        || RealProfile != SysClkProfile_Docked))
+                    hz = 460'800'000;
+                else
+                    hz = 768'000'000;
+                break;
+            case SysClkModule_MEM:
+                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
+                                        || RealProfile != SysClkProfile_Docked))
+                    hz = 1331'200'000;
+                else
+                    hz = 1600'000'000;
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (hz)
+    {
+        hz = Clocks::GetNearestHz(module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
+
+        /* Ignore if MEM Max Hz > 1600 MHz */
+        if (module == SysClkModule_MEM && hz == 1600'000'000 && this->context->freqs[module] >= hz)
+        {
+            return 0;
+        }
+    }
+
+    if (module == SysClkModule_CPU)
+    {
+        if (this->oc->systemCoreBoostCPU && hz < MAX_CPU)
+            return MAX_CPU;
+        else if (!hz)
+            return 1020'000'000;
+    }
+
+    return hz;
+}
+
 void ClockManager::Tick()
 {
     std::scoped_lock lock{this->contextMutex};
 
-    if(!GameStartBoost())
+    if ((this->RefreshContext() || this->config->Refresh()) && this->context->enabled)
     {
-        bool cpuBoost = FileUtils::IsBoostEnabled() ? IsCpuBoostMode() : false;
-        if (this->RefreshContext() || this->config->Refresh())
+        for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
         {
-            std::uint32_t hz = 0;
-            std::uint32_t hzForceOverride = 0;
-            for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
+            uint32_t hz = GetHz((SysClkModule)module);
+
+            if (hz && hz != this->context->freqs[module])
             {
-                hz = this->context->overrideFreqs[module];
-
-                if(!hz)
+                if (IsCpuBoostMode())
                 {
-                    hz = this->config->GetAutoClockHz(this->context->applicationId, (SysClkModule)module, this->context->profile);
-                    hzForceOverride = this->config->GetAutoClockHz(0xA111111111111111, (SysClkModule)module, this->context->profile);
-                    if (!hz && hzForceOverride)
-                        hz = hzForceOverride;
-
-                    if(isEnabledReverseNX && !hz)
-                    {
-                        switch(module)
-                        {
-                            case SysClkModule_CPU:
-                                hz = 1020'000'000;
-                                break;
-                            case SysClkModule_GPU:
-                                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
-                                                        || RealProfile != SysClkProfile_Docked))
-                                    hz = 460'800'000;
-                                else
-                                    hz = 768'000'000;
-                                break;
-                            case SysClkModule_MEM:
-                                if (!isDockedReverseNX && ((FileUtils::IsDownclockDockEnabled() && RealProfile == SysClkProfile_Docked)
-                                                        || RealProfile != SysClkProfile_Docked))
-                                    hz = 1331'200'000;
-                                else
-                                    hz = 1600'000'000;
-                                break;
-                        }
-                    }
-
-                }
-
-                if (hz)
-                {
-                    hz = Clocks::GetNearestHz((SysClkModule)module, isEnabledReverseNX ? RealProfile : this->context->profile, hz);
-                    if (module == SysClkModule_MEM && hz == 1600'000'000 && this->context->freqs[module] >= hz)
+                    // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= 1963.5MHz or GPU >= 76.8MHz
+                    if ((module == SysClkModule_CPU && hz <= MAX_CPU) || module == SysClkModule_GPU)
                     {
                         continue;
                     }
-
-                    if (hz != this->context->freqs[module] && this->context->enabled)
-                    {
-                        if (cpuBoost)
-                        {
-                            // Skip setting CPU or GPU clocks in CpuBoostMode if CPU < 1963.5MHz or GPU > 76.8MHz
-                            if (module == SysClkModule_CPU && hz < MAX_CPU)
-                            {
-                                continue;
-                            }
-                            if (module == SysClkModule_GPU && hz > 76'800'000)
-                            {
-                                continue;
-                            }
-                        }
-                        FileUtils::LogLine("[mgr] %s clock set : %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
-                        Clocks::SetHz((SysClkModule)module, hz);
-                        this->context->freqs[module] = hz;
-                    }
                 }
+                FileUtils::LogLine("[mgr] %s clock set : %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
+                Clocks::SetHz((SysClkModule)module, hz);
+                this->context->freqs[module] = hz;
             }
         }
     }
@@ -285,17 +273,113 @@ void ClockManager::Tick()
 
 void ClockManager::WaitForNextTick()
 {
-    svcSleepThread(this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) * 1000000ULL);
+    /* Self-check system core (#3) usage via idleticks at intervals (Not enabled at higher CPU freq or without charger) */
+    this->oc->tickWaitTimeMs = this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs);
+
+    if (   this->context->enabled
+        && this->context->profile != SysClkProfile_Handheld
+        && this->context->freqs[SysClkModule_CPU] <= MAX_CPU)
+    {
+        uint64_t systemCoreIdleTickPrev = 0, systemCoreIdleTickNext = 0;
+        svcGetInfo(&systemCoreIdleTickPrev, InfoType_IdleTickCount, INVALID_HANDLE, 3);
+        svcSleepThread(this->oc->tickWaitTimeMs * 1000000ULL);
+        svcGetInfo(&systemCoreIdleTickNext, InfoType_IdleTickCount, INVALID_HANDLE, 3);
+
+        /* Convert idletick to load% */
+        /* If CPU core usage is 0%, then idletick = 19'200'000 per sec */
+        uint64_t systemCoreIdleTick = systemCoreIdleTickNext - systemCoreIdleTickPrev;
+        uint64_t freeIdleTick = 19'200 * this->oc->tickWaitTimeMs;
+        uint8_t  freePerc = systemCoreIdleTick / (freeIdleTick / 100);
+
+        bool systemCoreBoostCPU_PrevState = this->oc->systemCoreBoostCPU;
+
+        switch (this->context->profile)
+        {
+            case SysClkProfile_HandheldChargingOfficial:
+            case SysClkProfile_Docked:
+                this->oc->systemCoreBoostThreshold = systemCoreBoostCPU_PrevState ? 6 : 10;
+                break;
+            default: // Unofficial charger
+                this->oc->systemCoreBoostThreshold = systemCoreBoostCPU_PrevState ? 3 : 5;
+                break;
+        }
+
+        this->oc->systemCoreBoostCPU = (freePerc <= this->oc->systemCoreBoostThreshold);
+
+        if (systemCoreBoostCPU_PrevState && !this->oc->systemCoreBoostCPU)
+        {
+            Clocks::SetHz(SysClkModule_CPU, GetHz(SysClkModule_CPU));
+        }
+        else if (!systemCoreBoostCPU_PrevState && this->oc->systemCoreBoostCPU)
+        {
+            Clocks::SetHz(SysClkModule_CPU, MAX_CPU);
+        }
+    }
+    else
+    {
+        svcSleepThread(this->oc->tickWaitTimeMs * 1000000ULL);
+    }
+
+    /* Signal that systemCore is not busy */
+    // this->oc->systemCoreStuckCount = 0;
 }
+
+/* Tricky part, see IpcService implementation of calling static member function */
+// I don't see any use of this @ 1020 MHz (only useful at lowest freq),
+// and downclock below 1020 MHz won't save battery. (same volt @ 600mV)
+/*void ClockManager::CheckSystemCoreStuck(void *arg)
+{
+    ClockManager* clkMgr = (ClockManager*)arg;
+    while (clkMgr->oc->systemCoreCheckStuck)
+    {
+        svcSleepThread(clkMgr->oc->tickWaitTimeMs * 1000000ULL);
+
+        if (clkMgr->context->freqs[SysClkModule_CPU] >= clkMgr->MAX_CPU)
+            continue;
+
+        // Core #0,1,2 will check if Core#3 is stuck (threshold count = 2*3 = 6)
+        // ! Add mutex !
+        if (clkMgr->oc->systemCoreStuckCount++ > 6)
+        {
+            // Signal that current core will take over to boost CPU and wait some time to recheck
+            clkMgr->oc->systemCoreStuckCount = -6;
+            Clocks::SetHz(SysClkModule_CPU, clkMgr->MAX_CPU);
+        }
+    }
+}*/
+
+/*void ClockManager::StartCheckSystemCore()
+{
+    this->oc->systemCoreCheckStuck = true;
+    threadCreate(&this->t_CheckSystemCoreStuck_0, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 0);
+    threadCreate(&this->t_CheckSystemCoreStuck_1, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 1);
+    threadCreate(&this->t_CheckSystemCoreStuck_2, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 2);
+    threadStart(&this->t_CheckSystemCoreStuck_0);
+    threadStart(&this->t_CheckSystemCoreStuck_1);
+    threadStart(&this->t_CheckSystemCoreStuck_2);
+}*/
+
+/*void ClockManager::StopCheckSystemCore()
+{
+    this->oc->systemCoreCheckStuck = false;
+    threadWaitForExit(&this->t_CheckSystemCoreStuck_0);
+    threadWaitForExit(&this->t_CheckSystemCoreStuck_1);
+    threadWaitForExit(&this->t_CheckSystemCoreStuck_2);
+    threadClose(&this->t_CheckSystemCoreStuck_0);
+    threadClose(&this->t_CheckSystemCoreStuck_1);
+    threadClose(&this->t_CheckSystemCoreStuck_2);
+}*/
 
 void ClockManager::checkReverseNXToolAsm(FILE* readFile, uint8_t* flag)
 {
-    // Copied from ReverseNXTool
+    // Magic Value
     uint8_t Docked[0x10] = {0xE0, 0x03, 0x00, 0x32, 0xC0, 0x03, 0x5F, 0xD6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     uint8_t Handheld[0x10] = {0x00, 0x00, 0xA0, 0x52, 0xC0, 0x03, 0x5F, 0xD6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
     uint8_t filebuffer[0x10] = {0};
-    uint8_t cmpresult = 0;
     fread(&filebuffer, 1, 16, readFile);
+
+    uint8_t cmpresult = 0;
     cmpresult = memcmp(filebuffer, Docked, sizeof(Docked));
     if (cmpresult != 0)
     {
@@ -367,18 +451,6 @@ bool ClockManager::RefreshContext()
             if (applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
                 this->checkReverseNXTool();
         }
-
-        if (FileUtils::IsBoostStartEnabled() && this->context->applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
-        {
-            // If a game starts and overrides for CPU are not enabled, then set MAX_CPU for 10 sec
-            std::uint32_t overcpu = this->context->overrideFreqs[SysClkModule_CPU];
-            if (!overcpu)
-            {
-                tickStartBoost = (std::uint32_t)( 10'000 / this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) ) + 1;
-                FileUtils::LogLine("[mgr] A game starts, bump CPU to max for 10 sec");
-                return true;
-            }
-        }
     }
 
     if (FileUtils::IsReverseNXSyncEnabled() && (!tickCheckReverseNXRT || recheckReverseNX))
@@ -420,8 +492,7 @@ bool ClockManager::RefreshContext()
                     this->checkReverseNXTool();
                 break;
         }
-        // Check once per sec
-        tickCheckReverseNXRT = (std::uint32_t)( 1'000 / this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs) ) + 1;
+        tickCheckReverseNXRT = (std::uint32_t)( 1'000 / this->oc->tickWaitTimeMs ) + 1;
     }
     tickCheckReverseNXRT--;
 
@@ -444,6 +515,19 @@ bool ClockManager::RefreshContext()
         recheckReverseNX = true;
     }
 
+    /* Update PerformanceConfigurationId */
+    {
+        uint32_t confId = 0;
+        Result rc = 0;
+        rc = apmExtGetCurrentPerformanceConfiguration(&confId);
+        ASSERT_RESULT_OK(rc, "apmExtGetCurrentPerformanceConfiguration");
+        if (this->context->perfConfId != confId)
+        {
+            this->context->perfConfId = confId;
+            hasChanged = true;
+        }
+    }
+
     // restore clocks to stock values on app or profile change
     if(hasChanged)
         Clocks::ResetToStock();
@@ -453,10 +537,7 @@ bool ClockManager::RefreshContext()
     {
         hz = Clocks::GetCurrentHz((SysClkModule)module);
 
-        // Round to MHz
-        uint32_t cur_mhz = hz/1000'000;
-        uint32_t be4_mhz = this->context->freqs[module]/1000'000;
-        if (hz != 0 && cur_mhz != be4_mhz)
+        if (hz != 0 && hz != this->context->freqs[module])
         {
             FileUtils::LogLine("[mgr] %s clock change: %u.%u Mhz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
             this->context->freqs[module] = hz;

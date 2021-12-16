@@ -37,7 +37,6 @@ class FileUtils
     static bool IsInitialized();
     static bool IsLogEnabled();
     static bool IsBoostEnabled();
-    static bool IsBoostStartEnabled();
     static bool IsDownclockDockEnabled();
     static bool IsReverseNXSyncEnabled();
     static bool IsReverseNXToolExist();

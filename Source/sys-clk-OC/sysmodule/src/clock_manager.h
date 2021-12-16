@@ -26,26 +26,10 @@ class ClockManager
     static void Initialize();
     static void Exit();
 
-    bool recheckReverseNX = false;
-    bool isEnabledReverseNX = false;
-    bool isEnabledReverseNXTool = false;
-    bool isDockedReverseNX = false;
-    std::uint16_t tickCheckReverseNXRT = 0;
-    std::uint16_t tickStartBoost = 0;
-    char prevReverseNXRT = 0;
-    SysClkProfile RealProfile;
-
-    bool IsCpuBoostMode();
-    SysClkProfile ReverseNXProfile(bool);
-    void checkReverseNXTool();
-    bool GameStartBoost();
-
     void SetRunning(bool running);
     bool Running();
     void Tick();
     void WaitForNextTick();
-    void checkReverseNXToolAsm(FILE*, uint8_t*);
-    void checkReverseNXRT(bool, uint8_t*);
     SysClkContext GetCurrentContext();
     Config* GetConfig();
 
@@ -62,4 +46,28 @@ class ClockManager
     SysClkContext *context;
     std::uint64_t lastTempLogNs;
     std::uint64_t lastCsvWriteNs;
+
+    bool recheckReverseNX = false;
+    bool isEnabledReverseNX = false;
+    bool isEnabledReverseNXTool = false;
+    bool isDockedReverseNX = false;
+    uint16_t tickCheckReverseNXRT = 0;
+    uint8_t prevReverseNXRT = 0;
+    SysClkProfile RealProfile;
+
+    bool IsCpuBoostMode();
+    SysClkProfile ReverseNXProfile(bool);
+    void checkReverseNXTool();
+
+    void checkReverseNXToolAsm(FILE*, uint8_t*);
+    void checkReverseNXRT(bool, uint8_t*);
+
+    SysClkOcExtra *oc;
+    uint32_t GetHz(SysClkModule);
+
+    // Thread t_CheckSystemCoreStuck_0, t_CheckSystemCoreStuck_1, t_CheckSystemCoreStuck_2;
+
+    // static void CheckSystemCoreStuck(void *arg);
+    // void StartCheckSystemCore();
+    // void StopCheckSystemCore();
 };
