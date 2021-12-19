@@ -1,5 +1,7 @@
 # Switch OC Suite
 
+[![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 11.0.0-13.2.0.
 
 This project will not be actively maintained by me and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
