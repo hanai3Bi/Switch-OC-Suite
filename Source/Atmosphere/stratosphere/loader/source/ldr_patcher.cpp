@@ -179,11 +179,6 @@ namespace ams::ldr {
                     /* Patch max GPU voltage on Mariko */
                     std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::GpuVoltageLimitOffsets[i]), &pcv::NewGpuVoltageLimit, sizeof(pcv::NewGpuVoltageLimit));
 
-                    /* Patch RAM Clock */
-                    for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
-                    }
-
                     /* Calculate DIVM and DIVN (clock DIVisors) */
                     /* Assume oscillator (PLLMB_IN) is 38.4 MHz */
                     /* PLLMB_OUT = PLLMB_IN / DIVM * DIVN */
@@ -196,15 +191,26 @@ namespace ams::ldr {
 
                     if (i >= 2) {
                         for (u32 j = 0; j < sizeof(pcv::MtcTable_1600[i-2])/sizeof(u32); j++) {
-                            pcv::MarikoMtcTable* mtc_table_1600 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j]);
-                            pcv::MarikoMtcTable* mtc_table_1331 = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j] - pcv::MtcTableOffset);
+                            pcv::MarikoMtcTable* mtc_table_new = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j]);
+                            pcv::MarikoMtcTable* mtc_table_old = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j] - pcv::MtcTableOffset);
 
-                            pcv::AdjustMtcTable(mtc_table_1600, mtc_table_1331);
+                            #ifdef REPLACE_1331
+                            /* Replace 1331 MHz with 1600 MHz */
+                            std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(pcv::MarikoMtcTable));
+                            #endif
+
+                            /* Generate new table for OC MHz */
+                            pcv::AdjustMtcTable(mtc_table_new);
 
                             /* Patch clock divisors */
                             mtc_table_1600->pllmb_divm = divm;
                             mtc_table_1600->pllmb_divn = divn;
                         }
+                    }
+
+                    /* Patch RAM Clock */
+                    for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
                     }
                 }
             }

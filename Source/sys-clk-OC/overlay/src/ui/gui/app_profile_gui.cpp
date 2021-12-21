@@ -92,7 +92,7 @@ void AppProfileGui::update()
 {
     BaseMenuGui::update();
 
-    if(this->context && this->applicationId != this->context->applicationId)
+    if(this->context && this->applicationId != 0xA111111111111111 && this->applicationId != this->context->applicationId)
     {
         tsl::changeTo<FatalGui>(
             "Application changed\n\n"

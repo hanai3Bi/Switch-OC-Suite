@@ -23,7 +23,7 @@ This project will not be actively maintained by me and I'm looking for collabora
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
   - Auto-Boost CPU for faster game loading
-  - Profile-aware clock override for all games
+  - Global clock override for all profiles
 - System Settings
   - Disable background services, less heat and power consumption in standby mode
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
@@ -43,7 +43,7 @@ This project will not be actively maintained by me and I'm looking for collabora
     - Only 1331.2 and MAX MHz could be selected in sys-clk.
     - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
     - DRAM Timing Table Adjustment:
-      - 2131.2 MHz is stable for Micron chips with ~24.8GiB/s throughput. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
+      - 2131.2 MHz should be stable for some Micron chips with ~24.8GiB/s throughput without overvolting. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
       - 1862.4 MHz is stable for all. (~23.0 GB/s)
 
   - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
@@ -79,26 +79,6 @@ This project will not be actively maintained by me and I'm looking for collabora
     - Enable CPU Boost (1963.5 MHz) if CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
     - Auto-Boost will be enabled only when charger is connected. (>90% w/ PD charger or >95% w/ unsupported charger)
     - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/ `.
-  - Profile-aware clock override for all games
-    - Add `[A111111111111111]` title config in `/config/sys-clk/config.ini` to set frequency override globally:
-      ```ini
-      [A111111111111111]
-      docked_cpu=
-      docked_gpu=
-      docked_mem=
-      handheld_charging_cpu=
-      handheld_charging_gpu=
-      handheld_charging_mem=
-      handheld_charging_usb_cpu=
-      handheld_charging_usb_gpu=
-      handheld_charging_usb_mem=
-      handheld_charging_official_cpu=
-      handheld_charging_official_gpu=
-      handheld_charging_official_mem=
-      handheld_cpu=
-      handheld_gpu=
-      handheld_mem=
-      ```
 
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.

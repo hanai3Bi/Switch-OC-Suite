@@ -13,7 +13,12 @@
 #include <switch.h>
 #include <stdexcept>
 
+#ifdef DEBUG
 #define ERROR_THROW(format, ...) Errors::ThrowException(format "\n  in %s:%u", ##__VA_ARGS__, __FILE__, __LINE__)
+#else
+#define ERROR_THROW(format, ...) Errors::ThrowException(format, ##__VA_ARGS__)
+#endif
+
 #define ERROR_RESULT_THROW(rc, format, ...) ERROR_THROW(format "\n  RC: [0x%x] %04d-%04d", ##__VA_ARGS__, rc, R_MODULE(rc), R_DESCRIPTION(rc))
 #define ASSERT_RESULT_OK(rc, format, ...)                                   \
     if (R_FAILED(rc))                                                       \

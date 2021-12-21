@@ -20,6 +20,8 @@
 
 #include "advanced_settings_tab.h"
 
+#include "app_profile_frame.h"
+
 #include "utils.h"
 
 #include <sysclk/clocks.h>
@@ -94,10 +96,25 @@ AdvancedSettingsTab::AdvancedSettingsTab()
 
     this->addView(cpuFreqListItem);
     this->addView(gpuFreqListItem);
-    //this->addView(memFreqListItem);
+    this->addView(memFreqListItem);
+
+    // Permanent overrides
+    this->addView(new brls::Header("Permanent overrides"));
+
+    // Add the ListItem to Permanent override
+    Title* permTitle = (Title*) malloc(sizeof(Title));
+    permTitle->tid = 0xA111111111111111;
+
+    brls::ListItem *listItem = new brls::ListItem(std::string("Permanent Override"));
+    listItem->getClickEvent()->subscribe([permTitle](View* view) {
+        AppProfileFrame* profileFrame = new AppProfileFrame(permTitle);
+        brls::Application::pushView(profileFrame, brls::ViewAnimation::SLIDE_LEFT);
+    });
+    this->addView(listItem);
 
     // Config
-    this->addView(new brls::Header("Configuration"));
+    // Broken, only accepting single digit
+    // this->addView(new brls::Header("Configuration"));
 
     // Logging
     // TODO: add a logger view and put the button to enter it here
@@ -105,57 +122,57 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     // Config entries
     // TODO: add constraints to the swkbd if possible (min / max)
 
-    sysclkIpcGetConfigValues(&this->configValues);
+    // sysclkIpcGetConfigValues(&this->configValues);
 
-    for (int i = 0; i < SysClkConfigValue_EnumMax; i++)
-    {
-        SysClkConfigValue config = (SysClkConfigValue) i;
+    // for (int i = 0; i < SysClkConfigValue_EnumMax; i++)
+    // {
+    //     SysClkConfigValue config = (SysClkConfigValue) i;
 
-        std::string label       = std::string(sysclkFormatConfigValue(config, true));
-        std::string description = this->getDescriptionForConfig(config);
-        uint64_t defaultValue   = configValues.values[config];
+    //     std::string label       = std::string(sysclkFormatConfigValue(config, true));
+    //     std::string description = this->getDescriptionForConfig(config);
+    //     uint64_t defaultValue   = configValues.values[config];
 
-        brls::IntegerInputListItem* configItem = new brls::IntegerInputListItem(label, defaultValue, label, description);
+    //     brls::IntegerInputListItem* configItem = new brls::IntegerInputListItem(label, defaultValue, label, description);
 
-        configItem->setReduceDescriptionSpacing(true);
+    //     configItem->setReduceDescriptionSpacing(true);
 
-        configItem->getClickEvent()->subscribe([this, configItem, config](View* view)
-        {
-            try
-            {
-                int value = std::stoi(configItem->getValue());
+    //     configItem->getClickEvent()->subscribe([this, configItem, config](View* view)
+    //     {
+    //         try
+    //         {
+    //             int value = std::stoi(configItem->getValue());
 
-                // Validate the value
-                if (value < 0)
-                {
-                    brls::Application::notify("\uE5CD Couldn't save configuration: invalid value (is negative)");
-                    configItem->setValue(std::to_string(this->configValues.values[config]));
-                    return;
-                }
+    //             // Validate the value
+    //             if (value < 0)
+    //             {
+    //                 brls::Application::notify("\uE5CD Couldn't save configuration: invalid value (is negative)");
+    //                 configItem->setValue(std::to_string(this->configValues.values[config]));
+    //                 return;
+    //             }
 
-                uint64_t uvalue = (uint64_t) value;
+    //             uint64_t uvalue = (uint64_t) value;
 
-                if (!sysclkValidConfigValue(config, uvalue))
-                {
-                    brls::Application::notify("\uE5CD Couldn't save configuration: invalid value");
-                    configItem->setValue(std::to_string(this->configValues.values[config]));
-                    return;
-                }
+    //             if (!sysclkValidConfigValue(config, uvalue))
+    //             {
+    //                 brls::Application::notify("\uE5CD Couldn't save configuration: invalid value");
+    //                 configItem->setValue(std::to_string(this->configValues.values[config]));
+    //                 return;
+    //             }
 
-                // Save the config
-                this->configValues.values[config] = uvalue;
-                sysclkIpcSetConfigValues(&this->configValues);
+    //             // Save the config
+    //             this->configValues.values[config] = uvalue;
+    //             sysclkIpcSetConfigValues(&this->configValues);
 
-                brls::Application::notify("\uE14B Configuration saved");
-            }
-            catch(const std::exception& e)
-            {
-                brls::Logger::error("Unable to parse config value %s: %s", configItem->getValue().c_str(), e.what());
-            }
-        });
+    //             brls::Application::notify("\uE14B Configuration saved");
+    //         }
+    //         catch(const std::exception& e)
+    //         {
+    //             brls::Logger::error("Unable to parse config value %s: %s", configItem->getValue().c_str(), e.what());
+    //         }
+    //     });
 
-        this->addView(configItem);
-    }
+    //     this->addView(configItem);
+    // }
 }
 
 std::string AdvancedSettingsTab::getDescriptionForConfig(SysClkConfigValue config)

@@ -59,12 +59,11 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
-    this->oc->systemCoreCheckStuck = false;
-    this->oc->reverseNXToolMode = ReverseNX_NotFound;
-    this->oc->reverseNXRTMode = ReverseNX_NotFound;
+    // this->oc->systemCoreCheckStuck = false;
+    // this->oc->systemCoreStuckCount = 0;
+    this->oc->reverseNXMode = ReverseNX_NotFound;
     this->oc->tickWaitTimeMs = 0;
     this->oc->maxMEMFreq = 1600'000'000;
-    // this->oc->systemCoreStuckCount = 0;
 }
 
 ClockManager::~ClockManager()
@@ -82,13 +81,12 @@ bool ClockManager::IsCpuBoostMode()
 
 bool ClockManager::IsReverseNXEnabled()
 {
-    return (this->oc->reverseNXRTMode || this->oc->reverseNXToolMode);
+    return (this->oc->reverseNXMode);
 }
 
 bool ClockManager::IsReverseNXDocked()
 {
-    return (this->oc->reverseNXRTMode == ReverseNX_Docked
-         || this->oc->reverseNXToolMode == ReverseNX_Docked);
+    return (this->oc->reverseNXMode == ReverseNX_Docked);
 }
 
 void ClockManager::SetRunning(bool running)
@@ -227,14 +225,14 @@ void ClockManager::WaitForNextTick()
                 break;
         }
 
-        bool systemCoreBoostCPU_PrevState = this->oc->systemCoreBoostCPU;
+        bool systemCoreBoostCPUPrevState = this->oc->systemCoreBoostCPU;
         this->oc->systemCoreBoostCPU = (freePerc <= systemCoreBoostFreeThreshold);
 
-        if (systemCoreBoostCPU_PrevState && !this->oc->systemCoreBoostCPU)
+        if (systemCoreBoostCPUPrevState && !this->oc->systemCoreBoostCPU)
         {
             Clocks::SetHz(SysClkModule_CPU, GetHz(SysClkModule_CPU));
         }
-        else if (!systemCoreBoostCPU_PrevState && this->oc->systemCoreBoostCPU)
+        else if (!systemCoreBoostCPUPrevState && this->oc->systemCoreBoostCPU)
         {
             Clocks::SetHz(SysClkModule_CPU, CPU_BOOST_FREQ);
         }
@@ -245,54 +243,56 @@ void ClockManager::WaitForNextTick()
     }
 
     /* Signal that systemCore is not busy */
-    // this->oc->systemCoreStuckCount = 0;
+    // {
+    //     std::scoped_lock lock{this->systemCoreStuckCountMutex};
+    //     this->oc->systemCoreStuckCount = 0;
+    // }
 }
 
 /* Tricky part, see IpcService implementation of calling static member function */
-// I don't see any use of this @ 1020 MHz (only useful at lowest freq),
-// and downclock below 1020 MHz won't save battery. (same volt @ 600mV)
-/*void ClockManager::CheckSystemCoreStuck(void *arg)
-{
-    ClockManager* clkMgr = (ClockManager*)arg;
-    while (clkMgr->oc->systemCoreCheckStuck)
-    {
-        svcSleepThread(clkMgr->oc->tickWaitTimeMs * 1000000ULL);
+// void ClockManager::CheckSystemCoreStuck(void *arg)
+// {
+//     ClockManager* clkMgr = (ClockManager*)arg;
+//     while (clkMgr->oc->systemCoreCheckStuck)
+//     {
+//         svcSleepThread(clkMgr->oc->tickWaitTimeMs * 1000000ULL);
 
-        if (clkMgr->context->freqs[SysClkModule_CPU] >= clkMgr->CPU_BOOST_FREQ)
-            continue;
+//         if (clkMgr->context->freqs[SysClkModule_CPU] >= clkMgr->CPU_BOOST_FREQ)
+//             continue;
 
-        // Core #0,1,2 will check if Core#3 is stuck (threshold count = 2*3 = 6)
-        // ! Add mutex !
-        if (clkMgr->oc->systemCoreStuckCount++ > 6)
-        {
-            // Signal that current core will take over to boost CPU and wait some time to recheck
-            clkMgr->oc->systemCoreStuckCount = -6;
-            Clocks::SetHz(SysClkModule_CPU, clkMgr->CPU_BOOST_FREQ);
-        }
-    }
-}*/
+//         // Core #0,1,2 will check if Core#3 is stuck (threshold count = 2*3 = 6)
+//         {
+//             std::scoped_lock lock{clkMgr->systemCoreStuckCountMutex};
+//             if (++clkMgr->oc->systemCoreStuckCount > 6)
+//             {
+//                 clkMgr->oc->systemCoreStuckCount = -6;
+//                 Clocks::SetHz(SysClkModule_CPU, clkMgr->CPU_BOOST_FREQ);
+//             }
+//         }
+//     }
+// }
 
-/*void ClockManager::StartCheckSystemCore()
-{
-    this->oc->systemCoreCheckStuck = true;
-    threadCreate(&this->t_CheckSystemCoreStuck_0, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 0);
-    threadCreate(&this->t_CheckSystemCoreStuck_1, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 1);
-    threadCreate(&this->t_CheckSystemCoreStuck_2, this->CheckSystemCoreStuck, NULL, NULL, 0x1000, 0x20, 2);
-    threadStart(&this->t_CheckSystemCoreStuck_0);
-    threadStart(&this->t_CheckSystemCoreStuck_1);
-    threadStart(&this->t_CheckSystemCoreStuck_2);
-}*/
+// void ClockManager::StartCheckSystemCore()
+// {
+//     this->oc->systemCoreCheckStuck = true;
+//     threadCreate(&this->t_CheckSystemCoreStuck_0, this->CheckSystemCoreStuck, this, NULL, 0x1000, 0x20, 0);
+//     threadCreate(&this->t_CheckSystemCoreStuck_1, this->CheckSystemCoreStuck, this, NULL, 0x1000, 0x20, 1);
+//     threadCreate(&this->t_CheckSystemCoreStuck_2, this->CheckSystemCoreStuck, this, NULL, 0x1000, 0x20, 2);
+//     threadStart(&this->t_CheckSystemCoreStuck_0);
+//     threadStart(&this->t_CheckSystemCoreStuck_1);
+//     threadStart(&this->t_CheckSystemCoreStuck_2);
+// }
 
-/*void ClockManager::StopCheckSystemCore()
-{
-    this->oc->systemCoreCheckStuck = false;
-    threadWaitForExit(&this->t_CheckSystemCoreStuck_0);
-    threadWaitForExit(&this->t_CheckSystemCoreStuck_1);
-    threadWaitForExit(&this->t_CheckSystemCoreStuck_2);
-    threadClose(&this->t_CheckSystemCoreStuck_0);
-    threadClose(&this->t_CheckSystemCoreStuck_1);
-    threadClose(&this->t_CheckSystemCoreStuck_2);
-}*/
+// void ClockManager::StopCheckSystemCore()
+// {
+//     this->oc->systemCoreCheckStuck = false;
+//     threadWaitForExit(&this->t_CheckSystemCoreStuck_0);
+//     threadWaitForExit(&this->t_CheckSystemCoreStuck_1);
+//     threadWaitForExit(&this->t_CheckSystemCoreStuck_2);
+//     threadClose(&this->t_CheckSystemCoreStuck_0);
+//     threadClose(&this->t_CheckSystemCoreStuck_1);
+//     threadClose(&this->t_CheckSystemCoreStuck_2);
+// }
 
 SysClkProfile ClockManager::ReverseNXProfileHandler()
 {
@@ -351,13 +351,7 @@ ReverseNXMode ClockManager::ReverseNXFileHandler(bool checkTool, const char* fil
 
         if (!memcmp(&this->context->applicationId, &tidBuffer, sizeof(tidBuffer)))
         {
-            /* If user toggles -RT overlay, mode set by -Tool remains invalid until the game restarts */
-            this->oc->reverseNXToolMode = ReverseNX_NotValid;
-
-            ReverseNXMode getMode = static_cast<ReverseNXMode>(ctrlBuffer);
-            this->oc->reverseNXRTMode = getMode;
-
-            return getMode;
+            return static_cast<ReverseNXMode>(ctrlBuffer);
         }
     }
 
@@ -388,7 +382,7 @@ void ClockManager::CheckReverseNXTool()
         }
     }
 
-    this->oc->reverseNXToolMode = getMode;
+    this->oc->reverseNXMode = getMode;
 }
 
 bool ClockManager::RefreshContext()
@@ -412,8 +406,8 @@ bool ClockManager::RefreshContext()
         hasChanged = true;
         shouldAdjustProfile = true;
 
-        /* Clear ReverseNX-RT state and recheck -Tool patches*/
-        this->oc->reverseNXRTMode = ReverseNX_SystemDefault;
+        /* Clear ReverseNX state and recheck -Tool patches*/
+        this->oc->reverseNXMode = ReverseNX_SystemDefault;
         CheckReverseNXTool();
     }
 
@@ -426,24 +420,25 @@ bool ClockManager::RefreshContext()
         shouldAdjustProfile = true;
     }
 
-    /* Check ReverseNX-RT once per tick */
+    /* Check ReverseNX-RT */
     {
         ReverseNXMode getMode = ReverseNXFileHandler(false, FILE_REVERSENX_RT_CONF_PATH);
         if (getMode)
         {
-            this->oc->reverseNXRTMode = getMode;
+            this->oc->reverseNXMode = getMode;
             shouldAdjustProfile = true;
         }
 
         if (getMode == ReverseNX_RTResetToDefault)
         {
-            this->oc->reverseNXRTMode = ReverseNX_SystemDefault;
+            this->oc->reverseNXMode = ReverseNX_SystemDefault;
         }
+    }
 
-        if (shouldAdjustProfile)
-        {
-            this->context->profile = ReverseNXProfileHandler();
-        }
+    /* Adjust nominal profile when tid, real profile or -RT profile change */
+    if (shouldAdjustProfile)
+    {
+        this->context->profile = ReverseNXProfileHandler();
     }
 
     /* Update PerformanceConfigurationId */

@@ -67,11 +67,9 @@ typedef struct
     bool systemCoreBoostCPU;
     bool systemCoreCheckStuck;
 
-    ReverseNXMode  reverseNXToolMode;
-    ReverseNXMode  reverseNXRTMode;
+    ReverseNXMode  reverseNXMode;
 
     uint64_t tickWaitTimeMs;
-    // int16_t  systemCoreStuckCount;
     uint32_t maxMEMFreq;
 } SysClkOcExtra;
 

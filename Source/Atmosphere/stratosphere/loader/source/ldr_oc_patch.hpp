@@ -264,6 +264,7 @@ namespace pcv {
 
     #include "mtc_timing_table.hpp"
 
+    #if 0
     #define ADJUST_PROP(TARGET, REF) (REF + ((GetEmcClock()-1331200)*(TARGET-REF))/(1600000-1331200))
 
     #define ADJUST_PARAM_ROUND2_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)                                                        \
@@ -316,6 +317,95 @@ namespace pcv {
     /* For latency allowance */
     #define ADJUST_INVERSE(TARGET) ((TARGET*1000) / (GetEmcClock()/1600))
 
+    #endif
+
+    #define ADJUST_PARAM(PARAM)                 PARAM = GetEmcClock()*PARAM/1600000;
+
+    #define ADJUST_PARAM_TABLE(TABLE, PARAM)    ADJUST_PARAM(TABLE->PARAM)
+
+    #define ADJUST_PARAM_ALL_REG(TABLE, PARAM)                 \
+        ADJUST_PARAM_TABLE(TABLE, burst_regs.PARAM)            \
+        ADJUST_PARAM_TABLE(TABLE, shadow_regs_ca_train.PARAM)  \
+        ADJUST_PARAM_TABLE(TABLE, shadow_regs_rdwr_train.PARAM)
+
+    void AdjustMtcTable(MarikoMtcTable* table)
+    {
+        /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download:
+         *     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual
+         *     Section 18.11: MC Registers
+         *
+         * Retail Mariko: 200FBGA 16Gb DDP LPDDR4X SDRAM x 2
+         * x16/Ch, 1Ch/die, Double-die, 2Ch, 1CS(rank), 8Gb density per die
+         * 64Mb x 16DQ x 8banks x 2channels = 2048MB (x32DQ) per package
+         *
+         * Devkit Mariko: 200FBGA 32Gb DDP LPDDR4X SDRAM x 2
+         * x16/Ch, 1Ch/die, Quad-die,   2Ch, 2CS(rank), 8Gb density per die
+         * X1+ EMC can R/W to both ranks at the same time, resulting in doubled DQ
+         * 64Mb x 32DQ x 8banks x 2channels = 4096MB (x64DQ) per package
+         *
+         * If you have access to LPDDR4(X) specs or datasheets (from manufacturers or Google),
+         * you'd better calculate timings yourself rather than relying on following algorithm.
+         */
+
+        ADJUST_PARAM_ALL_REG(table, emc_rc);
+        ADJUST_PARAM_ALL_REG(table, emc_rfc);
+        ADJUST_PARAM_ALL_REG(table, emc_rfcpb);
+        ADJUST_PARAM_ALL_REG(table, emc_ras);
+        ADJUST_PARAM_ALL_REG(table, emc_rp);
+        ADJUST_PARAM_ALL_REG(table, emc_r2w);
+        ADJUST_PARAM_ALL_REG(table, emc_w2r);
+        ADJUST_PARAM_ALL_REG(table, emc_r2p);
+        ADJUST_PARAM_ALL_REG(table, emc_w2p);
+        ADJUST_PARAM_ALL_REG(table, emc_trtm);
+        ADJUST_PARAM_ALL_REG(table, emc_twtm);
+        ADJUST_PARAM_ALL_REG(table, emc_tratm);
+        ADJUST_PARAM_ALL_REG(table, emc_twatm);
+        ADJUST_PARAM_ALL_REG(table, emc_rd_rcd);
+        ADJUST_PARAM_ALL_REG(table, emc_wr_rcd);
+        ADJUST_PARAM_ALL_REG(table, emc_rrd);
+
+        ADJUST_PARAM_ALL_REG(table, emc_refresh);
+        ADJUST_PARAM_ALL_REG(table, emc_pre_refresh_req_cnt);
+
+        ADJUST_PARAM_ALL_REG(table, emc_pdex2wr);
+        ADJUST_PARAM_ALL_REG(table, emc_pdex2rd);
+        ADJUST_PARAM_ALL_REG(table, emc_act2pden);
+        ADJUST_PARAM_ALL_REG(table, emc_rw2pden);
+        ADJUST_PARAM_ALL_REG(table, emc_cke2pden);
+        ADJUST_PARAM_ALL_REG(table, emc_pdex2mrr);
+
+        ADJUST_PARAM_ALL_REG(table, emc_txsr);
+        ADJUST_PARAM_ALL_REG(table, emc_txsrdll);
+        ADJUST_PARAM_ALL_REG(table, emc_tcke);
+        ADJUST_PARAM_ALL_REG(table, emc_tckesr);
+        ADJUST_PARAM_ALL_REG(table, emc_tpd);
+        ADJUST_PARAM_ALL_REG(table, emc_tfaw);
+        ADJUST_PARAM_ALL_REG(table, emc_trpab);
+        ADJUST_PARAM_ALL_REG(table, emc_tclkstop);
+        ADJUST_PARAM_ALL_REG(table, emc_trefbw);
+
+        ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2);
+
+        ADJUST_PARAM_TABLE(table, dram_timings.rl);
+
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_rcd);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_rp);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_rc);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_ras);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_faw);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_wap2pre);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_r2w);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_w2r);
+        ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_timing_rfcpb);
+
+        ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate);
+        ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement);
+
+        ADJUST_PARAM_TABLE(table, min_mrs_wait);
+        ADJUST_PARAM_TABLE(table, latency);
+    }
+
+    #if 0
     void AdjustMtcTable(MarikoMtcTable* target_table, MarikoMtcTable* ref_table)
     {
         /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download: */
@@ -659,6 +749,7 @@ namespace pcv {
 
         #endif
     }
+    #endif
 
     /* Unlock the second sub-partition for retail Mariko, and double the bandwidth (~60GB/s)
      * https://github.com/CTCaer/hekate/blob/01b6e645b3cb69ddf28cc9eff40c4b35bf03dbd4/bdk/mem/sdram.h#L30

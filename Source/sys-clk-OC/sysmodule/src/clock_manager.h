@@ -59,6 +59,7 @@ class ClockManager
 
     void CheckReverseNXTool();
 
+    // LockableMutex systemCoreStuckCountMutex;
     // Thread t_CheckSystemCoreStuck_0, t_CheckSystemCoreStuck_1, t_CheckSystemCoreStuck_2;
 
     // static void CheckSystemCoreStuck(void *arg);

@@ -21,7 +21,7 @@
 #include "logo.h"
 
 Logo::Logo(LogoStyle style) {
-    this->logoLabel = new brls::Label(brls::LabelStyle::LIST_ITEM, "sys-clk", style == LogoStyle::ABOUT);
+    this->logoLabel = new brls::Label(brls::LabelStyle::LIST_ITEM, "sys-clk-OC", style == LogoStyle::ABOUT);
     this->logoLabel->setParent(this);
 
     int logoFont = brls::Application::findFont(LOGO_FONT_NAME);

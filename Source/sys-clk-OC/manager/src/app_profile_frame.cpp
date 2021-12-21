@@ -30,7 +30,9 @@
 
 AppProfileFrame::AppProfileFrame(Title* title) : ThumbnailFrame(), title(title)
 {
-    this->setTitle("Edit application profile");
+    bool isPermanent = (title->tid == 0xA111111111111111);
+
+    this->setTitle(isPermanent ? "Edit Permanent Override" : "Edit application profile");
     this->setIcon(new brls::MaterialIcon("\uE315"));
 
     // Get the freqs
@@ -40,9 +42,12 @@ AppProfileFrame::AppProfileFrame(Title* title) : ThumbnailFrame(), title(title)
         errorResult("sysclkIpcGetProfiles", rc);
 
     // Setup the right sidebar
-    this->getSidebar()->setThumbnail(title->icon, sizeof(title->icon));
-    this->getSidebar()->setTitle(std::string(title->name));
-    this->getSidebar()->setSubtitle(formatTid(title->tid));
+    if (!isPermanent)
+    {
+        this->getSidebar()->setThumbnail(title->icon, sizeof(title->icon));
+        this->getSidebar()->setTitle(std::string(title->name));
+        this->getSidebar()->setSubtitle(formatTid(title->tid));
+    }
     this->getSidebar()->getButton()->setState(brls::ButtonState::DISABLED);
 
     this->getSidebar()->getButton()->getClickEvent()->subscribe([this, title](brls::View* view)
