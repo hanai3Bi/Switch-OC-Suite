@@ -179,32 +179,18 @@ namespace ams::ldr {
                     /* Patch max GPU voltage on Mariko */
                     std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::GpuVoltageLimitOffsets[i]), &pcv::NewGpuVoltageLimit, sizeof(pcv::NewGpuVoltageLimit));
 
-                    /* Calculate DIVM and DIVN (clock DIVisors) */
-                    /* Assume oscillator (PLLMB_IN) is 38.4 MHz */
-                    /* PLLMB_OUT = PLLMB_IN / DIVM * DIVN */
-                    u32 divm = 1;
-                    u32 divn = GetEmcClock() / 38400;
-                    if (GetEmcClock() - divn * 38400 >= 38400 / 2) {
-                        divm = 2;
-                        divn = divn * 2 + 1;
-                    }
-
                     if (i >= 2) {
                         for (u32 j = 0; j < sizeof(pcv::MtcTable_1600[i-2])/sizeof(u32); j++) {
                             pcv::MarikoMtcTable* mtc_table_new = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j]);
                             pcv::MarikoMtcTable* mtc_table_old = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j] - pcv::MtcTableOffset);
 
                             #ifdef REPLACE_1331
-                            /* Replace 1331 MHz with 1600 MHz */
+                            /* Replace 1331 MHz with 1600 MHz, not possible without proper timings for oc clock */
                             std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(pcv::MarikoMtcTable));
                             #endif
 
                             /* Generate new table for OC MHz */
-                            pcv::AdjustMtcTable(mtc_table_new);
-
-                            /* Patch clock divisors */
-                            mtc_table_1600->pllmb_divm = divm;
-                            mtc_table_1600->pllmb_divn = divn;
+                            pcv::AdjustMtcTable(mtc_table_new, mtc_table_old);
                         }
                     }
 
