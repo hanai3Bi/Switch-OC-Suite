@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 11.0.0-13.2.0.
+Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 13.0.0-13.2.0.
 
 This project will not be actively maintained by me and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
 
@@ -22,8 +22,9 @@ This project will not be actively maintained by me and I'm looking for collabora
 - **Fan Control Optimization** at high load
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
-  - Auto-Boost CPU for faster game loading
-  - Global clock override for all profiles
+  - **Auto-Boost CPU** for faster game loading
+  - Permanent global clock override for all profiles
+  - View charger & battery info, toggle charging/fast-charging in overlay
 - System Settings
   - Disable background services, less heat and power consumption in standby mode
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
@@ -39,12 +40,12 @@ This project will not be actively maintained by me and I'm looking for collabora
   - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
 
-  - **Recommended RAM clock: 1862.4 MHz**.
-    - Only 1331.2 and MAX MHz could be selected in sys-clk.
+  - **Recommended RAM clock: 1862.4/1996.8 MHz**.
+    - Only 1600 and MAX MHz could be selected in sys-clk.
     - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
     - DRAM Timing Table Adjustment:
-      - 2131.2 MHz should be stable for some Micron chips with ~24.8GiB/s throughput without overvolting. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
-      - 1862.4 MHz is stable for all. (~23.0 GB/s)
+      - 2131.2 MHz should be stable for some chips. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
+      - 1862.4/1996.8 MHz should be stable for all.
 
   - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
 
@@ -55,7 +56,7 @@ This project will not be actively maintained by me and I'm looking for collabora
   - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
 
   - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 Mhz trigger overvolting. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
-    - You cannot set ≥ 1344 MHz without official chargers.
+    - You cannot set > 1267 MHz without official chargers.
 
   - RAM [NOT RECOMMENDED]
     - Only diff patch for hekate bootloader is provided.
@@ -70,6 +71,7 @@ This project will not be actively maintained by me and I'm looking for collabora
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
   - Replace crappy factory thermal paste is preferred.
   - Place a thermal pad onto Wi-Fi/BT module (shielded, adjacent to antennas) to lower tskin temperature.
+  - Not tested on Aula, which has lower temperature tolerance.
 
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
@@ -78,7 +80,7 @@ This project will not be actively maintained by me and I'm looking for collabora
   - **Auto-Boost CPU for faster game loading**
     - Enable CPU Boost (1963.5 MHz) if CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
     - Auto-Boost will be enabled only when charger is connected. (>90% w/ PD charger or >95% w/ unsupported charger)
-    - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/ `.
+    - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/`.
 
 - Disable background services, less heat and power consumption in standby mode
   - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.

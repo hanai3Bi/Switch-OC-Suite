@@ -68,15 +68,15 @@ namespace ams::ldr {
 
         u32 GetEmcClock() {
             // RAM freqs from Hekate:
-            //   1600000, 1728000, 1795200, 1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
+            //   1862400, 1894400, 1932800, 1996800, 2064000, 2099200, 2131200
             // Other values might work as well
             // RAM overclock could be UNSTABLE and generate graphical glitches / instabilities / NAND corruption
             return 1862400;
         }
 
-        u32 GetCpuBoostClock() {
-            return 1963500;
-        }
+        // u32 GetCpuBoostClock() {
+        //     return 1963500;
+        // }
 
         consteval u8 ParseNybble(char c) {
             AMS_ASSUME(('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'));
@@ -179,42 +179,54 @@ namespace ams::ldr {
                     /* Patch max GPU voltage on Mariko */
                     std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::GpuVoltageLimitOffsets[i]), &pcv::NewGpuVoltageLimit, sizeof(pcv::NewGpuVoltageLimit));
 
-                    if (i >= 2) {
-                        for (u32 j = 0; j < sizeof(pcv::MtcTable_1600[i-2])/sizeof(u32); j++) {
-                            pcv::MarikoMtcTable* mtc_table_new = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j]);
-                            pcv::MarikoMtcTable* mtc_table_old = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i-2][j] - pcv::MtcTableOffset);
+                    for (u32 j = 0; j < sizeof(pcv::MtcTable_1600[i])/sizeof(u32); j++) {
+                        pcv::MarikoMtcTable* mtc_table_new = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i][j]);
+                        pcv::MarikoMtcTable* mtc_table_old = reinterpret_cast<pcv::MarikoMtcTable *>(mapped_nso + pcv::MtcTable_1600[i][j] - pcv::MtcTableOffset);
 
-                            #ifdef REPLACE_1331
-                            /* Replace 1331 MHz with 1600 MHz, not possible without proper timings for oc clock */
-                            std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(pcv::MarikoMtcTable));
-                            #endif
+                        /* Replace 1331 MHz with 1600 MHz, not possible without proper timings for oc clock */
+                        std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(pcv::MarikoMtcTable));
 
-                            /* Generate new table for OC MHz */
-                            pcv::AdjustMtcTable(mtc_table_new, mtc_table_old);
-                        }
+                        /* Generate new table for OC MHz */
+                        pcv::AdjustMtcTable(mtc_table_new, mtc_table_old);
                     }
 
                     /* Patch RAM Clock */
                     for (u32 j = 0; j < sizeof(pcv::EmcFreqOffsets[i])/sizeof(u32); j++) {
                         std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcFreqOffsets[i][j]), &EmcClock, sizeof(EmcClock));
                     }
+
+                    /* Replace 1331 MHz with 1600 MHz in EmcDvbTable */
+                    const u32 mem1331 = 1600'000;
+                    std::memcpy(reinterpret_cast<void *>(mapped_nso + pcv::EmcDvb1331[i]), &mem1331, sizeof(mem1331));
                 }
             }
 
-            // u32 PtmEmcClock = GetEmcClock() * 1000;
+            u32 PtmEmcClk1600 = GetEmcClock() * 1000;
+            const u32 PtmEmcClk1331 = 1600'000'000;
 
-            u32 CpuBoostClock = GetCpuBoostClock() * 1000;
+            // u32 CpuBoostClock = GetCpuBoostClock() * 1000;
 
+            /* Patch Ptm for coexistent of 1600 MHz and OC clock */
             for (u32 i = 0; i < sizeof(PtmModuleId)/sizeof(ro::ModuleId); i++) {
                 if (std::memcmp(std::addressof(PtmModuleId[i]), std::addressof(module_id), sizeof(module_id)) == 0) {
-                    // for (u32 j = 0; j < 16; j++) {
-                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClock, sizeof(PtmEmcClock));
-                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClock, sizeof(PtmEmcClock));
-                    // }
-                    for (u32 j = 0; j < 2; j++) {
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
-                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
+                    for (u32 j = 0; j < 6; j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClk1600, sizeof(PtmEmcClk1600));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClk1600, sizeof(PtmEmcClk1600));
                     }
+                    for (u32 j = 6; j < 10; j++) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClk1331, sizeof(PtmEmcClk1331));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClk1331, sizeof(PtmEmcClk1331));
+                    }
+                    for (u32 j = 10; j < 16; j+=2) {
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j), &PtmEmcClk1600, sizeof(PtmEmcClk1600));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * j + 0x4), &PtmEmcClk1600, sizeof(PtmEmcClk1600));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * (j+1)), &PtmEmcClk1331, sizeof(PtmEmcClk1331));
+                        std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::OffsetInterval * (j+1) + 0x4), &PtmEmcClk1331, sizeof(PtmEmcClk1331));
+                    }
+                    // for (u32 j = 0; j < 2; j++) {
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j), &CpuBoostClock, sizeof(CpuBoostClock));
+                    //     std::memcpy(reinterpret_cast<void *>(mapped_nso + ptm::EmcOffsetStart[i] + ptm::CpuBoostOffset + ptm::OffsetInterval * j + 0x4), &CpuBoostClock, sizeof(CpuBoostClock));
+                    // }
                 }
             }
         }

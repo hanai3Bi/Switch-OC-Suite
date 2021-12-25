@@ -59,11 +59,9 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
-    // this->oc->systemCoreCheckStuck = false;
-    // this->oc->systemCoreStuckCount = 0;
     this->oc->reverseNXMode = ReverseNX_NotFound;
     this->oc->tickWaitTimeMs = 0;
-    this->oc->maxMEMFreq = 1600'000'000;
+    this->oc->maxMEMFreq = 0;
 }
 
 ClockManager::~ClockManager()
@@ -130,9 +128,9 @@ uint32_t ClockManager::GetHz(SysClkModule module)
                 break;
             case SysClkModule_MEM:
                 if (!IsReverseNXDocked() && this->context->realProfile != SysClkProfile_Docked)
-                    hz = 1331'200'000;
+                    hz = 1600000000;
                 else
-                    hz = 1600'000'000;
+                    hz = MAX_MEM_CLOCK;
                 break;
             default:
                 break;
@@ -144,11 +142,16 @@ uint32_t ClockManager::GetHz(SysClkModule module)
         /* Considering realProfile frequency limit */
         hz = Clocks::GetNearestHz(module, this->context->realProfile, hz);
 
-        if (module == SysClkModule_MEM && hz == 1600'000'000)
+        if (module == SysClkModule_MEM && hz == MAX_MEM_CLOCK)
         {
-            /* Return maxMemFreq */
-            if (this->context->freqs[module] > this->oc->maxMEMFreq)
-                this->oc->maxMEMFreq = this->context->freqs[module];
+            /* Trigger Max Mem Clock and record it */
+            if (!this->oc->maxMEMFreq)
+            {
+                uint32_t CurrentHz = Clocks::GetCurrentHz(SysClkModule_MEM);
+                Clocks::SetHz(SysClkModule_MEM, MAX_MEM_CLOCK);
+                this->oc->maxMEMFreq = Clocks::GetCurrentHz(SysClkModule_MEM);
+                Clocks::SetHz(SysClkModule_MEM, CurrentHz);
+            }
 
             return this->oc->maxMEMFreq;
         }
@@ -385,6 +388,29 @@ void ClockManager::CheckReverseNXTool()
     this->oc->reverseNXMode = getMode;
 }
 
+bool ClockManager::CheckReverseNXRT()
+{
+    bool shouldCheckReverseNXRT = FileUtils::IsReverseNXSyncEnabled();
+    if (!shouldCheckReverseNXRT)
+        return false;
+
+    bool shouldAdjustProfile = false;
+
+    ReverseNXMode getMode = ReverseNXFileHandler(false, FILE_REVERSENX_RT_CONF_PATH);
+    if (getMode)
+    {
+        this->oc->reverseNXMode = getMode;
+        shouldAdjustProfile = true;
+    }
+
+    if (getMode == ReverseNX_RTResetToDefault)
+    {
+        this->oc->reverseNXMode = ReverseNX_SystemDefault;
+    }
+
+    return shouldAdjustProfile;
+}
+
 bool ClockManager::RefreshContext()
 {
     bool hasChanged = false;
@@ -421,18 +447,9 @@ bool ClockManager::RefreshContext()
     }
 
     /* Check ReverseNX-RT */
+    if (CheckReverseNXRT())
     {
-        ReverseNXMode getMode = ReverseNXFileHandler(false, FILE_REVERSENX_RT_CONF_PATH);
-        if (getMode)
-        {
-            this->oc->reverseNXMode = getMode;
-            shouldAdjustProfile = true;
-        }
-
-        if (getMode == ReverseNX_RTResetToDefault)
-        {
-            this->oc->reverseNXMode = ReverseNX_SystemDefault;
-        }
+        shouldAdjustProfile = true;
     }
 
     /* Adjust nominal profile when tid, real profile or -RT profile change */

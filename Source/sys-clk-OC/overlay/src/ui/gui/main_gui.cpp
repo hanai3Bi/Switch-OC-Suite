@@ -13,7 +13,7 @@
 #include "fatal_gui.h"
 #include "app_profile_gui.h"
 #include "global_override_gui.h"
-// #include "misc_gui.h"
+#include "misc_gui.h"
 
 void MainGui::listUI()
 {
@@ -68,17 +68,17 @@ void MainGui::listUI()
     });
     this->listElement->addItem(globalPermanentOverrideItem);
 
-    // tsl::elm::ListItem* miscItem = new tsl::elm::ListItem("Miscellaneous");
-    // miscItem->setClickListener([this](u64 keys) {
-    //     if((keys & HidNpadButton_A) == HidNpadButton_A && this->context)
-    //     {
-    //         tsl::changeTo<MiscGui>();
-    //         return true;
-    //     }
+    tsl::elm::ListItem* miscItem = new tsl::elm::ListItem("Miscellaneous");
+    miscItem->setClickListener([this](u64 keys) {
+        if((keys & HidNpadButton_A) == HidNpadButton_A && this->context)
+        {
+            tsl::changeTo<MiscGui>();
+            return true;
+        }
 
-    //     return false;
-    // });
-    // this->listElement->addItem(miscItem);
+        return false;
+    });
+    this->listElement->addItem(miscItem);
 }
 
 void MainGui::refresh()

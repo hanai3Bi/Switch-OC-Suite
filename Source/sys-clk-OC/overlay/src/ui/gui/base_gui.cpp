@@ -13,13 +13,13 @@
 #include "../elements/base_frame.h"
 // #include "logo_rgba_bin.h"
 
-#define LOGO_LABEL_X 18
-#define LOGO_LABEL_Y 26
-#define LOGO_LABEL_FONT_SIZE 23
+#define LOGO_LABEL_X 20
+#define LOGO_LABEL_Y 35
+#define LOGO_LABEL_FONT_SIZE 20
 
 #define VERSION_X 246
 #define VERSION_Y LOGO_LABEL_Y
-#define VERSION_FONT_SIZE 16
+#define VERSION_FONT_SIZE 15
 
 void BaseGui::preDraw(tsl::gfx::Renderer* renderer)
 {

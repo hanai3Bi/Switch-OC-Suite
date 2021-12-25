@@ -13,6 +13,8 @@
 #include <switch.h>
 #include <sysclk.h>
 
+#define MAX_MEM_CLOCK 1862'400'000
+
 class Clocks
 {
   public:
