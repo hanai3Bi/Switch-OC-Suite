@@ -37,3 +37,6 @@ int test_8bit_wide_random(unsigned long volatile *bufa, unsigned long volatile *
 int test_16bit_wide_random(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);
 #endif
 
+int test_stress_memcpy(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);
+int test_stress_memset(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);
+int test_stress_memcmp(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);

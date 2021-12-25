@@ -1,5 +1,6 @@
 /*
- * memtester version 4
+ * MemTesterNX
+ * based on memtester version 4
  *
  * Very simple but very effective user-space memory tester.
  * Originally by Simon Kirby <sim@stormix.com> <sim@neato.org>
@@ -12,7 +13,7 @@
  *
  */
 
-#define __version__ "4.5.1-full"
+#define __version__ "4.5.1-multithread"
 
 // Include the most common headers from the C standard library
 #include <stddef.h>
@@ -22,6 +23,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -33,7 +35,7 @@
 #include <switch.h>
 
 PadState pad;
-unsigned short dividend;
+unsigned short dividend = 1;
 
 void waitForAnyKey() {
     while (appletMainLoop())
@@ -73,6 +75,13 @@ void ShowErr(const char* err, const char* details, Result rc) {
     appletHolderRequestExit(&currentApplet);
 }
 
+double gettime(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) / 1000000.;
+}
+
 struct test tests[] = {
     { "Random Value", test_random_value },
     { "Compare XOR", test_xor_comparison },
@@ -86,13 +95,20 @@ struct test tests[] = {
     { "Block Sequential", test_blockseq_comparison },
     { "Checkerboard", test_checkerboard_comparison },
     { "Bit Spread", test_bitspread_comparison },
-    { "Bit Flip", test_bitflip_comparison },
+    { "Bit Flip (Slow)", test_bitflip_comparison },
     { "Walking Ones", test_walkbits1_comparison },
     { "Walking Zeroes", test_walkbits0_comparison },
 #ifdef TEST_NARROW_WRITES    
     { "8-bit Writes", test_8bit_wide_random },
     { "16-bit Writes", test_16bit_wide_random },
 #endif
+    { NULL, NULL }
+};
+
+struct test stress_tests[] = {
+    { "Stress memcpy x128", test_stress_memcpy },
+    { "Stress memset x128", test_stress_memset },
+    { "Stress memcmp x 32", test_stress_memcmp },
     { NULL, NULL }
 };
 
@@ -104,6 +120,69 @@ int memtester_pagesize(void) {
 /* Global vars - so tests have access to this information */
 int use_phys = 0;
 off_t physaddrbase = 0;
+int testJobId[4] = {0};
+int testWorkerReport[4] = {0};
+size_t bufsize[4], wantbytes[4];
+void volatile *aligned[4];
+Thread threads[4];
+struct test* test_select = tests;
+
+void testWorker(int div)
+{
+    // Get ready
+    while (testJobId[div] != -2)
+        svcSleepThread(10000000ULL);
+
+    while (true)
+    {
+        int currentJobId = -1;
+
+        // Stuck address
+        while (testJobId[div] != currentJobId)
+            svcSleepThread(10000000ULL);
+
+        if (!test_stuck_address(aligned[div], bufsize[div]/sizeof(ul)))
+        {
+            testWorkerReport[div] = 1;
+            currentJobId++;
+        }
+        else
+        {
+            testWorkerReport[div] = -1;
+            return;
+        }
+
+        // tests[], currentJobId = 0 here
+        while (test_select[currentJobId].name)
+        {
+            while (testJobId[div] != currentJobId)
+                svcSleepThread(10000000ULL);
+
+            if (!test_select[currentJobId].fp(aligned[div], ((size_t)aligned[div] + bufsize[div]/2), bufsize[div]/sizeof(ul)/2))
+            {
+                testWorkerReport[div] = 1;
+                currentJobId++;
+            }
+            else
+            {
+                testWorkerReport[div] = -1;
+                return;
+            }
+        }
+    }
+}
+
+void testWorker0(void*) { testWorker(0); }
+void testWorker1(void*) { testWorker(1); }
+void testWorker2(void*) { testWorker(2); }
+void testWorker3(void*) { testWorker(3); }
+
+void* workers[] = {
+    testWorker0,
+    testWorker1,
+    testWorker2,
+    testWorker3,
+};
 
 // Main program entrypoint
 int main(int argc, char* argv[])
@@ -121,22 +200,26 @@ int main(int argc, char* argv[])
 
     padInitializeDefault(&pad);
 
-    ul loop, i;
-    unsigned short div, maxdiv = 0;
-    size_t pagesize, wantraw, wantbytes[4], wantbytes_orig, bufsize[4], halflen, count;
+    ull loop, i;
+    unsigned short div, testThreads = 3;
+    size_t pagesize, wantraw, wantbytes_orig;
     ptrdiff_t pagesizemask;
-    void volatile *buf[4], *aligned[4];
-    ulv *bufa, *bufb;
+    void volatile *buf[4];
     int memshift;
-    ul testmask = 0;
     ull totalmem = 0;
+    int numOfMallocs = 0;
+    bool isDevKit8GB = false;
 
-    printf("MemTesterNX version " __version__ " (%d-bit)\n", UL_LEN);
-    printf("Based on memtester. Copyright (C) 2001-2020 Charles Cazabon.\n");
-    printf("Licensed under the GNU General Public License version 2 (only).\n\n");
-    printf("4.5.1-full supports full RAM test (up to 8GB for devkit).\n");
-    printf("It will looping forever until an error shows up or you manually exit to HOME screen.\n\n");
-    printf("Press A: long test\nPress B: fast test\nPress any other key: exit\n\n");
+    printf("MemTesterNX version " __version__ " (%d-bit)\n"\
+           "Based on memtester. Copyright (C) 2001-2020 Charles Cazabon, 2021 KazushiMe.\n"\
+           "Licensed under the GNU General Public License version 2 (only).\n\n"\
+           "Support full RAM test (up to 8GB) with 3-4 threads.\n"\
+           "It will be looping forever until error occurs or user exits to HOME screen.\n\n"\
+           "Press A: long test\n"\
+           "Press X: fast test\n"\
+           "Press Y: stress DRAM (memcpy, memset and memcmp)\n"\
+           "Press any other key: exit\n\n",
+           UL_LEN);
 
     while (appletMainLoop())
     {
@@ -146,12 +229,17 @@ int main(int argc, char* argv[])
 
         if (kDown & HidNpadButton_A)
         {
-            dividend = 1;
             break; 
         }
-        else if (kDown & HidNpadButton_B)
+        else if (kDown & HidNpadButton_X)
         {
             dividend = 4;
+            break;
+        }
+        else if (kDown & HidNpadButton_Y)
+        {
+            dividend = 16;
+            test_select = stress_tests;
             break;
         }
         else if (kDown)
@@ -163,20 +251,23 @@ int main(int argc, char* argv[])
         consoleUpdate(NULL);
     }
 
+    // Disable auto sleep and request CPU Boost mode
+    appletSetAutoSleepDisabled(true);
+    appletSetCpuBoostMode(ApmCpuBoostMode_FastLoad);
+
     pagesize = memtester_pagesize();
     pagesizemask = (ptrdiff_t) ~(pagesize - 1);
     printf("pagesizemask is 0x%tx\n", pagesizemask);
     consoleUpdate(NULL);
     
     memshift = 20; /* megabytes */
-    wantraw = 2048;
+    wantraw = 2048; // HOS limit
     
     wantbytes_orig = ((size_t) wantraw << memshift);
 
     // Allocate as much RAM as possible.
-    for(div = 0; div <= 3; div++)
+    for (div = 0; div <= 3; div++)
     {
-
         buf[div] = NULL;
         wantbytes[div] = wantbytes_orig;
 
@@ -186,9 +277,69 @@ int main(int argc, char* argv[])
                 wantbytes[div] -= pagesize;
         }
 
+        totalmem += wantbytes[div];
+
+        if ((wantbytes[div] >> memshift) < 2047)
+        {
+            numOfMallocs = div + 1;
+            break;
+        }
+    }
+
+    for (div = 0; div < numOfMallocs; div++)
+    {
+        free((void *)buf[div]);
+    }
+
+    // Unknown: Not sure if devkit could use full 8GB in application space
+    if ((totalmem >> memshift) > 3 * 2047)
+    {
+        isDevKit8GB = true;
+        testThreads = 4;
+    }
+
+    // Create workers
+    for (div = 0; div < testThreads; div++)
+    {
+        Result rc;
+        rc = threadCreate(&threads[div], workers[div], NULL, NULL, 0x1000, 0x2C, div == 3 ? -2 : div);
+        if (R_FAILED(rc))
+        {
+            printf("Fatal: threadCreate[%d] failed: 0x%X\n", div, rc);
+            consoleUpdate(NULL);
+        }
+        else
+        {
+            totalmem -= 0x1000;
+        }
+    }
+
+    printf("\nTotal RAM available: %lldMB\n\n", totalmem >> memshift);
+    consoleUpdate(NULL);
+
+    // Redistribute RAM allocation equally to testThreads workers
+    for (div = 0; div < testThreads; div++)
+    {
+        buf[div] = NULL;
+        if (isDevKit8GB)
+        {
+            if (div != 3)
+                wantbytes[div] = totalmem / 3;
+            else
+                wantbytes[div] = 2047;
+        }
+        else
+        {
+            wantbytes[div] = totalmem / testThreads;
+        }
+
+        while (!buf[div] && wantbytes[div]) {
+            buf[div] = (void volatile *) malloc(wantbytes[div]);
+            if (!buf[div])
+                wantbytes[div] -= pagesize;
+        }
+
         bufsize[div] = wantbytes[div];
-        printf("Alloc %d: got  %lluMB (%llu bytes)\n", div+1, (ull) wantbytes[div] >> 20, (ull) wantbytes[div]);
-        consoleUpdate(NULL);
 
         /* Do alighnment here as well, as some cases won't trigger above if you
            define out the use of mlock() (cough HP/UX 10 cough). */
@@ -203,68 +354,92 @@ int main(int argc, char* argv[])
             aligned[div] = buf[div];
         }
 
-        totalmem += wantbytes[div];
+        printf("Alloc %d: got  %lluMB (%llu bytes)\n", div+1, (ull) wantbytes[div] >> memshift, (ull) wantbytes[div]);
+        consoleUpdate(NULL);
+    }
 
-        if((wantbytes[div] >> 20) < 2047)
+    // Start workers
+    for (div = 0; div < testThreads; div++)
+    {
+        Result rc;
+        rc = threadStart(&threads[div]);
+        if (R_FAILED(rc))
         {
-            maxdiv = div;
-            break;
+            printf("Fatal: threadStart[%d] failed: 0x%X\n", div, rc);
+            consoleUpdate(NULL);
         }
     }
 
-    printf("\nTotal RAM allocated: %lldMB\n\n", totalmem >> 20);
-    consoleUpdate(NULL);
-
     for(loop=1;;loop++)
     {
-        printf("Loop %lu:\n", loop);
+        // Set testJobId to -2(Ready)
+        for (int j = 0; j < testThreads; j++)
+            testJobId[j] = -2;
 
-        for(div=0; div<=maxdiv; div++)
+        printf("Loop %llu:\n", loop);
+
+        // Stuck address (-1)
+        printf("  %-20s: ", "Stuck Address");
+        consoleUpdate(NULL);
+        for (int j = 0; j < testThreads; j++)
+            testJobId[j] = -1;
+
+        ull count = 0;
+        for (int j = 0; j < testThreads; )
         {
-            printf("Alloc %d:\n", div+1);
-            printf("  %-20s: ", "Stuck Address");
-            consoleUpdate(NULL);
-
-            halflen = bufsize[div] / 2;            
-            count = halflen / sizeof(ul);
-            bufa = (ulv *) aligned[div];
-            bufb = (ulv *) ((size_t) aligned[div] + halflen);
-
-            if (!test_stuck_address(aligned[div], bufsize[div] / sizeof(ul))) {
-                 printf("ok\n");
-            }
-            else
+            count++;
+            switch (testWorkerReport[j])
             {
-                printf("Alloc %d: Error!\nPress any key to exit.\n", div+1);
-                waitForAnyKey();
-                consoleExit(NULL);
-                return 0;
-            }
-            consoleUpdate(NULL);
-            for (i=0;;i++) {
-                if (!tests[i].name) break;
-                /* If using a custom testmask, only run this test if the
-                   bit corresponding to this test was set by the user.
-                 */
-                if (testmask && (!((1 << i) & testmask))) {
-                    continue;
-                }
-                printf("  %-20s: ", tests[i].name);
-                if (!tests[i].fp(bufa, bufb, count)) {
-                    printf("ok\n");
-                }
-                else
-                {
-                    printf("Alloc %d: Error!\nPress any key to exit.\n", div+1);
+                case 0:
+                    svcSleepThread(10000000ULL);
+                    break;
+                case -1:
+                    printf("Alloc %d/%d: Error detected!\nPress any key to exit.\n", j+1, testThreads+1);
+                    consoleUpdate(NULL);
                     waitForAnyKey();
                     consoleExit(NULL);
                     return 0;
-                }
-                consoleUpdate(NULL);
-                /* clear buffer */
-                memset((void *) buf[div], 255, wantbytes[div]);
+                case 1:
+                    testWorkerReport[j] = 0;
+                    j++;
+                    continue;
             }
-            printf("\n");
+        }
+        printf("ok\n");
+        consoleUpdate(NULL);
+
+        // tests[]
+        for (i = 0 ;; i++) {
+            if (!test_select[i].name)
+                break;
+
+            printf("  %-20s: ...", test_select[i].name);
+            consoleUpdate(NULL);
+            for (int j = 0; j < testThreads; j++)
+                testJobId[j] = i;
+
+            double start_sec = gettime();
+            for (int j = 0; j < testThreads; )
+            {
+                switch (testWorkerReport[j])
+                {
+                    case 0:
+                        svcSleepThread(10000000ULL);
+                        continue;
+                    case -1:
+                        printf("Alloc %d/%d: Error detected!\nPress any key to exit.\n", j+1, testThreads+1);
+                        consoleUpdate(NULL);
+                        waitForAnyKey();
+                        consoleExit(NULL);
+                        return 0;
+                    case 1:
+                        testWorkerReport[j] = 0;
+                        j++;
+                        continue;
+                }
+            }
+            double end_sec = gettime();
+            printf("\b\b\bok! finished in %.1fs\n", end_sec - start_sec);
             consoleUpdate(NULL);
         }
     }

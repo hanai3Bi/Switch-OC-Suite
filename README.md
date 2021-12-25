@@ -30,8 +30,8 @@ This project will not be actively maintained by me and I'm looking for collabora
   - Game recording and SysDVR streaming @ 60fps with high video bitrate
   - Option to change the threshold for chargers providing enough power
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
-- MemTesterNX: A userspace utility for testing DRAM faults based on [memtester](https://pyropus.ca/software/memtester/)
-  - For testing stability, GPU/DRAM-heavy games like BotW/MHR will do better jobs as it's easier to spot framebuffer corruption/freeze
+- **MemTesterNX**: A userspace utility for testing DRAM faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
+  - Now with multi-thread support and "stress DRAM" option, it should be able to test DRAM stability with adjusted timings.
 
 #### Details
 
@@ -104,21 +104,16 @@ This project will not be actively maintained by me and I'm looking for collabora
 
 - Modded `loader.kip` with embedded pcv, ptm, am-no-copyright, ValidateAcidSignature patches
 - Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
-- Hekate with DRAM overvolting patch
 - `system-settings.ini` with some QoL improvements
 
-1. **Restoring pcv backup if you have patched pcv module manually:** Launch the `patcher.te` script via TegraExplorer to restore your backup. Separated **ptm patches should be removed** to avoid conflicts.
+1. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
-2. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
+2. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
-
-4. **Hekate-ipl bootloader:**
-
+3. **Hekate-ipl bootloader**
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
 
    **Atmosphere Fusee bootloader:**
-
    - Fusee will load any kips in `/atmosphere/kips/` automatically.
 
 

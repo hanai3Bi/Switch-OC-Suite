@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 
 #include "tests.h"
 #include "types.h"
@@ -48,18 +49,17 @@ int compare_regions(ulv *bufa, ulv *bufb, size_t count) {
     size_t i;
     ulv *p1 = bufa;
     ulv *p2 = bufb;
-    off_t physaddr;
+    // off_t physaddr;
 
     for (i = 0; i < count; i++, p1++, p2++) {
         if (*p1 != *p2) {
-            if (use_phys) {
-                physaddr = physaddrbase + (i * sizeof(ul));
-                printf("FAILURE: 0x%08lx != 0x%08lx at physical address 0x%08lx.\n", (ul) *p1, (ul) *p2, physaddr);
-            } else {
-                printf("FAILURE: 0x%08lx != 0x%08lx at offset 0x%08lx.\n", (ul) *p1, (ul) *p2, (ul) (i * sizeof(ul)));
-            }
-            consoleUpdate(NULL);
-            /* printf("Skipping to next test..."); */
+            // if (use_phys) {
+                // physaddr = physaddrbase + (i * sizeof(ul));
+                // printf("FAILURE: 0x%08lx != 0x%08lx at physical address 0x%08lx.\n", (ul) *p1, (ul) *p2, physaddr);
+            // } else {
+                // printf("FAILURE: 0x%08lx != 0x%08lx at offset 0x%08lx.\n", (ul) *p1, (ul) *p2, (ul) (i * sizeof(ul)));
+            // }
+            /* // printf("Skipping to next test..."); */
             r = -1;
         }
     }
@@ -70,57 +70,97 @@ int test_stuck_address(ulv *bufa, size_t count) {
     ulv *p1 = bufa;
     unsigned int j;
     size_t i;
-    off_t physaddr;
+    // off_t physaddr;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (16 / dividend) ; j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         p1 = (ulv *) bufa;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         for (i = 0; i < count; i++) {
             *p1 = ((j + i) % 2) == 0 ? (ul) p1 : ~((ul) p1);
             *p1++;
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         p1 = (ulv *) bufa;
         for (i = 0; i < count; i++, p1++) {
             if (*p1 != (((j + i) % 2) == 0 ? (ul) p1 : ~((ul) p1))) {
-                if (use_phys) {
-                    physaddr = physaddrbase + (i * sizeof(ul));
-                    printf("FAILURE: possible bad address line at physical address 0x%08lx.\n", physaddr);
-                } else {
-                    printf("FAILURE: possible bad address line at offset 0x%08lx.\n", (ul) (i * sizeof(ul)));
-                }
-                printf("Skipping to next test...\n");
-                consoleUpdate(NULL);
+                // if (use_phys) {
+                //     physaddr = physaddrbase + (i * sizeof(ul));
+                    // printf("FAILURE: possible bad address line at physical address 0x%08lx.\n", physaddr);
+                // } else {
+                    // printf("FAILURE: possible bad address line at offset 0x%08lx.\n", (ul) (i * sizeof(ul)));
+                // }
+                // printf("Skipping to next test...\n");
                 return -1;
             }
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
+}
+
+int test_stress_memcpy(ulv *bufa, ulv *bufb, size_t count) {
+    unsigned int j;
+
+    int q = rand_ul();
+    memset((void*)bufa, q, count*sizeof(ul));
+    memset((void*)bufb, q, count*sizeof(ul));
+
+    for (j = 0; j < 128; j++) {
+        memcpy((void*)bufa, (void*)bufb, count*sizeof(ul));
+    }
+    return memcmp((void*)bufa, (void*)bufb, count*sizeof(ul));
+}
+
+int test_stress_memset(ulv *bufa, ulv *bufb, size_t count) {
+    unsigned int j;
+
+    for (j = 0; j < 128; j++) {
+        int q = rand_ul();
+        memset((void*)bufa, q, count*sizeof(ul));
+        memset((void*)bufb, q, count*sizeof(ul));
+    }
+    return memcmp((void*)bufa, (void*)bufb, count*sizeof(ul));
+}
+
+int test_stress_memcmp(ulv *bufa, ulv *bufb, size_t count) {
+    ulv *p1 = bufa;
+    ulv *p2 = bufb;
+    unsigned int j;
+
+    int q = rand_ul();
+    memset((void*)bufa, q, count*sizeof(ul));
+    memset((void*)bufb, q, count*sizeof(ul));
+
+    int rc = 0;
+
+    for (j = 0; j < 32; j++) {
+        // Trick compiler so that it won't skip memcmp
+        *p1++ = *p2++ = rand_ul();
+        rc = memcmp((void*)bufa, (void*)bufb, count*sizeof(ul));
+        if (rc)
+            return rc;
+    }
+    return rc;
 }
 
 int test_random_value(ulv *bufa, ulv *bufb, size_t count) {
     ulv *p1 = bufa;
     ulv *p2 = bufb;
-    ul j = 0;
+    // ul j = 0;
     size_t i;
 
-    putchar(' ');
+    // putchar(' ');
     for (i = 0; i < count; i++) {
         *p1++ = *p2++ = rand_ul();
         if (!(i % PROGRESSOFTEN)) {
-            putchar('\b');
-            putchar(progress[++j % PROGRESSLEN]);
-            consoleUpdate(NULL);
+            // putchar('\b');
+            // putchar(progress[++j % PROGRESSLEN]);
         }
     }
-    printf("\b \b");
-    consoleUpdate(NULL);
+    // printf("\b \b");
     return compare_regions(bufa, bufb, count);
 }
 
@@ -224,26 +264,23 @@ int test_solidbits_comparison(ulv *bufa, ulv *bufb, size_t count) {
     ul q;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (64 / dividend / dividend); j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         q = (j % 2) == 0 ? UL_ONEBITS : 0;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
         for (i = 0; i < count; i++) {
             *p1++ = *p2++ = (i % 2) == 0 ? q : ~q;
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
-    consoleUpdate(NULL);
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -254,26 +291,23 @@ int test_checkerboard_comparison(ulv *bufa, ulv *bufb, size_t count) {
     ul q;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (64 / dividend / dividend); j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         q = (j % 2) == 0 ? CHECKERBOARD1 : CHECKERBOARD2;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
         for (i = 0; i < count; i++) {
             *p1++ = *p2++ = (i % 2) == 0 ? q : ~q;
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
-    consoleUpdate(NULL);
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -283,25 +317,22 @@ int test_blockseq_comparison(ulv *bufa, ulv *bufb, size_t count) {
     unsigned int j;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (64 / dividend / dividend) ; j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         for (i = 0; i < count; i++) {
             *p1++ = *p2++ = (ul) UL_BYTE(j);
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
-    consoleUpdate(NULL);
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -311,13 +342,12 @@ int test_walkbits0_comparison(ulv *bufa, ulv *bufb, size_t count) {
     unsigned int j;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (UL_LEN * 2 / dividend / dividend); j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         for (i = 0; i < count; i++) {
             if (j < UL_LEN) { /* Walk it up. */
                 *p1++ = *p2++ = ONE << j;
@@ -325,14 +355,13 @@ int test_walkbits0_comparison(ulv *bufa, ulv *bufb, size_t count) {
                 *p1++ = *p2++ = ONE << (UL_LEN * 2 - j - 1);
             }
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -342,13 +371,12 @@ int test_walkbits1_comparison(ulv *bufa, ulv *bufb, size_t count) {
     unsigned int j;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (UL_LEN * 2 / dividend / dividend); j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         for (i = 0; i < count; i++) {
             if (j < UL_LEN) { /* Walk it up. */
                 *p1++ = *p2++ = UL_ONEBITS ^ (ONE << j);
@@ -356,14 +384,13 @@ int test_walkbits1_comparison(ulv *bufa, ulv *bufb, size_t count) {
                 *p1++ = *p2++ = UL_ONEBITS ^ (ONE << (UL_LEN * 2 - j - 1));
             }
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -373,13 +400,12 @@ int test_bitspread_comparison(ulv *bufa, ulv *bufb, size_t count) {
     unsigned int j;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (j = 0; j < (UL_LEN * 2 / dividend / dividend); j++) {
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
         p1 = (ulv *) bufa;
         p2 = (ulv *) bufb;
-        printf("setting %3u", j);
-        consoleUpdate(NULL);
+        // printf("setting %3u", j);
         for (i = 0; i < count; i++) {
             if (j < UL_LEN) { /* Walk it up. */
                 *p1++ = *p2++ = (i % 2 == 0)
@@ -393,14 +419,13 @@ int test_bitspread_comparison(ulv *bufa, ulv *bufb, size_t count) {
                                     | (ONE << (UL_LEN * 2 + 1 - j)));
             }
         }
-        printf("\b\b\b\b\b\b\b\b\b\b\b");
-        printf("testing %3u", j);
-        consoleUpdate(NULL);
+        // printf("\b\b\b\b\b\b\b\b\b\b\b");
+        // printf("testing %3u", j);
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -411,28 +436,26 @@ int test_bitflip_comparison(ulv *bufa, ulv *bufb, size_t count) {
     ul q;
     size_t i;
 
-    printf("           ");
+    // printf("           ");
     for (k = 0; k < (UL_LEN / dividend / dividend); k++) {
         q = ONE << k;
         for (j = 0; j < 8; j++) {
-            printf("\b\b\b\b\b\b\b\b\b\b\b");
+            // printf("\b\b\b\b\b\b\b\b\b\b\b");
             q = ~q;
-            printf("setting %3u", k * 8 + j);
-            consoleUpdate(NULL);
+            // printf("setting %3u", k * 8 + j);
             p1 = (ulv *) bufa;
             p2 = (ulv *) bufb;
             for (i = 0; i < count; i++) {
                 *p1++ = *p2++ = (i % 2) == 0 ? q : ~q;
             }
-            printf("\b\b\b\b\b\b\b\b\b\b\b");
-            printf("testing %3u", k * 8 + j);
-            consoleUpdate(NULL);
+            // printf("\b\b\b\b\b\b\b\b\b\b\b");
+            // printf("testing %3u", k * 8 + j);
             if (compare_regions(bufa, bufb, count)) {
                 return -1;
             }
         }
     }
-    printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
+    // printf("\b\b\b\b\b\b\b\b\b\b\b           \b\b\b\b\b\b\b\b\b\b\b");
     return 0;
 }
 
@@ -444,7 +467,7 @@ int test_8bit_wide_random(ulv* bufa, ulv* bufb, size_t count) {
     unsigned int b, j = 0;
     size_t i;
 
-    putchar(' ');
+    // putchar(' ');
     for (attempt = 0; attempt < 2;  attempt++) {
         if (attempt & 1) {
             p1 = (u8v *) bufa;
@@ -460,17 +483,15 @@ int test_8bit_wide_random(ulv* bufa, ulv* bufb, size_t count) {
                 *p1++ = *t++;
             }
             if (!(i % PROGRESSOFTEN)) {
-                putchar('\b');
-                putchar(progress[++j % PROGRESSLEN]);
-                consoleUpdate(NULL);
+                // putchar('\b');
+                // putchar(progress[++j % PROGRESSLEN]);
             }
         }
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b \b");
-    consoleUpdate(NULL);
+    // printf("\b \b");
     return 0;
 }
 
@@ -481,7 +502,7 @@ int test_16bit_wide_random(ulv* bufa, ulv* bufb, size_t count) {
     unsigned int b, j = 0;
     size_t i;
 
-    putchar( ' ' );
+    // putchar( ' ' );
     for (attempt = 0; attempt < 2; attempt++) {
         if (attempt & 1) {
             p1 = (u16v *) bufa;
@@ -497,17 +518,15 @@ int test_16bit_wide_random(ulv* bufa, ulv* bufb, size_t count) {
                 *p1++ = *t++;
             }
             if (!(i % PROGRESSOFTEN)) {
-                putchar('\b');
-                putchar(progress[++j % PROGRESSLEN]);
-                consoleUpdate(NULL);
+                // putchar('\b');
+                // putchar(progress[++j % PROGRESSLEN]);
             }
         }
         if (compare_regions(bufa, bufb, count)) {
             return -1;
         }
     }
-    printf("\b \b");
-    consoleUpdate(NULL);
+    // printf("\b \b");
     return 0;
 }
 #endif
