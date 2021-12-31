@@ -1,5 +1,4 @@
-/*
- * --------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
  * <p-sam@d3vs.net>, <natinusala@gmail.com>, <m4x@m4xw.net>
  * wrote this file. As long as you retain this notice you can do whatever you
@@ -102,6 +101,13 @@ class MiscGui : public BaseMenuGui
             ChargeInfoFlags Flags;              //Unknown flags
         } ChargeInfo;
 
+        typedef enum
+        {
+            Max17050Reg_Current     = 0x0A,
+            Max17050Reg_AvgCurrent  = 0x0B,
+            Max17050Reg_Cycle       = 0x17,
+        } Max17050Reg;
+
         void PsmUpdate(uint32_t dispatchId = 0)
         {
             smInitialize();
@@ -140,35 +146,114 @@ class MiscGui : public BaseMenuGui
             return this->isEnoughPowerSupplied;
         }
 
-        void PsmGetInfo(char* out, size_t outsize)
+        Result I2cReadRegHandler(u8 reg, I2cDevice dev, u16 *out)
+        {
+            // ams::fatal::srv::StopSoundTask::StopSound()
+            // I2C Bus Communication Reference: https://www.ti.com/lit/an/slva704/slva704.pdf
+            struct { u8 reg;  } __attribute__((packed)) cmd;
+            struct { u16 val; } __attribute__((packed)) rec;
+
+            I2cSession _session;
+
+            Result res = i2cOpenSession(&_session, dev);
+            if (res)
+                return res;
+
+            cmd.reg = reg;
+            res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+            if (res)
+            {
+                i2csessionClose(&_session);
+                return res;
+            }
+
+            res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+            if (res)
+            {
+                i2csessionClose(&_session);
+                return res;
+            }
+
+            *out = rec.val;
+            i2csessionClose(&_session);
+            return 0;
+        }
+
+        bool Max17050ReadReg(u8 reg, u16 *out)
+        {
+            u16 data = 0;
+            Result res = I2cReadRegHandler(reg, I2cDevice_Max17050, &data);
+
+            if (res)
+            {
+                *out = res;
+                return false;
+            }
+
+            *out = data;
+            return true;
+        }
+
+        void GetInfo(char* out, size_t outsize)
         {
             float chargerVoltLimit = (float)chargeInfo->ChargerVoltageLimit / 1000;
             float chargerCurrLimit = (float)chargeInfo->ChargerCurrentLimit / 1000;
             float chargerOutWatts  = chargerVoltLimit * chargerCurrLimit;
 
+            float batCurrent = 0;
+            float batCycleCount = 0;
+
             char chargeVoltLimit[20] = "";
             if (chargeInfo->ChargeVoltageLimit)
                 snprintf(chargeVoltLimit, sizeof(chargeVoltLimit), ", %u mV", chargeInfo->ChargeVoltageLimit);
 
+            // From Hekate, too lazy to query configuration from reg
+            constexpr float max17050SenseResistor = 5.; // in uOhm
+            constexpr float max17050CGain = 1.99993;
+
+            // Init, read registers and exit I2C service all here to save resources
+            {
+                smInitialize();
+                i2cInitialize();
+                u16 data = 0;
+
+                if (Max17050ReadReg(Max17050Reg_Cycle, &data))
+                    batCycleCount = data / 100.;
+
+                if (Max17050ReadReg(Max17050Reg_Current, &data))
+                    batCurrent = (s16)data * (1.5625 / (max17050SenseResistor * max17050CGain));
+
+                i2cExit();
+                smExit();
+            }
+
+            char batWattsInfo[20] = "";
+            if (std::abs(batCurrent) > 100)
+                snprintf(batWattsInfo, sizeof(batWattsInfo), " (%+.2f W)", batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
+
             snprintf(out, outsize,
-                "Charger:            %s %.1fV/%.1fA (%.1fW)"
-                "\n%s"
-                "\nBattery:              %.3fV %.2f\u00B0C"
-                "\nCurrent Limit:    %u mA IN, %u mA OUT"
-                "\nCharging Limit: %u mA%s"
-                "\nRaw Charge:    %.2f%%"
-                "\nBattery Age:     %.2f%%"
-                "\nPower Role:      %s"
+                "%s"
+                "\nCharger:             %s %.1fV/%.1fA (%.1fW)"
+                "\nBattery:               %.3fV %.2f\u00B0C"
+                "\nCurrent Limit:     %u mA IN, %u mA OUT"
+                "\nCharging Limit:  %u mA%s"
+                "\nRaw Charge:     %.2f%%"
+                "\nBattery Age:      %.2f%%"
+                "\nPower Role:       %s"
+                "\nCycle Count:     %.2f (Reset at power-up)"
+                "\nCurrent Flow:    %+.2f mA%s"
                 ,
-                ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargerVoltLimit, chargerCurrLimit, chargerOutWatts,
                 PsmIsEnoughPowerSupplied() ? "Enough Power Supplied" : "",
+                ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargerVoltLimit, chargerCurrLimit, chargerOutWatts,
                 (float)chargeInfo->VoltageAvg / 1000,
                 (float)chargeInfo->BatteryTemperature / 1000,
                 chargeInfo->InputCurrentLimit, chargeInfo->VBUSCurrentLimit,
                 chargeInfo->ChargeCurrentLimit, chargeVoltLimit,
                 (float)chargeInfo->RawBatteryCharge / 1000,
                 (float)chargeInfo->BatteryAge / 1000,
-                ChargeInfoPowerRoleToStr(chargeInfo->PowerRole)
+                ChargeInfoPowerRoleToStr(chargeInfo->PowerRole),
+                batCycleCount,
+                batCurrent, batWattsInfo
             );
         }
 
@@ -196,6 +281,6 @@ class MiscGui : public BaseMenuGui
 
         ChargeInfo* chargeInfo;
         bool isEnoughPowerSupplied = false;
-        char psmOutput[800] = "";
+        char infoOutput[800] = "";
         int frameCounter = 60;
 };

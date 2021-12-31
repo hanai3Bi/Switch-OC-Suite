@@ -1,5 +1,4 @@
-/*
- * --------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
  * <p-sam@d3vs.net>, <natinusala@gmail.com>, <m4x@m4xw.net>
  * wrote this file. As long as you retain this notice you can do whatever you
@@ -27,7 +26,7 @@ void MiscGui::preDraw(tsl::gfx::Renderer* render)
 {
     BaseMenuGui::preDraw(render);
 
-    render->drawString(this->psmOutput, false, 40, 300, SMALL_TEXT_SIZE, DESC_COLOR);
+    render->drawString(this->infoOutput, false, 40, 300, SMALL_TEXT_SIZE, DESC_COLOR);
 }
 
 void MiscGui::listUI()
@@ -70,7 +69,7 @@ void MiscGui::update()
     {
         frameCounter = 0;
         PsmUpdate();
-        PsmGetInfo(this->psmOutput, sizeof(this->psmOutput));
+        GetInfo(this->infoOutput, sizeof(this->infoOutput));
         this->chargingToggle->setState(this->PsmIsCharging());
         this->fastChargingToggle->setState(this->PsmIsFastCharging());
     }

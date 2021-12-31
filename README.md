@@ -1,10 +1,10 @@
 # Switch OC Suite
 
-[![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 13.0.0-13.2.0.
 
-This project will not be actively maintained by me and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
+This project will not be actively maintained in 2022 and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
 
 
 
@@ -39,6 +39,8 @@ This project will not be actively maintained by me and I'm looking for collabora
 
   - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
     - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+    - All maxed out OC is not recommended, and is strongly discouraged without charger.
+      - See `Battery Current Flow` in sys-clk-OC overlay `Miscellaneous`.
 
   - **Recommended RAM clock: 1862.4/1996.8 MHz**.
     - Only 1600 and MAX MHz could be selected in sys-clk.
@@ -55,17 +57,8 @@ This project will not be actively maintained by me and I'm looking for collabora
 
   - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
 
-  - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 Mhz trigger overvolting. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
+  - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 MHz trigger overvolting.
     - You cannot set > 1267 MHz without official chargers.
-
-  - RAM [NOT RECOMMENDED]
-    - Only diff patch for hekate bootloader is provided.
-    - Edit `oc.ini` to change Vddq voltage value:
-    ```ini
-    [emc]
-    volt=600000
-    ```
-    - Overvolting beyond 650mV is not safe and proved to be not much helpful.
 
 - **Fan Control Optimization** at high load
   - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
@@ -75,10 +68,9 @@ This project will not be actively maintained by me and I'm looking for collabora
 
 - **Modded sys-clk and ReverseNX**(-Tools and -RT)
   - **No need to change clocks manually** after toggling modes in ReverseNX
-    - Add `/config/sys-clk/downclock_dock.flag` to use handheld clocks in Docked mode when Handheld mode is set in ReverseNX.
     - To **disable this feature**, use original version of ReverseNX-RT and delete `/config/sys-clk/ReverseNX_sync.flag`.
   - **Auto-Boost CPU for faster game loading**
-    - Enable CPU Boost (1963.5 MHz) if CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
+    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
     - Auto-Boost will be enabled only when charger is connected. (>90% w/ PD charger or >95% w/ unsupported charger)
     - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/`.
 
@@ -128,7 +120,7 @@ Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT, hekate
 
 - CTCaer for [Hekate-ipl](https://github.com/CTCaer/hekate) bootloader, RE and hardware research
 - [devkitPro](https://devkitpro.org/) for All-In-One homebrew toolchains
-- masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT) and [BatteryChargeInfoNX](https://github.com/masagrator/BatteryChargeInfoNX)
+- masagrator for [ReverseNX-RT](https://github.com/masagrator/ReverseNX-RT) and info on BatteryChargeInfoFields in psm module
 - Nvidia for [Tegra X1 Technical Reference Manual](https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual)
 - RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch

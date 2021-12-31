@@ -384,10 +384,8 @@ int main(int argc, char* argv[])
         for (int j = 0; j < testThreads; j++)
             testJobId[j] = -1;
 
-        ull count = 0;
         for (int j = 0; j < testThreads; )
         {
-            count++;
             switch (testWorkerReport[j])
             {
                 case 0:
