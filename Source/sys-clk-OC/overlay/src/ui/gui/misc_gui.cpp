@@ -14,12 +14,14 @@
 
 MiscGui::MiscGui()
 {
-    this->chargeInfo = new ChargeInfo;
+    this->chargeInfo = new ChargeInfo {};
+    this->i2cInfo    = new I2cInfo {};
 }
 
 MiscGui::~MiscGui()
 {
     delete this->chargeInfo;
+    delete this->i2cInfo;
 }
 
 void MiscGui::preDraw(tsl::gfx::Renderer* render)
@@ -69,7 +71,8 @@ void MiscGui::update()
     {
         frameCounter = 0;
         PsmUpdate();
-        GetInfo(this->infoOutput, sizeof(this->infoOutput));
+        I2cGetInfo(this->i2cInfo);
+        PrintInfo(this->infoOutput, sizeof(this->infoOutput));
         this->chargingToggle->setState(this->PsmIsCharging());
         this->fastChargingToggle->setState(this->PsmIsFastCharging());
     }

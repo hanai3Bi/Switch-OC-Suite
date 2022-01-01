@@ -108,6 +108,20 @@ class MiscGui : public BaseMenuGui
             Max17050Reg_Cycle       = 0x17,
         } Max17050Reg;
 
+        typedef enum
+        {
+            Max77812Reg_CPUVolt     = 0x26,
+            Max77812Reg_GPUVolt     = 0x23,
+            Max77812Reg_DRAMVolt    = 0x25,
+        } Max77812Reg;
+
+        typedef struct {
+            float batCurrent;
+            u32 cpuVolt  = 620;
+            u32 gpuVolt  = 610;
+            u32 dramVolt = 600;
+        } I2cInfo;
+
         void PsmUpdate(uint32_t dispatchId = 0)
         {
             smInitialize();
@@ -179,72 +193,89 @@ class MiscGui : public BaseMenuGui
             return 0;
         }
 
-        bool Max17050ReadReg(u8 reg, u16 *out)
+        void I2cGetInfo(I2cInfo* i2cInfo)
         {
+            smInitialize();
+            i2cInitialize();
             u16 data = 0;
-            Result res = I2cReadRegHandler(reg, I2cDevice_Max17050, &data);
 
-            if (res)
+            // Read max17050 furl gauge regs. Sense resistor and CGain are from Hekate, too lazy to query configuration from reg
             {
-                *out = res;
-                return false;
+                constexpr float SenseResistor = 5.; // in uOhm
+                constexpr float CGain = 1.99993;
+
+                if (R_SUCCEEDED(I2cReadRegHandler(Max17050Reg_Current, I2cDevice_Max17050, &data)))
+                    i2cInfo->batCurrent = (s16)data * (1.5625 / (SenseResistor * CGain));
             }
 
-            *out = data;
-            return true;
+            // Read max77812 volt regs
+            {
+                auto ConvertToMVolt = [](u32 *out, u16 data)
+                {
+                    constexpr u32 MinMVolt  = 250;
+                    constexpr u32 StepMVolt = 5;
+                    constexpr u32 VoltMask  = 0xFF;
+
+                    u32 mvolt = (data & VoltMask) * StepMVolt + MinMVolt;
+
+                    // Ignore 850 mV as it is questionable
+                    if (mvolt == 850)
+                        return;
+
+                    *out = mvolt;
+                };
+
+                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_CPUVolt, I2cDevice_Max77812_2, &data)))
+                    ConvertToMVolt(&(i2cInfo->cpuVolt), data);
+
+                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_GPUVolt, I2cDevice_Max77812_2, &data)))
+                    ConvertToMVolt(&(i2cInfo->gpuVolt), data);
+
+                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_DRAMVolt, I2cDevice_Max77812_2, &data)))
+                    ConvertToMVolt(&(i2cInfo->dramVolt), data);
+            }
+
+            i2cExit();
+            smExit();
         }
 
-        void GetInfo(char* out, size_t outsize)
+        void PrintInfo(char* out, size_t outsize)
         {
             float chargerVoltLimit = (float)chargeInfo->ChargerVoltageLimit / 1000;
             float chargerCurrLimit = (float)chargeInfo->ChargerCurrentLimit / 1000;
             float chargerOutWatts  = chargerVoltLimit * chargerCurrLimit;
 
-            float batCurrent = 0;
-            float batCycleCount = 0;
-
             char chargeVoltLimit[20] = "";
             if (chargeInfo->ChargeVoltageLimit)
                 snprintf(chargeVoltLimit, sizeof(chargeVoltLimit), ", %u mV", chargeInfo->ChargeVoltageLimit);
 
-            // From Hekate, too lazy to query configuration from reg
-            constexpr float max17050SenseResistor = 5.; // in uOhm
-            constexpr float max17050CGain = 1.99993;
+            char chargWattsInfo[50] = "";
+            if (chargeInfo->ChargerType)
+                snprintf(chargWattsInfo, sizeof(chargWattsInfo), " %.1fV/%.1fA (%.1fW)", chargerVoltLimit, chargerCurrLimit, chargerOutWatts);
 
-            // Init, read registers and exit I2C service all here to save resources
-            {
-                smInitialize();
-                i2cInitialize();
-                u16 data = 0;
-
-                if (Max17050ReadReg(Max17050Reg_Cycle, &data))
-                    batCycleCount = data / 100.;
-
-                if (Max17050ReadReg(Max17050Reg_Current, &data))
-                    batCurrent = (s16)data * (1.5625 / (max17050SenseResistor * max17050CGain));
-
-                i2cExit();
-                smExit();
-            }
-
-            char batWattsInfo[20] = "";
-            if (std::abs(batCurrent) > 100)
-                snprintf(batWattsInfo, sizeof(batWattsInfo), " (%+.2f W)", batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
+            char batCurInfo[30] = "";
+            if (std::abs(i2cInfo->batCurrent) < 10)
+                snprintf(batCurInfo, sizeof(batCurInfo), "0 mA");
+            else
+                snprintf(batCurInfo, sizeof(batCurInfo), "%+.2f mA (%+.2f W)",
+                    i2cInfo->batCurrent, i2cInfo->batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
 
             snprintf(out, outsize,
                 "%s"
-                "\nCharger:             %s %.1fV/%.1fA (%.1fW)"
+                "\nCharger:             %s%s"
                 "\nBattery:               %.3fV %.2f\u00B0C"
                 "\nCurrent Limit:     %u mA IN, %u mA OUT"
                 "\nCharging Limit:  %u mA%s"
                 "\nRaw Charge:     %.2f%%"
                 "\nBattery Age:      %.2f%%"
                 "\nPower Role:       %s"
-                "\nCycle Count:     %.2f (Reset at power-up)"
-                "\nCurrent Flow:    %+.2f mA%s"
+                "\nCurrent Flow:    %s\n"
+                "\nCPU    Volt:       %d mV"
+                "\nGPU    Volt:       %d mV"
+                "\nDRAM Volt:       %d mV"
                 ,
                 PsmIsEnoughPowerSupplied() ? "Enough Power Supplied" : "",
-                ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargerVoltLimit, chargerCurrLimit, chargerOutWatts,
+                ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargWattsInfo,
                 (float)chargeInfo->VoltageAvg / 1000,
                 (float)chargeInfo->BatteryTemperature / 1000,
                 chargeInfo->InputCurrentLimit, chargeInfo->VBUSCurrentLimit,
@@ -252,8 +283,10 @@ class MiscGui : public BaseMenuGui
                 (float)chargeInfo->RawBatteryCharge / 1000,
                 (float)chargeInfo->BatteryAge / 1000,
                 ChargeInfoPowerRoleToStr(chargeInfo->PowerRole),
-                batCycleCount,
-                batCurrent, batWattsInfo
+                batCurInfo,
+                i2cInfo->cpuVolt,
+                i2cInfo->gpuVolt,
+                i2cInfo->dramVolt
             );
         }
 
@@ -269,9 +302,6 @@ class MiscGui : public BaseMenuGui
 
         bool PsmFastChargingToggler(bool enable)
         {
-            if (!PsmIsChargerConnected())
-                return false;
-
             PsmUpdate(enable ? 10 : 11);
 
             return PsmIsFastCharging() == enable;
@@ -280,6 +310,7 @@ class MiscGui : public BaseMenuGui
         tsl::elm::ToggleListItem *chargingToggle, *fastChargingToggle;
 
         ChargeInfo* chargeInfo;
+        I2cInfo*    i2cInfo;
         bool isEnoughPowerSupplied = false;
         char infoOutput[800] = "";
         int frameCounter = 60;

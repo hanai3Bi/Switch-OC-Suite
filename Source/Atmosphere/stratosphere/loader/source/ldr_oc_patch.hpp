@@ -59,7 +59,6 @@ namespace pcv {
         // 0xF11A0,
         0xF11F0,
     };
-    // TODO: correctly derive c0-c1 dfll coefficients
     constexpr cpu_freq_cvb_table_t NewCpuTables[] = {
      // OldCpuTables
      // {  204000, {  721589, -12695, 27 }, { 1120000 } },
@@ -80,10 +79,10 @@ namespace pcv {
      // { 1785000, { 1527196, -36015, 27 }, { 1120000 } },
      // { 1887000, { 1609246, -37515, 27 }, { 1120000 } },
      // { 1963500, { 1675751, -38635, 27 }, { 1120000 } },
-        { 2091000, { 1719782, -40440, 27 }, { NewCpuVoltageScaled } },
-        { 2193000, { 1809766, -41939, 27 }, { NewCpuVoltageScaled } },
-        { 2295000, { 1904458, -43439, 27 }, { NewCpuVoltageScaled } },
-        { 2397000, { NewCpuVoltageScaled }, { NewCpuVoltageScaled } },
+        { 2091000, { 1785520, -40523, 27 }, { NewCpuVoltageScaled } },
+        { 2193000, { 1878755, -42027, 27 }, { NewCpuVoltageScaled } },
+        { 2295000, { 1975655, -43531, 27 }, { NewCpuVoltageScaled } },
+        { 2397000, { 2076220, -45036, 27 }, { NewCpuVoltageScaled } },
     };
     static_assert(sizeof(NewCpuTables) <= sizeof(cpu_freq_cvb_table_t)*14);
 
@@ -107,7 +106,7 @@ namespace pcv {
         // 0xF2260,
         0xF22B0,
     };
-    // TODO: correctly derive c0-c5 coefficients
+    // No way to correctly derive c0-c5 coefficients, as coefficients >= 1152000 only make sense
     constexpr gpu_cvb_pll_table_t NewGpuTables[] = {
      // OldGpuTables
      // {  537600, {}, {  801688, -10900, -163,  298, -10599, 162 } },

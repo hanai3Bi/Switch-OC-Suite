@@ -38,7 +38,6 @@ This project will not be actively maintained in 2022 and I'm looking for collabo
 - **Overclock**
 
   - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
-    - Anything above that are not in the table of official module. ([issue #4](https://github.com/KazushiMe/Switch-OC-Suite/issues/4))
     - All maxed out OC is not recommended, and is strongly discouraged without charger.
       - See `Battery Current Flow` in sys-clk-OC overlay `Miscellaneous`.
 
