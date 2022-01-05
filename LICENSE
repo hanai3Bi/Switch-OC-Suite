@@ -1,3 +1,10 @@
+- "libstratosphere", "loader" from Atmosphere-NX and "memtester" are licensed under GPL v2.
+
+- Tinymembench is under MIT license, which is compatible with GPL v2.
+
+- Although "sys-clk" uses permissive license, all modifications towards it in this repo ("sys-clk-OC") are licensed under GPL v2.
+
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 2, June 1991
 

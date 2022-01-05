@@ -2,100 +2,122 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for Switch **(Mariko Only)** running on Atmosphere CFW. Support Horizon OS 13.0.0-13.2.0.
+Overclocking suite for **Mariko Only** Switch running on Atmosphere CFW. Support Horizon OS 13.0.0-13.2.0.
 
-This project will not be actively maintained in 2022 and I'm looking for collaborators. Open an issue if you are interested and would like to be added into the maintainer list.
+This project will not be actively maintained.
+
+I'd appreciate if someone is willing to contribute. But if you are releasing somewhere else (with or without your own modifications), be sure you are complying with GPL v2 license and _include necessary warnings for users_.
 
 
 
-## Disclaimer
+## DISCLAIMER: USE AT YOUR OWN RISK!
 
-### USE AT YOUR OWN RISK!
+- Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
 
-**I AM NOT RESPONSIBLE FOR ANYTHING BAD THAT MIGHT HAPPEN TO YOUR CONSOLE** (bans, internal component failure, etc.) by installing OC Suite or tinkering software/hardware with any info from this repo.
+- There is **no dynamic frequency scaling** in HorizonOS (HOS), which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
+
+- Most games are _bottlenecked by RAM bandwidth_, **ONLY ramp up RAM clock** beyond official maximum (1963/1267/1600) to 1862/1996 MHz if you want to _stay safe_.
+
+- Aula (OLED model) is not tested and I don't know if it works, even they have same X1+ SoC.
+
+
+### Why not Erista?
+
+- Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
+  - Snapdragon 810 (4 x A57 @ 2.0GHz + 4 x A53) also uses 20nm HPM, see how it plagued Android phones in 2014.
+
+- The board power supply is quite limited, even if you've done cooling mod.
+  - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
+  - CPU / GPU performance at max clocks will be worse if power supply is not enough.
+
+- RAM overclock is already available online.
 
 
 
 ## Features
 
-- **CPU/GPU/RAM Overclock** up to **2397.0/1497.6/2131.2 MHz**
-- **Fan Control Optimization** at high load
-- **Modded sys-clk and ReverseNX**(-Tools and -RT)
-  - **No need to change clocks manually** after toggling modes in ReverseNX
-  - **Auto-Boost CPU** for faster game loading
-  - Permanent global clock override for all profiles
-  - View charger & battery info, toggle charging/fast-charging in overlay
-- System Settings
+- **CPU/GPU/RAM Overclock**
+
+  - Safe: Official Maximum (1963/1267/1600) with DRAM OC
+
+    - CPU/GPU: 1963/1267 MHz exists in official pcv module, but is not unlocked.
+
+    - DRAM: 2131.2 MHz @ 600 mV (stock)
+      - 1862.4 / 1996.8 MHz should be stable for all (Samsung / Micron/ Hynix).
+      - 2131.2 MHz might be stable for some chips.
+      - Theoretically, you could replace 2x2GB DRAM chips (dual-channel) with 2x4GB DRAM chips from SAMSUNG (quad-channel) to attain doubled bandwidth.
+
+  - Unsafe: All maxed out **(NOT RECOMMENDED)**
+
+    - Why NOT RECOMMENDED?
+      - See `Current Flow` in sys-clk-OC overlay `Miscellaneous` (on battery) or measure power draw from charger yourself.
+
+    - CPU: 2397 MHz @ 1220 mV (overvolting from 1120 mV)
+      - Performance depends on CPU speedo (higher speedo === lower voltage required === better silicon quality).
+        - You'd get somewhere between 2360 to 2390 MHz performance for real.
+      - This is where floating point performance maxed out.
+      - ≥ 2193 MHz will _ENABLE OVERVOLTING_.
+
+    - GPU: 1497 MHz @ 1170 mV (overvolting from 1050 mV)
+      - Not tested. Not sure if it has any benefit over 1267 MHz. GPU (OpenGL) benchmark is required.
+      - ≥ 1344 MHz _cannot be set without official chargers_.
+      - ≥ 1420 MHz will _ENABLE OVERVOLTING_.
+
+    - DRAM: Overvolting
+      - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+
+- **Modded sys-clk and ReverseNX**(-RT)
+
+  - No need to change clocks manually after toggling modes in ReverseNX (Optional)
+    - To disable this feature, use original version of ReverseNX-RT and remove `/config/sys-clk/ReverseNX_sync.flag`.
+
+  - Auto-Boost CPU for faster game loading (Optional)
+    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
+    - Auto-Boost will be enabled only when charger is connected.
+    - To disable this feature, remove `/config/sys-clk/boost.flag`.
+
+  - Permanent global clock override
+    - Expected usage: set maximum DRAM clocks for all games and profiles.
+
+  - View charger & battery info, toggle charging/fast-charging(2A) in overlay
+    - Extend battery life expectancy by maintaining battery charge at 40% - 60% and disabling fast charging if possible.
+    - Known issue: Fast charging toggle will be reset in-game.
+
+- System Settings (Optional)
+
+  - Cherry-pick from below and add them manually.
+
+  - Fan Control Optimization at high load
+    - `[tc]`
+    - Set `holdable_tskin` to 56˚C (default 48˚C), less audible fan noise.
+    - Replacing stock thermal paste and adding thermal pad on Wi-Fi/BT module(shielded, adjacent to antennas) is recommended.
+
   - Disable background services, less heat and power consumption in standby mode
-  - Game recording and SysDVR streaming @ 60fps with high video bitrate
-  - Option to change the threshold for chargers providing enough power
+    - `;Disable Background service`
+    - Don't add this if you **use Nintendo Online services**.
+
+  - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
+    - `[am.debug]`
+    - Recommended: [dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
+      - For optimal streaming experience, SysDVR via USB interface is recommended.
+    - Known Issues (won't fix)
+      - Game recordings may be less than 30 seconds if higher bitrate is used.
+      - It has noticeable performance impacts in demanding games.
+      - Video duration shown in album will be doubled, while the playback speed or mp4 file itself are not affected.
+
+  - Change the threshold for chargers providing enough power
+    - `[psm]`
+    - `enough_power_threshold_mw` is be the threshold of "Official Charger"
+      - E.g. set it to `0x4268` (17,000 mW) and 18W power bank will be "Official Charger".
+
 - **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
+
 - **MemTesterNX**: A userspace utility for testing DRAM faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
   - Now with multi-thread support and "stress DRAM" option, it should be able to test DRAM stability with adjusted timings.
-
-#### Details
-
-- **Overclock**
-
-  - **Official X1+ CPU/GPU Max clock: 1963.5/1267.2 MHz**.
-    - All maxed out OC is not recommended, and is strongly discouraged without charger.
-      - See `Battery Current Flow` in sys-clk-OC overlay `Miscellaneous`.
-
-  - **Recommended RAM clock: 1862.4/1996.8 MHz**.
-    - Only 1600 and MAX MHz could be selected in sys-clk.
-    - Apply thermal paste on RAM chips and test with emuNAND before long-term usage.
-    - DRAM Timing Table Adjustment:
-      - 2131.2 MHz should be stable for some chips. (theoretical bandwidth: 31.76GiB/s @ 2131.2 MHz)
-      - 1862.4/1996.8 MHz should be stable for all.
-
-  - See [issue #5](https://github.com/KazushiMe/Switch-OC-Suite/issues/5) for more info on DRAM OC and timings
-
-  - For more info on available clock rates, see [README.md](https://github.com/KazushiMe/Switch-OC-Suite/tree/master/Source/sys-clk-OC) in sys-clk-OC.
-
-- **Overvolt**
-
-  - CPU overvolting: 1220 mV, up from default 1120 mV. Frequencies ≥ 2193 MHz will enable overvolting.
-
-  - GPU overvolting: 1170 mV, default 1050 mV. Frequencies ≥ 1420 MHz trigger overvolting.
-    - You cannot set > 1267 MHz without official chargers.
-
-- **Fan Control Optimization** at high load
-  - Higher tolerable temperature and smoother fan curve. Set `holdable_tskin` to 56˚C. Previously it's set to 48˚C, so by default the fan would go crazy (80~100%) easily with a slight degree of OC.
-  - Replace crappy factory thermal paste is preferred.
-  - Place a thermal pad onto Wi-Fi/BT module (shielded, adjacent to antennas) to lower tskin temperature.
-  - Not tested on Aula, which has lower temperature tolerance.
-
-- **Modded sys-clk and ReverseNX**(-Tools and -RT)
-  - **No need to change clocks manually** after toggling modes in ReverseNX
-    - To **disable this feature**, use original version of ReverseNX-RT and delete `/config/sys-clk/ReverseNX_sync.flag`.
-  - **Auto-Boost CPU for faster game loading**
-    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card.
-    - Auto-Boost will be enabled only when charger is connected. (>90% w/ PD charger or >95% w/ unsupported charger)
-    - To **disable this feature**, simply remove `boost.flag` in `/config/sys-clk/`.
-
-- Disable background services, less heat and power consumption in standby mode
-  - **Remove** the "Disable Background service" part in `/atmosphere/config/system_settings.ini` if you **use Nintendo Online services**.
-
-- Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
-  - (Recommended)[dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
-  - For optimal streaming experience, SysDVR via USB interface is recommended.
-  - Known Issues (won't fix)
-    - Game recordings may be less than 30 seconds if higher bitrate is used.
-    - It has noticeable performance impacts in demanding games.
-    - Video duration shown in album will be twice than the actual value, while the playback speed is not affected.
-  - To **disable** this feature, simply remove the `[am.debug]` section in `system_settings.ini`.
-
-- Option to change the threshold for chargers providing enough power
-    - Find the string `enough_power_threshold_mw` in `system_settings.ini`. The default value is `0x9858` (39,000 mW).
-    - To lower the threshold, you may change the value to `0x4268` (17,000 mW). Now the system and "sys-clk" will see typical Power Delivery chargers that only supply up to 18W (9V/2A) as "Official Chargers".
 
 
 
 ## Installation
-
-- Modded `loader.kip` with embedded pcv, ptm, am-no-copyright, ValidateAcidSignature patches
-- Prebuilt sys-clk-OC and ReverseNX-RT modified for OC
-- `system-settings.ini` with some QoL improvements
 
 1. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
@@ -111,7 +133,7 @@ This project will not be actively maintained in 2022 and I'm looking for collabo
 
 ## Build
 
-Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT, hekate and Atmosphere (or loader only) with devkitpro.
+Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
 
 
 
