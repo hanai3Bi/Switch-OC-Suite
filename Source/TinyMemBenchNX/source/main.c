@@ -552,14 +552,14 @@ void memset_wrapper(int64_t *dst, int64_t *src, int size)
 
 static bench_info aarch64_neon[] =
 {
-    { "NEON LDP", 0, aligned_block_read_ldp_q_aarch64 },
-    { "NEON LDP/STP copy", 0, aligned_block_copy_ldpstp_q_aarch64 },
+    { "NEON LDP (READ)", 0, aligned_block_read_ldp_q_aarch64 },
+    { "NEON LDP/STP copy (COPY)", 0, aligned_block_copy_ldpstp_q_aarch64 },
     { "NEON LDP/STP copy pldl2strm (32B step)", 0, aligned_block_copy_ldpstp_q_pf32_l2strm_aarch64 },
     { "NEON LDP/STP copy pldl2strm (64B step)", 0, aligned_block_copy_ldpstp_q_pf64_l2strm_aarch64 },
     { "NEON LDP/STP copy pldl1keep (32B step)", 0, aligned_block_copy_ldpstp_q_pf32_l1keep_aarch64 },
     { "NEON LDP/STP copy pldl1keep (64B step)", 0, aligned_block_copy_ldpstp_q_pf64_l1keep_aarch64 },
     { "NEON LD1/ST1 copy", 0, aligned_block_copy_ld1st1_aarch64 },
-    { "NEON STP fill", 0, aligned_block_fill_stp_q_aarch64 },
+    { "NEON STP fill (WRITE)", 0, aligned_block_fill_stp_q_aarch64 },
     { "NEON STNP fill", 0, aligned_block_fill_stnp_q_aarch64 },
     { "ARM LDP", 0, aligned_block_read_ldp_x_aarch64 },
     { "ARM LDP/STP copy", 0, aligned_block_copy_ldpstp_x_aarch64 },
@@ -887,6 +887,7 @@ void printClock()
     clkrstOpenSession(&clkrstSession, PcvModuleId_EMC, 3);
     clkrstGetClockRate(&clkrstSession, &mem_hz);
     clkrstCloseSession(&clkrstSession);
+    clkrstExit();
 
     printf("== CPU: %u.%u MHz ==\n== MEM: %u.%u MHz ==\n",
         cpu_hz/1000000, cpu_hz/100000 - cpu_hz/1000000*10,

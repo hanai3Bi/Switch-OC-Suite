@@ -119,7 +119,7 @@ I'd appreciate if someone is willing to contribute. But if you are releasing som
 
 ## Installation
 
-1. Copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
+1. Download latest release and copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
 
 2. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
