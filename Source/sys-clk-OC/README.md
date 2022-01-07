@@ -28,13 +28,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### GPU clocks
 
-* 1??? → unknown max for Mariko
-* 1497
-* 1459
-* 1420
-* 1382
-* 1344
-* 1305
+* 1305 → OC max for Mariko
 * 1267 → official max for Mariko
 * 1228
 * 1152
@@ -55,7 +49,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### MEM clocks
 
-**Only 1331 and Max could be set in sys-clk-OC.**
+**Only 1600 and Max could be set in sys-clk-OC.**
 
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 

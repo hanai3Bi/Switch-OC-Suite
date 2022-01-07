@@ -58,10 +58,9 @@ I'd appreciate if someone is willing to contribute. But if you are releasing som
       - This is where floating point performance maxed out.
       - ≥ 2193 MHz will _ENABLE OVERVOLTING_.
 
-    - GPU: 1497 MHz @ 1170 mV (overvolting from 1050 mV)
-      - Not tested. Not sure if it has any benefit over 1267 MHz. GPU (OpenGL) benchmark is required.
-      - ≥ 1344 MHz _cannot be set without official chargers_.
-      - ≥ 1420 MHz will _ENABLE OVERVOLTING_.
+    - GPU: 1305 MHz (no overvolting, less than official threshold 1050 mV)
+      - Tested with deko3d compute shaders converted from [Maxwell SASS assembly](https://gist.github.com/KazushiMe/82b6bd89621f451b51c9b1ccd2202b97). Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.
+      - 1305 MHz CANNOT be set without charger connected.
 
     - DRAM: Overvolting
       - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).

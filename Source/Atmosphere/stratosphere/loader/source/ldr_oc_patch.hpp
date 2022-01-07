@@ -94,12 +94,12 @@ namespace pcv {
     constexpr u32 NewMaxCpuClock = 2397000;
 
     /* GPU */
-    constexpr u32 GpuVoltageLimitOffsets[] = {
-        // 0xE3044,
-        // 0xF1E94,
-        0xF1EE4,
-    };
-    constexpr u32 NewGpuVoltageLimit = 1170; // default max 1050mV
+    // constexpr u32 GpuVoltageLimitOffsets[] = {
+    //     // 0xE3044,
+    //     // 0xF1E94,
+    //     0xF1EE4,
+    // };
+    // constexpr u32 NewGpuVoltageLimit = 1170; // default max 1050mV
 
     constexpr u32 GpuTablesFreeSpace[] = {
         // 0xE3410,
@@ -120,13 +120,7 @@ namespace pcv {
      // { 1152000, {}, { 1204812,  -9908, -830,    0,   1469, 110 } },
      // { 1228800, {}, { 1277303, -11675, -859,    0,   3722, 313 } },
      // { 1267200, {}, { 1335531, -12567, -867,    0,   3681, 559 } },
-        { 1305600, {}, {  955000 } },
-        { 1344000, {}, {  990000 } },
-        { 1382400, {}, { 1030000 } },
-        { 1420800, {}, { 1075000 } },
-        { 1459200, {}, { 1120000 } },
-        { 1497600, {}, { 1170000 } },
-     // { 1536000, {}, { 1250000 } },
+        { 1305600, {}, { 1374130, -13725, -859,    0,   4442, 576 } },
     };
     static_assert(sizeof(NewGpuTables) <= sizeof(gpu_cvb_pll_table_t)*15);
 
