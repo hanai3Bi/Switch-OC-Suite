@@ -86,9 +86,9 @@ I'd appreciate if someone is willing to contribute. But if you are releasing som
 
   - Cherry-pick from below and add them manually.
 
-  - Fan Control Optimization at high load
+  - Fan Control Optimization (safe OC)
     - `[tc]`
-    - Set `holdable_tskin` to 56˚C (default 48˚C), less audible fan noise.
+    - Set `holdable_tskin` to 52˚C (default 48˚C).
     - Replacing stock thermal paste and adding thermal pad on Wi-Fi/BT module(shielded, adjacent to antennas) is recommended.
 
   - Disable background services, less heat and power consumption in standby mode
