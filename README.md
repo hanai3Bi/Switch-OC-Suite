@@ -2,68 +2,76 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for **Mariko Only** Switch running on Atmosphere CFW. Support Horizon OS 13.0.0-13.2.0.
+Overclocking suite for (Mariko Only) Nintendo Switch™ running on Atmosphere CFW.
 
-This project will not be actively maintained.
+This project will not be actively maintained or regularly updated along with Atmosphere CFW.
 
-I'd appreciate if someone is willing to contribute. But if you are releasing somewhere else (with or without your own modifications), be sure you are complying with GPL v2 license and _include necessary warnings for users_.
+I'd appreciate if someone is willing to contribute or upload latest binaries. But if you are releasing somewhere else (with or without your own modifications), be sure you are complying with GPL v2 license and _include necessary warnings for users_.
 
 
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
 
+- Auto-patching and Erista support (DRAM OC loader.kip only) is under WIP
+
 - Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
 
 - There is **no dynamic frequency scaling** in HorizonOS (HOS), which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
 
-- Most games are _bottlenecked by RAM bandwidth_, **ONLY ramp up RAM clock** beyond official maximum (1963/1267/1600) to 1862/1996 MHz if you want to _stay safe_.
-
-- Aula (OLED model) is not tested and I don't know if it works, even they have same X1+ SoC.
+- **ONLY ramp up RAM clock** beyond HOS maximum to 1862 or 1996 MHz if you want to _stay safe_.
 
 
-### Why not Erista?
+### Why no CPU/GPU OC for Erista?
 
 - Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
+  - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.
   - Snapdragon 810 (4 x A57 @ 2.0GHz + 4 x A53) also uses 20nm HPM, see how it plagued Android phones in 2014.
 
 - The board power supply is quite limited, even if you've done cooling mod.
   - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
   - CPU / GPU performance at max clocks will be worse if power supply is not enough.
 
-- RAM overclock is already available online.
-
 
 
 ## Features
 
-- **CPU/GPU/RAM Overclock**
+- **DRAM Overclock**
 
-  - Safe: Official Maximum (1963/1267/1600) with DRAM OC
+  - Most games are **bottlenecked by RAM bandwidth**
 
-    - CPU/GPU: 1963/1267 MHz exists in official pcv module, but is not unlocked.
+  - Safe: 1862.4 / 1996.8 MHz
+    - 1862.4 / 1996.8 MHz is stable for all (Samsung / Micron / Hynix).
+    - Adjusted memory parameters (Mariko only). [Discussion](https://github.com/KazushiMe/Switch-OC-Suite/issues/5).
 
-    - DRAM: 2131.2 MHz @ 600 mV (stock)
-      - 1862.4 / 1996.8 MHz should be stable for all (Samsung / Micron/ Hynix).
-      - 2131.2 MHz might be stable for some chips.
-      - Theoretically, you could replace 2x2GB DRAM chips (dual-channel) with 2x4GB DRAM chips from SAMSUNG (quad-channel) to attain doubled bandwidth.
+  - Unsafe: 2131.2 MHz or Overvolting
+    - 2131.2 MHz might be stable for some chips without overvolting.
+    - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
 
-  - Unsafe: All maxed out **(NOT RECOMMENDED)**
 
-    - Why NOT RECOMMENDED?
+### Mariko Only
+
+- **CPU/GPU Overclock**
+
+  - Safe: CPU/GPU @ 1785/921 MHz (HOS maximum)
+    - It has been proved safe without charger (not reaching battery power draw threshold)
+
+  - Unsafe: CPU/GPU @ 2397/1305 MHz
+
+    - Why **NOT RECOMMENDED**?
       - See `Current Flow` in sys-clk-OC overlay `Miscellaneous` (on battery) or measure power draw from charger yourself.
+      - Currently, there are no protective measures from heavy power draw.
 
     - CPU: 2397 MHz @ 1220 mV (overvolting from 1120 mV)
-      - Performance depends on CPU speedo (higher speedo === lower voltage required === better silicon quality).
+      - NVIDIA Official Maximum: 1963.5 MHz
+      - Maximum performance depends on CPU speedo.
         - You'd get somewhere between 2360 to 2390 MHz performance for real.
       - This is where floating point performance maxed out.
       - ≥ 2193 MHz will _ENABLE OVERVOLTING_.
 
     - GPU: 1305 MHz (no overvolting, less than official threshold 1050 mV)
+      - NVIDIA Official Maximum: 1267.2 MHz
       - Tested with deko3d compute shaders converted from [Maxwell SASS assembly](https://gist.github.com/KazushiMe/82b6bd89621f451b51c9b1ccd2202b97). Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.
       - 1305 MHz CANNOT be set without charger connected.
-
-    - DRAM: Overvolting
-      - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
 
 - **Modded sys-clk and ReverseNX**(-RT)
 
@@ -90,6 +98,7 @@ I'd appreciate if someone is willing to contribute. But if you are releasing som
     - `[tc]`
     - Set `holdable_tskin` to 52˚C (default 48˚C).
     - Replacing stock thermal paste and adding thermal pad on Wi-Fi/BT module(shielded, adjacent to antennas) is recommended.
+    - Beware that Aula (OLED model) has worse cooling compared to all previous models.
 
   - Disable background services, less heat and power consumption in standby mode
     - `;Disable Background service`
@@ -118,11 +127,13 @@ I'd appreciate if someone is willing to contribute. But if you are releasing som
 
 ## Installation
 
-1. Download latest release and copy all the files in `SdOut` to the root of SD card. `system_settings.ini` should be edited manually.
+1. Download latest release.
 
-2. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+2. Manually edit `system_settings.ini` and copy all the files in `SdOut` to the root of SD card.
 
-3. **Hekate-ipl bootloader**
+3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+
+4. **Hekate-ipl bootloader**
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
 
    **Atmosphere Fusee bootloader:**
