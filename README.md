@@ -2,7 +2,7 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for (Mariko Only) Nintendo Switch™ running on Atmosphere CFW.
+Overclocking suite for (Mariko Only) Nintendo Switch™ running on Atmosphere CFW. Should support Horizon OS (HOS) >= 1.0.
 
 This project will not be actively maintained or regularly updated along with Atmosphere CFW.
 
@@ -12,16 +12,14 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
 
-- Auto-patching and Erista support (DRAM OC loader.kip only) is under WIP
-
 - Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
 
-- There is **no dynamic frequency scaling** in HorizonOS (HOS), which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
+- There is **no dynamic frequency scaling** in HOS, which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
 
-- **ONLY ramp up RAM clock** beyond HOS maximum to 1862 or 1996 MHz if you want to _stay safe_.
+- **ONLY ramp up RAM clock** beyond HOS maximum to 1862 / 1996 MHz if you want to _stay safe_. Higher RAM clock could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption.
 
 
-### Why no CPU/GPU OC for Erista?
+## Why no CPU/GPU OC for Erista?
 
 - Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
   - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.
@@ -45,7 +43,15 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
   - Unsafe: 2131.2 MHz or Overvolting
     - 2131.2 MHz might be stable for some chips without overvolting.
+    - No obvious evidence suggests that DRAM bus overvolting is useful.
     - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+
+- **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
+
+- **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
+
+- **MemTesterNX**: A userspace utility for testing DRAM faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
+  - Now with multi-thread support and "stress DRAM" option, it should be able to test DRAM stability with adjusted timings.
 
 
 ### Mariko Only
@@ -90,46 +96,14 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     - Extend battery life expectancy by maintaining battery charge at 40% - 60% and disabling fast charging if possible.
     - Known issue: Fast charging toggle will be reset in-game.
 
-- System Settings (Optional)
-
-  - Cherry-pick from below and add them manually.
-
-  - Fan Control Optimization (safe OC)
-    - `[tc]`
-    - Set `holdable_tskin` to 52˚C (default 48˚C).
-    - Replacing stock thermal paste and adding thermal pad on Wi-Fi/BT module(shielded, adjacent to antennas) is recommended.
-    - Beware that Aula (OLED model) has worse cooling compared to all previous models.
-
-  - Disable background services, less heat and power consumption in standby mode
-    - `;Disable Background service`
-    - Don't add this if you **use Nintendo Online services**.
-
-  - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
-    - `[am.debug]`
-    - Recommended: [dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
-      - For optimal streaming experience, SysDVR via USB interface is recommended.
-    - Known Issues (won't fix)
-      - Game recordings may be less than 30 seconds if higher bitrate is used.
-      - It has noticeable performance impacts in demanding games.
-      - Video duration shown in album will be doubled, while the playback speed or mp4 file itself are not affected.
-
-  - Change the threshold for chargers providing enough power
-    - `[psm]`
-    - `enough_power_threshold_mw` is be the threshold of "Official Charger"
-      - E.g. set it to `0x4268` (17,000 mW) and 18W power bank will be "Official Charger".
-
-- **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
-
-- **MemTesterNX**: A userspace utility for testing DRAM faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
-  - Now with multi-thread support and "stress DRAM" option, it should be able to test DRAM stability with adjusted timings.
-
 
 
 ## Installation
 
 1. Download latest release.
 
-2. Manually edit `system_settings.ini` and copy all the files in `SdOut` to the root of SD card.
+2. Copy all files in `SdOut` to the root of SD card. (Mariko Only)
+  - Erista: Sys-clk-OC will NOT work, use official sys-clk instead. Only `loader.kip` and some benchmark homebrew are available.
 
 3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 

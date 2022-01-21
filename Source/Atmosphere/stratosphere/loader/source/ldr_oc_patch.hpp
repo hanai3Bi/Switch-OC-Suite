@@ -939,8 +939,8 @@ namespace ams::ldr {
                 if (value == memPtmLimit)
                 {
                     confTable = reinterpret_cast<perf_conf_entry *>(ptr - offsetof(perf_conf_entry, emc_freq_1));
-                    uintptr_t confTableEntryNew = reinterpret_cast<uintptr_t>(confTable + entryCnt);
-                    if (confTableEntryNew > mapped_nso + nso_size)
+                    uintptr_t entry_end_offset = reinterpret_cast<uintptr_t>(confTable + entryCnt) - sizeof(u32);
+                    if (entry_end_offset > mapped_nso + nso_size)
                         return;
                     break;
                 }
@@ -953,21 +953,21 @@ namespace ams::ldr {
 
             for (u32 i = 0; i < entryCnt; i++)
             {
-                perf_conf_entry* PerfConfEntryCurrent = confTable + i;
+                perf_conf_entry* entry_current = confTable + i;
 
-                if (PerfConfEntryCurrent->emc_freq_1 != PerfConfEntryCurrent->emc_freq_2)
+                if (entry_current->emc_freq_1 != entry_current->emc_freq_2)
                     return;
 
-                switch (PerfConfEntryCurrent->emc_freq_1)
+                switch (entry_current->emc_freq_1)
                 {
                     case memPtmLimit:
-                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_1), memPtmMax);
-                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_2), memPtmMax);
+                        PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmMax);
+                        PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmMax);
                         break;
                     case 1331'200'000:
                     case 1065'600'000:
-                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_1), memPtmLimit);
-                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_2), memPtmLimit);
+                        PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmLimit);
+                        PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmLimit);
                         break;
                     default:
                         return;
