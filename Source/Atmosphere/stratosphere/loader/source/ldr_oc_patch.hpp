@@ -27,12 +27,28 @@ namespace ams::ldr {
     constexpr u32 EmcClock = 1996800;
 
     // CPU max clockrate:
-    // >= 2193000 will enable overvolting
+    // >= 2193000 will enable overvolting (> 1120 mV)
     constexpr u32 CpuMaxClock = 2397000;
 
     // CPU max voltage
-    constexpr u32 CpuVoltageLimit = 1220; // default max 1120mV
-    static_assert(CpuVoltageLimit <= 1250);
+    constexpr u32 CpuMaxVoltage = 1220;
+    static_assert(CpuMaxVoltage <= 1250);
+
+    constexpr u32 CpuClkOSLimit   = 1785'000;
+    constexpr u32 CpuClkOfficial  = 1963'500;
+    constexpr u32 GpuClkOfficial  = 1267'200;
+    constexpr u32 CpuVoltOfficial = 1120;
+    constexpr u32 MemClkOSLimit   = 1600'000;
+
+    inline void PatchOffset(uintptr_t offset, u32 value) {
+        *(reinterpret_cast<u32 *>(offset)) = value;
+    }
+
+    inline void PatchOffset(u32* offset, u32 value) {
+        *(offset) = value;
+    }
+
+    #define ResultFailure() -1
 
     namespace pcv {
         typedef struct {
@@ -62,19 +78,18 @@ namespace ams::ldr {
         } emc_dvb_dvfs_table_t;
 
         /* CPU */
-        constexpr u32 NewCpuVoltageScaled = CpuVoltageLimit * 1000;
+        constexpr u32 NewCpuVoltageScaled = CpuMaxVoltage * 1000;
 
-        // TODO: correctly derive c0-c1 dfll coefficients
         constexpr cpu_freq_cvb_table_t NewCpuTables[] = {
          // OldCpuTables
-         // {  204000, {  721589, -12695, 27 }, { 1120000 } },
-         // {  306000, {  747134, -14195, 27 }, { 1120000 } },
-         // {  408000, {  776324, -15705, 27 }, { 1120000 } },
-         // {  510000, {  809160, -17205, 27 }, { 1120000 } },
-         // {  612000, {  845641, -18715, 27 }, { 1120000 } },
-         // {  714000, {  885768, -20215, 27 }, { 1120000 } },
-         // {  816000, {  929540, -21725, 27 }, { 1120000 } },
-         // {  918000, {  976958, -23225, 27 }, { 1120000 } },
+         // {  204000, {  721589, -12695, 27 }, {} },
+         // {  306000, {  747134, -14195, 27 }, {} },
+         // {  408000, {  776324, -15705, 27 }, {} },
+         // {  510000, {  809160, -17205, 27 }, {} },
+         // {  612000, {  845641, -18715, 27 }, {} },
+         // {  714000, {  885768, -20215, 27 }, {} },
+         // {  816000, {  929540, -21725, 27 }, {} },
+         // {  918000, {  976958, -23225, 27 }, {} },
          // { 1020000, { 1028021, -24725, 27 }, { 1120000 } },
          // { 1122000, { 1082730, -26235, 27 }, { 1120000 } },
          // { 1224000, { 1141084, -27735, 27 }, { 1120000 } },
@@ -99,6 +114,7 @@ namespace ams::ldr {
          // {  153600, {}, {  610000,                                 } },
          // {  230400, {}, {  610000,                                 } },
          // {  307200, {}, {  610000,                                 } },
+         // {  384000, {}, {  610000,                                 } },
          // {  460800, {}, {  610000,                                 } },
          // {  537600, {}, {  801688, -10900, -163,  298, -10599, 162 } },
          // {  614400, {}, {  824214,  -5743, -452,  238,  -6325,  81 } },
@@ -115,6 +131,22 @@ namespace ams::ldr {
         };
         static_assert(sizeof(NewGpuTables) <= sizeof(gpu_cvb_pll_table_t)*15);
 
+        /* GPU Max Clock asm Pattern:
+         *
+         * MOV W11, #0x1000 MOV (wide immediate)                0x1000                              0xB (11)
+         *  sf | opc |                 | hw  |                   imm16                        |      Rd
+         * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
+         *   0 | 1 0 | 1  0  0  1  0  1| 0  0| 0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0 |0  1  0  1  1
+         *
+         * MOVK W11, #0xE, LSL#16     <shift>16                    0xE                              0xB (11)
+         *  sf | opc |                 | hw  |                   imm16                        |      Rd
+         * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
+         *   0 | 1 1 | 1  0  0  1  0  1| 0  1| 0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  0 |0  1  0  1  1
+         */
+        constexpr u32 gpuOfficialMarikoPattern[2]  = { 0x52820000, 0x72A001C0 }; // 921.6 MHz
+                  u32 gpuMaxClockMarikoPattern[2]  = { 0x528E0000, 0x72A002E0 }; // 1536 MHz
+        #define COMPARE_HIGH(val1, val2, bit_div) (((val1 ^ val2) >> bit_div) == 0)
+
         /* EMC */
 
         // DvbTable is all about frequency scaling along with CPU core voltage, no need to care about this for now.
@@ -129,10 +161,6 @@ namespace ams::ldr {
         //     { 1600000, {  675,  650,  637, } },
         // };
 
-        // Mariko have 3 mtc tables (204/1331/1600 MHz), only these 3 frequencies could be set.
-
-        // Mariko mtc tables starting from rev, see mtc_timing_table.hpp for parameters.
-        // All mariko mtc tables will be patched to simplify the procedure.
         #include "mtc_timing_table.hpp"
 
         void AdjustMtcTable(MarikoMtcTable* table, MarikoMtcTable* ref)
@@ -663,285 +691,287 @@ namespace ams::ldr {
             #endif
         }
 
-        #pragma GCC diagnostic ignored "-Wunused-variable"
+        Result PcvCpuClockVddHandler(u32* ptr) {
+            u32 value_next2 = *(ptr + 2);
+            constexpr u32 cpuClockVddCpuPatternNext = 0;
+            if (value_next2 != cpuClockVddCpuPatternNext)
+            {
+                return ResultFailure();
+            }
+
+            PatchOffset(ptr, CpuMaxClock);
+            return ResultSuccess();
+        }
+
+        Result PcvCpuDvfsHandler(cpu_freq_cvb_table_t* entry_1963, uintptr_t nso_end_offset) {
+            cpu_freq_cvb_table_t* entry_free = entry_1963 + 1;
+            cpu_freq_cvb_table_t* entry_204  = entry_free - 18;
+            uintptr_t entry_end_offset = reinterpret_cast<uintptr_t>(entry_free) + sizeof(NewCpuTables) - sizeof(u32);
+
+            if (   entry_end_offset >= nso_end_offset
+                || *(reinterpret_cast<u32 *>(entry_free))       != 0
+                || *(reinterpret_cast<u32 *>(entry_204))        != 204'000
+                || *(reinterpret_cast<u32 *>(entry_end_offset)) != 0 )
+            {
+                return ResultFailure();
+            }
+
+            std::memcpy(reinterpret_cast<void *>(entry_free), NewCpuTables, sizeof(NewCpuTables));
+
+            // Patch CPU max volt in CPU dvfs table
+            for (u32 i = 0; i < 10; i++)
+            {
+                cpu_freq_cvb_table_t* entry_current = entry_1963 - i;
+                u32* pll_max_volt = reinterpret_cast<u32 *>(std::addressof(entry_current->cvb_pll_param));
+                if (*pll_max_volt != CpuVoltOfficial * 1000)
+                    return ResultFailure();
+
+                PatchOffset(pll_max_volt, NewCpuVoltageScaled);
+            }
+
+            return ResultSuccess();
+        }
+
+        Result PcvGpuDvfsHandler(gpu_cvb_pll_table_t* entry_1267, uintptr_t nso_end_offset) {
+            gpu_cvb_pll_table_t* entry_free = entry_1267 + 1;
+            gpu_cvb_pll_table_t* entry_76_8 = entry_free - 17;
+            uintptr_t entry_end_offset = reinterpret_cast<uintptr_t>(entry_free) + sizeof(NewGpuTables) - sizeof(u32);
+
+            if (   entry_end_offset >= nso_end_offset
+                || *(reinterpret_cast<u32 *>(entry_free))       != 0
+                || *(reinterpret_cast<u32 *>(entry_76_8))       != 76'800
+                || *(reinterpret_cast<u32 *>(entry_end_offset)) != 0 )
+            {
+                return ResultFailure();
+            }
+
+            std::memcpy(reinterpret_cast<void *>(entry_free), NewGpuTables, sizeof(NewGpuTables));
+            return ResultSuccess();
+        }
+
+        Result PcvCpuVoltRangeHandler(u32* ptr) {
+            const std::vector<u32> acceptableCpuMinVolt = { 800, 637, 620, 610 };
+            u32 value_cpu_min_volt = *(ptr - 1);
+
+            for (const auto &min_volt : acceptableCpuMinVolt)
+            {
+                if (min_volt == value_cpu_min_volt)
+                {
+                    PatchOffset(ptr, CpuMaxVoltage);
+                    return ResultSuccess();
+                }
+            }
+
+            return ResultFailure();
+        }
+
+        Result PcvGpuMaxClockMarikoAsmHandler(u32* ptr) {
+            u32  value      = *(ptr);
+            u32* ptr_next   = ptr + 1;
+            u32  value_next = *(ptr_next);
+            if (COMPARE_HIGH(value_next, gpuOfficialMarikoPattern[1], 5))
+            {
+                u32 reg_id      = value      & ((1 << 5) - 1);
+                u32 reg_id_next = value_next & ((1 << 5) - 1);
+                if (reg_id == reg_id_next)
+                {
+                    PatchOffset(ptr     , gpuMaxClockMarikoPattern[0] | reg_id);
+                    PatchOffset(ptr_next, gpuMaxClockMarikoPattern[1] | reg_id);
+
+                    return ResultSuccess();
+                }
+            }
+            return ResultFailure();
+        }
+
+        Result PcvMemHandler(uintptr_t ptr, bool isMariko) {
+            if (isMariko)
+            {
+                // Mariko have 3 mtc tables (204/1331/1600 MHz), only these 3 frequencies could be set.
+                // Replace 1331 MHz with 1600 MHz as perf @ 1331 MHz is crap.
+                u32 value_next  = *(reinterpret_cast<u32 *>(ptr) + 1);
+                u32 value_next2 = *(reinterpret_cast<u32 *>(ptr) + 2);
+
+                constexpr u32 mtc_min_volt   = 1100;
+                constexpr u32 dvb_entry_volt = 675;
+                constexpr u32 mtc_table_rev  = 3;
+                constexpr u32 mem_1331_khz   = 1331'200;
+
+                if (value_next == mtc_min_volt)
+                {
+                    uintptr_t offset_new = ptr - offsetof(MarikoMtcTable, rate_khz);
+                    uintptr_t offset_old = offset_new - sizeof(MarikoMtcTable);
+
+                    MarikoMtcTable* const mtc_table_new = reinterpret_cast<MarikoMtcTable *>(offset_new);
+                    MarikoMtcTable* const mtc_table_old = reinterpret_cast<MarikoMtcTable *>(offset_old);
+                    if (   mtc_table_new->rev != mtc_table_rev
+                        || mtc_table_old->rev != mtc_table_rev
+                        || mtc_table_old->rate_khz != mem_1331_khz )
+                        return ResultFailure();
+
+                    std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(MarikoMtcTable));
+
+                    // Adjust params for Max MHz
+                    // [!TODO] ref table is identical to new table, leaving some params unchanged
+                    AdjustMtcTable(mtc_table_new, mtc_table_old);
+                }
+                else if (value_next2 == dvb_entry_volt)
+                {
+                    emc_dvb_dvfs_table_t* dvb_max_entry  = reinterpret_cast<emc_dvb_dvfs_table_t *>(ptr);
+                    emc_dvb_dvfs_table_t* dvb_1331_entry = dvb_max_entry - 1;
+
+                    u32* dvb_1331_offset = reinterpret_cast<u32 *>(dvb_1331_entry);
+                    if (*(dvb_1331_offset) != mem_1331_khz)
+                        return ResultFailure();
+
+                    PatchOffset(dvb_1331_offset, MemClkOSLimit);
+                }
+            }
+
+            PatchOffset(ptr, EmcClock);
+            return ResultSuccess();
+        }
+
         void ApplyAutoPcvPatch(uintptr_t mapped_nso, size_t nso_size) {
             /* Abort immediately once something goes wrong */
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
 
-            constexpr u32 emcMaxClockMaxCnt       = 30;
-            constexpr u32 cpuMaxVoltMarikoMaxCnt  = 13;
-            constexpr u32 mtcTableMarikoMaxCnt    = 13;
-            constexpr u32 gpuMaxClockMarikoReqCnt = 2;
-
-            constexpr u32 cpuClockVddCpuPatternNext = 0;
-            constexpr u32 cpuTableMarikoPatternNext = 1527196;
-         // constexpr u32 cpuTableEristaPatternNext = 1227500;
-
-            constexpr u32 cpuMinVolt[] = { 800, 637, 620, 610 };
-
-            u8 emcMaxClock {};
-            u8 cpuClockVddCpu {};
-            u8 cpuTableMariko {};
-         // u8 cpuTableErista {};
-            u8 gpuTableMariko {};
-            u8 cpuMaxVoltMariko {};
-            u8 mtcTableMariko {};
-            u8 dvbTableMariko {};
+            u8 cpuClockVddMariko {};
+            u8 cpuTableMariko    {};
+            u8 gpuTableMariko    {};
+            u8 cpuMaxVoltMariko  {};
             u8 gpuMaxClockMariko {};
-            u8 gpuMaxClockMarikoRd {};
-            u32 gpuMaxClockPattern[2] = { 0x528E0000, 0x72A002E0 }; // 1536 MHz
 
-            uintptr_t i = mapped_nso;
-            while (i <= mapped_nso + nso_size - sizeof(MarikoMtcTable))
+            uintptr_t ptr = mapped_nso;
+            while (ptr <= mapped_nso + nso_size - sizeof(MarikoMtcTable))
             {
-                u32 value = *(reinterpret_cast<u32 *>(i));
+                u32 value = *(reinterpret_cast<u32 *>(ptr));
 
-                #ifdef EXPERIMENTAL
                 if (isMariko)
                 {
-                    // CPU Table
-                    if (value == 1785'000)
+                    if (value == CpuClkOSLimit)
                     {
-                        u32 value_next2 = *(reinterpret_cast<u32 *>(i + sizeof(u32) * 2));
-                        if (value_next2 == cpuClockVddCpuPatternNext)
-                        {
-                            u32 value_next = *(reinterpret_cast<u32 *>(i + sizeof(u32)));
-                            if (value_next == cpuClockVddCpuPatternNext)
-                            {
-                                std::memcpy(reinterpret_cast<void *>(i), &CpuMaxClock, sizeof(CpuMaxClock));
-                                cpuClockVddCpu++;
-                            }
-                        }
-
-                        if (value_next2 == cpuTableMarikoPatternNext)
-                        {
-                            uintptr_t entry_1963 = i + 2 * sizeof(cpu_freq_cvb_table_t);
-                            uintptr_t free_space = entry_1963 + sizeof(cpu_freq_cvb_table_t);
-                            uintptr_t entry_204  = free_space - 18 * sizeof(cpu_freq_cvb_table_t);
-
-                            if (   *(reinterpret_cast<u32 *>(entry_1963)) == 1963'500
-                                && *(reinterpret_cast<u32 *>(free_space)) == 0
-                                && *(reinterpret_cast<u32 *>(entry_204))  == 204'000 )
-                            {
-                                std::memcpy(reinterpret_cast<void *>(free_space), NewCpuTables, sizeof(NewCpuTables));
-                                cpuTableMariko++;
-
-                                // Patch CPU max volt (1120'000) in CPU dvfs table
-                                for (u32 i = 0; i < 18; i++)
-                                {
-                                    void* max_volt_dvfs = reinterpret_cast<void *>(free_space - i * sizeof(cpu_freq_cvb_table_t) - sizeof(cvb_coefficients));
-                                    std::memcpy(max_volt_dvfs, &NewCpuVoltageScaled, sizeof(NewCpuVoltageScaled));
-                                }
-                            }
-                        }
+                        if (R_SUCCEEDED(PcvCpuClockVddHandler(reinterpret_cast<u32 *>(ptr))))
+                            cpuClockVddMariko++;
                     }
 
-                    // GPU Table
-                    if (value == 1267'200)
+                    if (value == CpuClkOfficial)
                     {
-                        u32 free_space = i + sizeof(gpu_cvb_pll_table_t);
-                        if (*(reinterpret_cast<u32 *>(free_space)) == 0)
-                        {
-                            std::memcpy(reinterpret_cast<void *>(free_space), NewGpuTables, sizeof(NewGpuTables));
+                        if (R_SUCCEEDED(PcvCpuDvfsHandler(reinterpret_cast<cpu_freq_cvb_table_t *>(ptr), mapped_nso + nso_size)))
+                            cpuTableMariko++;
+                    }
+
+                    if (value == GpuClkOfficial)
+                    {
+                        if (R_SUCCEEDED(PcvGpuDvfsHandler(reinterpret_cast<gpu_cvb_pll_table_t *>(ptr), mapped_nso + nso_size)))
                             gpuTableMariko++;
-                        }
                     }
 
-                    // CPU voltage range
-                    if (value == 1120)
+                    if (value == CpuVoltOfficial)
                     {
-                        u32 value_cpu_min_volt = *(reinterpret_cast<u32 *>(i - sizeof(u32)));
-
-                        for (u32 j = 0; j < sizeof(cpuMinVolt)/sizeof(u32); j++)
-                        {
-                            if (cpuMinVolt[j] == value_cpu_min_volt)
-                            {
-                                // acceptable cpu min volt, patch max volt
-                                std::memcpy(reinterpret_cast<void *>(i), &CpuVoltageLimit, sizeof(CpuVoltageLimit));
-                                cpuMaxVoltMariko++;
-                                break;
-                            }
-                        }
+                        if (R_SUCCEEDED(PcvCpuVoltRangeHandler(reinterpret_cast<u32 *>(ptr))))
+                            cpuMaxVoltMariko++;
                     }
 
-                    // GPU Max Clock asm
+                    if (COMPARE_HIGH(value, gpuOfficialMarikoPattern[0], 5))
                     {
-                        // Pattern:
-                        // *
-                        // * MOV W11, #0x1000 MOV (wide immediate)                0x1000                              0xB (11)
-                        // *  sf | opc |                 | hw  |                   imm16                        |      Rd
-                        // * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
-                        // *   0 | 1 0 | 1  0  0  1  0  1| 0  0| 0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0 |0  1  0  1  1
-                        // *
-                        // * MOVK W11, #0xE, LSL#16     <shift>16                    0xE                              0xB (11)
-                        // *  sf | opc |                 | hw  |                   imm16                        |      Rd
-                        // * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
-                        // *   0 | 1 1 | 1  0  0  1  0  1| 0  1| 0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  0 |0  1  0  1  1
-
-                        constexpr u32 mov_w_0x1000_hi       = 0x52820000 >> 5;
-                        constexpr u32 movk_w_0xE_shift16_hi = 0x72A001C0 >> 5;
-
-                        u32 value_hi = value >> 5;
-                        u32 value_lo = value & ((1 << 5) - 1);
-                        if (value_hi == mov_w_0x1000_hi)
-                        {
-                            u32 value_next    = *(reinterpret_cast<u32 *>(i + sizeof(u32)));
-                            u32 value_next_hi = value_next >> 5;
-                            u32 value_next_lo = value_next & ((1 << 5) - 1);
-                            if (value_next_hi == movk_w_0xE_shift16_hi && value_next_lo == value_lo)
-                            {
-                                if (!gpuMaxClockMarikoRd)
-                                    gpuMaxClockMarikoRd = value_lo;
-                                if (gpuMaxClockMarikoRd != value_lo)
-                                    AMS_ABORT("gpuMaxClockMarikoRd not consistent!");
-
-                                gpuMaxClockPattern[0] |= gpuMaxClockMarikoRd;
-                                gpuMaxClockPattern[1] |= gpuMaxClockMarikoRd;
-
-                                std::memcpy(reinterpret_cast<void *>(i), gpuMaxClockPattern, sizeof(gpuMaxClockPattern));
-                                gpuMaxClockMariko++;
-                            }
-                        }
+                        if (R_SUCCEEDED(PcvGpuMaxClockMarikoAsmHandler(reinterpret_cast<u32 *>(ptr))))
+                            gpuMaxClockMariko++;
                     }
                 }
-                #endif
 
+                if (value == MemClkOSLimit)
                 {
-                    // MEM
-                    if (value == 1600'000)
-                    {
-                        if (isMariko)
-                        {
-                            u32 value_next  = *(reinterpret_cast<u32 *>(i + sizeof(u32)));
-                            u32 value_next2 = *(reinterpret_cast<u32 *>(i + sizeof(u32) * 2));
-
-                            if (value_next == 1100) // min_volt in MtcTable
-                            {
-                                uintptr_t offset = i - offsetof(MarikoMtcTable, rate_khz);
-                                uintptr_t offset_prev = offset - sizeof(MarikoMtcTable);
-
-                                MarikoMtcTable* const mtc_table_new = reinterpret_cast<MarikoMtcTable *>(offset);
-                                MarikoMtcTable* const mtc_table_old = reinterpret_cast<MarikoMtcTable *>(offset_prev);
-                                if (mtc_table_new->rev != 3 || mtc_table_old->rev != 3 || mtc_table_old->rate_khz != 1331'200)
-                                    AMS_ABORT("mtc_table");
-
-                                // Replace 1331 MHz with 1600 MHz
-                                std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(MarikoMtcTable));
-                                mtcTableMariko++;
-
-                                // Generate new table for Max MHz
-                                // [!TODO] ref table is identical to new table, leaving some params unchanged
-                                AdjustMtcTable(mtc_table_new, mtc_table_old);
-                            }
-                            else if (value_next2 == 675) // Mariko Dvb Table
-                            {
-                                u32 dvb_1331_offset = i - sizeof(emc_dvb_dvfs_table_t);
-
-                                u32 value_1331_entry = *(reinterpret_cast<u32 *>(dvb_1331_offset));
-                                if (value_1331_entry == 1331'200)
-                                {
-                                    const u32 dvb_1600_clk = 1600'000;
-                                    std::memcpy(reinterpret_cast<void *>(dvb_1331_offset), &dvb_1600_clk, sizeof(dvb_1600_clk));
-                                    dvbTableMariko++;
-                                }
-                            }
-                        }
-
-                        // Patch Max Emc Clock for both Erista and Mariko
-                        std::memcpy(reinterpret_cast<void *>(i), &EmcClock, sizeof(EmcClock));
-                        emcMaxClock++;
-                    }
+                    if (R_FAILED(PcvMemHandler(ptr, isMariko)))
+                        AMS_ABORT();
                 }
 
-                i += sizeof(u32);
+                ptr += sizeof(u32);
             }
 
             if (isMariko)
             {
-                // if (cpuClockVddCpu != 1)
-                //     AMS_ABORT("cpuClockVddCpu");
-                // if (cpuTableMariko != 1)
-                //     AMS_ABORT("cpuTableMariko");
-                // if (gpuTableMariko != 1)
-                //     AMS_ABORT("gpuTableMariko");
-                if (dvbTableMariko != 1)
-                    AMS_ABORT("dvbTableMariko");
-                // if (cpuMaxVoltMariko > cpuMaxVoltMarikoMaxCnt || !cpuMaxVoltMariko)
-                //     AMS_ABORT("cpuMaxVoltMariko");
-                if (mtcTableMariko > mtcTableMarikoMaxCnt || !mtcTableMariko)
-                    AMS_ABORT("mtcTableMariko");
-                // if (gpuMaxClockMariko != gpuMaxClockMarikoReqCnt)
-                //     AMS_ABORT("gpuMaxClockMariko");
-            }
-            {
-                if (emcMaxClock > emcMaxClockMaxCnt || !emcMaxClock)
-                    AMS_ABORT("emcMaxClock");
+                constexpr u8 cpuMaxVoltMarikoMaxCnt  = 13;
+                constexpr u8 gpuMaxClockMarikoReqCnt = 2;
+
+                if (cpuClockVddMariko != 1)
+                    AMS_ABORT();
+                if (cpuTableMariko != 1)
+                    AMS_ABORT();
+                if (gpuTableMariko != 1)
+                    AMS_ABORT();
+                if (cpuMaxVoltMariko > cpuMaxVoltMarikoMaxCnt || !cpuMaxVoltMariko)
+                    AMS_ABORT();
+                if (gpuMaxClockMariko != gpuMaxClockMarikoReqCnt)
+                    AMS_ABORT();
             }
         }
-        #pragma GCC diagnostic error "-Wunused-variable"
     }
 
     namespace ptm {
+        typedef struct {
+            u32 conf_id;
+            u32 cpu_freq_1;
+            u32 cpu_freq_2;
+            u32 gpu_freq_1;
+            u32 gpu_freq_2;
+            u32 emc_freq_1;
+            u32 emc_freq_2;
+            u32 padding;
+        } perf_conf_entry;
+        static_assert(sizeof(perf_conf_entry) == 0x20);
+
         void ApplyAutoPtmPatch(uintptr_t mapped_nso, size_t nso_size) {
             /* No abort here as ptm is not that critical */
             if (spl::GetSocType() == spl::SocType_Erista)
                 return;
 
-            uintptr_t emcOffsetStart = 0;
-            constexpr u32 OffsetInterval = 0x20;
-            constexpr u32 emcOffsetCnt   = 16;
-            constexpr u32 EmcMaxClk      = EmcClock * 1000;
-            constexpr u32 Emc1600Clk     = 1600'000'000;
+            perf_conf_entry* confTable = 0;
+            constexpr u32 entryCnt     = 16;
+            constexpr u32 memPtmLimit  = MemClkOSLimit * 1000;
+            constexpr u32 memPtmMax    = EmcClock * 1000;
 
-            uintptr_t i = mapped_nso;
-
-            while (i <= mapped_nso + nso_size)
+            uintptr_t ptr = mapped_nso;
+            while (ptr <= mapped_nso + nso_size)
             {
-                u32 value = *(reinterpret_cast<u32 *>(i));
+                u32 value = *(reinterpret_cast<u32 *>(ptr));
 
-                if (value == 1600'000'000)
+                if (value == memPtmLimit)
                 {
-                    emcOffsetStart = i;
+                    confTable = reinterpret_cast<perf_conf_entry *>(ptr - offsetof(perf_conf_entry, emc_freq_1));
+                    uintptr_t confTableEntryNew = reinterpret_cast<uintptr_t>(confTable + entryCnt);
+                    if (confTableEntryNew > mapped_nso + nso_size)
+                        return;
                     break;
                 }
 
-                i += sizeof(u32);
+                ptr += sizeof(u32);
             }
 
-            if (!emcOffsetStart)
+            if (!confTable)
                 return;
 
-            for (u32 j = 0; j < emcOffsetCnt; j++)
+            for (u32 i = 0; i < entryCnt; i++)
             {
-                uintptr_t offset      = emcOffsetStart + OffsetInterval * j;
-                uintptr_t offset_next = offset + sizeof(u32);
+                perf_conf_entry* PerfConfEntryCurrent = confTable + i;
 
-                if (offset_next > mapped_nso + nso_size)
+                if (PerfConfEntryCurrent->emc_freq_1 != PerfConfEntryCurrent->emc_freq_2)
                     return;
 
-                u32 value       = *(reinterpret_cast<u32 *>(offset));
-                u32 value_next  = *(reinterpret_cast<u32 *>(offset_next));
-
-                if (value != value_next)
-                    return;
-
-                u32 value_patched = value;
-
-                switch (value)
+                switch (PerfConfEntryCurrent->emc_freq_1)
                 {
-                    case 1600'000'000:
-                        value_patched = EmcMaxClk;
+                    case memPtmLimit:
+                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_1), memPtmMax);
+                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_2), memPtmMax);
                         break;
                     case 1331'200'000:
                     case 1065'600'000:
-                        value_patched = Emc1600Clk;
+                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_1), memPtmLimit);
+                        PatchOffset(std::addressof(PerfConfEntryCurrent->emc_freq_2), memPtmLimit);
                         break;
                     default:
                         return;
                 }
-
-                std::memcpy(reinterpret_cast<void *>(offset),      &value_patched, sizeof(value_patched));
-                std::memcpy(reinterpret_cast<void *>(offset_next), &value_patched, sizeof(value_patched));
             }
         }
     }
