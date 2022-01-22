@@ -53,13 +53,13 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 
-- 2131 → max for Erista (requires I/O bus overvolting); official max for Mariko (requires proper timings)
+- 2131 → NOT stable: max for Erista and official max for Mariko
 - 2099
 - 2064
-- 1996
+- 1996 → stable for all
 - 1932
 - 1894
-- 1862 → official max for Erista; Mariko without timing adjustment (stable on most DRAM chips except Hynix ones)
+- 1862 → official max for Erista; Mariko without timing adjustment
 - 1795
 - 1728
 - 1600 → official docked & official boost mode
@@ -180,4 +180,4 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 |:-----------------------:|-------------------------------------------------------------------------------|:-------:|
 |**temp_log_interval_ms** | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms    |
 |**csv_write_interval_ms**| Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms    |
-|**poll_interval_ms**     | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 300 ms  |
+|**poll_interval_ms**     | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms  |

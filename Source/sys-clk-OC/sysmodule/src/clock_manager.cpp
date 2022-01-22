@@ -414,8 +414,6 @@ bool ClockManager::CheckReverseNXRT()
 bool ClockManager::RefreshContext()
 {
     bool hasChanged = false;
-    bool shouldAdjustProfile = false;
-
     bool enabled = this->GetConfig()->Enabled();
     if(enabled != this->context->enabled)
     {
@@ -430,7 +428,6 @@ bool ClockManager::RefreshContext()
         FileUtils::LogLine("[mgr] TitleID change: %016lX", applicationId);
         this->context->applicationId = applicationId;
         hasChanged = true;
-        shouldAdjustProfile = true;
 
         /* Clear ReverseNX state and recheck -Tool patches*/
         this->oc->reverseNXMode = ReverseNX_SystemDefault;
@@ -443,19 +440,6 @@ bool ClockManager::RefreshContext()
         FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(profile, true));
         this->context->realProfile = profile;
         hasChanged = true;
-        shouldAdjustProfile = true;
-    }
-
-    /* Check ReverseNX-RT */
-    if (CheckReverseNXRT())
-    {
-        shouldAdjustProfile = true;
-    }
-
-    /* Adjust nominal profile when tid, real profile or -RT profile change */
-    if (shouldAdjustProfile)
-    {
-        this->context->profile = ReverseNXProfileHandler();
     }
 
     /* Update PerformanceConfigurationId */
@@ -474,6 +458,11 @@ bool ClockManager::RefreshContext()
     // restore clocks to stock values on app or profile change
     if(hasChanged)
         Clocks::ResetToStock();
+
+    /* Check ReverseNX-RT and adjust nominal profile when context changes */
+    hasChanged |= CheckReverseNXRT();
+    if (hasChanged)
+        this->context->profile = ReverseNXProfileHandler();
 
     std::uint32_t hz = 0;
     for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
