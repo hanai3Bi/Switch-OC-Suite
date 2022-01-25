@@ -115,7 +115,7 @@ If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::a
 
 
 
-### Why no CPU/GPU OC for Erista?
+## Why no CPU/GPU OC for Erista?
 
 - Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
   - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.

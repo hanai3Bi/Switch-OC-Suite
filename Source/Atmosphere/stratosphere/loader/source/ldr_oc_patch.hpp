@@ -39,6 +39,8 @@ namespace ams::ldr {
     constexpr u32 GpuClkOfficial  = 1267'200;
     constexpr u32 CpuVoltOfficial = 1120;
     constexpr u32 MemClkOSLimit   = 1600'000;
+    constexpr u32 MemClkOSAlt     = 1331'200;
+    constexpr u32 MemClkOSClampDn = 1065'600;
 
     inline void PatchOffset(uintptr_t offset, u32 value) {
         *(reinterpret_cast<u32 *>(offset)) = value;
@@ -182,7 +184,11 @@ namespace ams::ldr {
              * you'd better calculate timings yourself rather than relying on following algorithm.
              */
 
-            #define ADJUST_PARAM(TARGET, REF)                TARGET = std::ceil(REF + ((EmcClock-1331200)*(TARGET-REF))/(1600000-1331200));
+            #define ADJUST_PROP(TARGET, REF)                                                             \
+                (u32)(std::ceil(REF + ((EmcClock-MemClkOSAlt)*(TARGET-REF))/(MemClkOSLimit-MemClkOSAlt)))
+
+            #define ADJUST_PARAM(TARGET, REF)     \
+                TARGET = ADJUST_PROP(TARGET, REF);
 
             #define ADJUST_PARAM_TABLE(TABLE, PARAM, REF)    ADJUST_PARAM(TABLE->PARAM, REF->PARAM)
 
@@ -195,6 +201,62 @@ namespace ams::ldr {
                 TABLE->burst_regs.PARAM = VALUE;            \
                 TABLE->shadow_regs_ca_train.PARAM = VALUE;  \
                 TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
+
+            ADJUST_PARAM_ALL_REG(table, emc_r2w, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_w2r, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_r2p, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_w2p, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_trtm, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_twtm, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_tratm, ref);
+            ADJUST_PARAM_ALL_REG(table, emc_twatm, ref);
+
+            ADJUST_PARAM_ALL_REG(table, emc_rw2pden, ref);
+
+            ADJUST_PARAM_ALL_REG(table, emc_tclkstop, ref);
+
+            ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA?
+
+            // ADJUST_PARAM_TABLE(table, dram_timings.rl); // not used on Mariko
+
+            ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref);
+            ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
+
+            // ADJUST_PARAM_TABLE(table, min_mrs_wait); // not used on LPDDR4X
+            // ADJUST_PARAM_TABLE(table, latency); // not used
+
+            /* Patch PLLMB divisors */
+            {
+                // Calculate DIVM and DIVN (clock divisors)
+                // Common PLL oscillator is 38.4 MHz
+                // PLLMB_OUT = 38.4 MHz / PLLLMB_DIVM * PLLMB_DIVN
+                u32 divm = 1;
+                u32 divn = EmcClock / 38400;
+                u32 remainder = EmcClock % 38400;
+                if (remainder >= 38400 * (3/4)) {
+                    divm = 4;
+                    divn = divn * divm + 3;
+                } else
+                if (remainder >= 38400 * (2/3)) {
+                    divm = 3;
+                    divn = divn * divm + 2;
+                } else
+                if (remainder >= 38400 * (1/2)) {
+                    divm = 2;
+                    divn = divn * divm + 1;
+                } else
+                if (remainder >= 38400 * (1/3)) {
+                    divm = 3;
+                    divn = divn * divm + 1;
+                } else
+                if (remainder >= 38400 * (1/4)) {
+                    divm = 4;
+                    divn = divn * divm + 1;
+                }
+
+                table->pllmb_divm = divm;
+                table->pllmb_divn = divn;
+            }
 
             /* Timings that are available in or can be derived from LPDDR4X datasheet or TRM */
             {
@@ -274,7 +336,7 @@ namespace ams::ldr {
                 constexpr u32 MC_ARB_DIV = 4; // ?
                 table->burst_mc_regs.mc_emem_arb_timing_rcd     = std::ceil(GET_CYCLE_CEIL(tRCD) / MC_ARB_DIV - 2);
                 table->burst_mc_regs.mc_emem_arb_timing_rp      = std::ceil(GET_CYCLE_CEIL(tRPpb) / MC_ARB_DIV - 1);
-                table->burst_mc_regs.mc_emem_arb_timing_rc      = std::ceil(std::max(GET_CYCLE_CEIL(tRC), GET_CYCLE_CEIL(tRAS)+GET_CYCLE_CEIL(tRPpb))/ MC_ARB_DIV);
+                table->burst_mc_regs.mc_emem_arb_timing_rc      = std::ceil(std::max(GET_CYCLE_CEIL(tRC), GET_CYCLE_CEIL(tRAS)+GET_CYCLE_CEIL(tRPpb)) / MC_ARB_DIV);
                 table->burst_mc_regs.mc_emem_arb_timing_ras     = std::ceil(GET_CYCLE_CEIL(tRAS) / MC_ARB_DIV - 2);
                 table->burst_mc_regs.mc_emem_arb_timing_faw     = std::ceil(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV - 1);
                 table->burst_mc_regs.mc_emem_arb_timing_rrd     = std::ceil(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV - 1);
@@ -283,62 +345,6 @@ namespace ams::ldr {
                 table->burst_mc_regs.mc_emem_arb_timing_r2w     = std::ceil(table->burst_regs.emc_r2w / MC_ARB_DIV + 1);
                 table->burst_mc_regs.mc_emem_arb_timing_w2r     = std::ceil(table->burst_regs.emc_w2r / MC_ARB_DIV + 1);
                 table->burst_mc_regs.mc_emem_arb_timing_rfcpb   = std::ceil(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV + 1); // ?
-            }
-
-            ADJUST_PARAM_ALL_REG(table, emc_r2w, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_w2r, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_r2p, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_w2p, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_trtm, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_twtm, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_tratm, ref);
-            ADJUST_PARAM_ALL_REG(table, emc_twatm, ref);
-
-            ADJUST_PARAM_ALL_REG(table, emc_rw2pden, ref);
-
-            ADJUST_PARAM_ALL_REG(table, emc_tclkstop, ref);
-
-            ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA?
-
-            // ADJUST_PARAM_TABLE(table, dram_timings.rl); // not used on Mariko
-
-            ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref);
-            ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
-
-            // ADJUST_PARAM_TABLE(table, min_mrs_wait); // not used on LPDDR4X
-            // ADJUST_PARAM_TABLE(table, latency); // not used
-
-            /* Patch PLLMB divisors */
-            {
-                // Calculate DIVM and DIVN (clock divisors)
-                // Common PLL oscillator is 38.4 MHz
-                // PLLMB_OUT = 38.4 MHz / PLLLMB_DIVM * PLLMB_DIVN
-                u32 divm = 1;
-                u32 divn = EmcClock / 38400;
-                u32 remainder = EmcClock % 38400;
-                if (remainder >= 38400 * (3/4)) {
-                    divm = 4;
-                    divn = divn * divm + 3;
-                } else
-                if (remainder >= 38400 * (2/3)) {
-                    divm = 3;
-                    divn = divn * divm + 2;
-                } else
-                if (remainder >= 38400 * (1/2)) {
-                    divm = 2;
-                    divn = divn * divm + 1;
-                } else
-                if (remainder >= 38400 * (1/3)) {
-                    divm = 3;
-                    divn = divn * divm + 1;
-                } else
-                if (remainder >= 38400 * (1/4)) {
-                    divm = 4;
-                    divn = divn * divm + 1;
-                }
-
-                table->pllmb_divm = divm;
-                table->pllmb_divn = divn;
             }
 
             #ifdef EXPERIMENTAL
@@ -350,17 +356,6 @@ namespace ams::ldr {
                         ((ADJUST_PROP(TARGET_TABLE->shadow_regs_ca_train.PARAM, REF_TABLE->shadow_regs_ca_train.PARAM) + 1) >> 1) << 1;    \
                     TARGET_TABLE->shadow_regs_rdwr_train.PARAM =                                                                           \
                         ((ADJUST_PROP(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM) + 1) >> 1) << 1;
-
-                #define ADJUST_PARAM(TARGET_PARAM, REF_PARAM)           \
-                    TARGET_PARAM = ADJUST_PROP(TARGET_PARAM, REF_PARAM);
-
-                #define ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, PARAM) \
-                    ADJUST_PARAM(TARGET_TABLE->PARAM, REF_TABLE->PARAM)
-
-                #define ADJUST_PARAM_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)                 \
-                    ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, burst_regs.PARAM)            \
-                    ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, shadow_regs_ca_train.PARAM)  \
-                    ADJUST_PARAM_TABLE(TARGET_TABLE, REF_TABLE, shadow_regs_rdwr_train.PARAM)
 
                 #define TRIM_BIT(IN_BITS, HIGH, LOW)                       \
                     ((IN_BITS >> LOW) & ( (1u << (HIGH - LOW + 1u)) - 1u ))
@@ -391,7 +386,7 @@ namespace ams::ldr {
                         | ADJUST_BIT(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM, HIGH2, LOW2) << LOW2;
 
                 /* For latency allowance */
-                #define ADJUST_INVERSE(TARGET) ((TARGET*1000) / (EmcClock/1600))
+                #define ADJUST_INVERSE(TARGET) (TARGET * (MemClkOSLimit / 1000) / (EmcClock / 1000))
 
                 /* emc_wdv, emc_wsv, emc_wev, emc_wdv_mask,
                    emc_quse, emc_quse_width, emc_ibdly, emc_obdly,
@@ -437,7 +432,7 @@ namespace ams::ldr {
                         offsetof(MarikoMtcTable, shadow_regs_rdwr_train.PARAM)  \
 
                     /* Section 1: adjust HI bits: BIT 26:16 */
-                    const uint32_t ddll_high[] = {
+                    const std::vector<uintptr_t> ddll_high = {
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_4),
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_5),
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_4),
@@ -460,17 +455,17 @@ namespace ams::ldr {
                         offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_2),
                         offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_3),
                     };
-                    for (uint32_t i = 0; i < sizeof(ddll_high)/sizeof(uint32_t); i++)
+                    for (const auto &offset : ddll_high)
                     {
-                        uint32_t *ddll = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + ddll_high[i]);
-                        uint32_t *ddll_ref = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(ref_table) + ddll_high[i]);
-                        uint16_t adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 26,16) & ((1 << 10) - 1);
+                        u32 *ddll     = reinterpret_cast<u32 *>(reinterpret_cast<uintptr_t>(table) + offset);
+                        u32 *ddll_ref = reinterpret_cast<u32 *>(reinterpret_cast<uintptr_t>(ref) + offset);
+                        u16 adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 26,16) & ((1 << (26-16)) - 1);
                         CLEAR_BIT(*ddll, 26,16)
                         *ddll |= adjusted_ddll << 16;
                     }
 
                     /* Section 2: adjust LOW bits: BIT 10:0 */
-                    const uint32_t ddll_low[] = {
+                    const std::vector<uintptr_t> ddll_low = {
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_4),
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dq_rank1_5),
                         OFFSET_ALL_REG(emc_pmacro_ob_ddll_long_dqs_rank0_0),
@@ -497,11 +492,11 @@ namespace ams::ldr {
                         offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_2),
                         offsetof(MarikoMtcTable, trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_3),
                     };
-                    for (uint32_t i = 0; i < sizeof(ddll_low)/sizeof(uint32_t); i++)
+                    for (const auto &offset : ddll_low)
                     {
-                        uint32_t *ddll = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(target_table) + ddll_low[i]);
-                        uint32_t *ddll_ref = reinterpret_cast<uint32_t *>(reinterpret_cast<uint8_t *>(ref_table) + ddll_low[i]);
-                        uint16_t adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 10,0) & ((1 << 10) - 1);
+                        u32 *ddll     = reinterpret_cast<u32 *>(reinterpret_cast<uintptr_t>(table) + offset);
+                        u32 *ddll_ref = reinterpret_cast<u32 *>(reinterpret_cast<uintptr_t>(ref) + offset);
+                        u16 adjusted_ddll = ADJUST_BIT(*ddll, *ddll_ref, 10,0) & ((1 << 10) - 1);
                         CLEAR_BIT(*ddll, 10,0)
                         *ddll |= adjusted_ddll;
                     }
@@ -534,7 +529,7 @@ namespace ams::ldr {
                 /* External Memory Arbitration Configuration */
                 /* BIT 20:16 - EXTRA_TICKS_PER_UPDATE: 0 */
                 /* BIT 8:0   - CYCLES_PER_UPDATE: 12(1600MHz), 10(1331.2MHz) */
-                ADJUST_PARAM_TABLE(target_table, ref_table, burst_mc_regs.mc_emem_arb_cfg);
+                ADJUST_PARAM_TABLE(table, burst_mc_regs.mc_emem_arb_cfg, ref);
 
                 /* External Memory Arbitration Configuration: Direction Arbiter: Turns */
                 /* BIT 31:24 - W2R_TURN: approx. mc_emem_arb_timing_w2r */
@@ -542,11 +537,9 @@ namespace ams::ldr {
                 /* BIT 15:8  - W2W_TURN: 0 */
                 /* BIT 7:0   - R2R_TURN: 0 */
                 {
-                    uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_da_turns;
-                    uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_da_turns;
-                    uint8_t w2r_turn = ADJUST_BIT(param_1600, param_1331, 31,24);
-                    uint8_t r2w_turn = ADJUST_BIT(param_1600, param_1331, 23,16);
-                    target_table->burst_mc_regs.mc_emem_arb_da_turns = w2r_turn << 24 | r2w_turn << 16;
+                    u8 w2r_turn = table->burst_mc_regs.mc_emem_arb_timing_w2r;
+                    u8 r2w_turn = table->burst_mc_regs.mc_emem_arb_timing_r2w;
+                    table->burst_mc_regs.mc_emem_arb_da_turns = w2r_turn << 24 | r2w_turn << 16;
                 }
 
                 /* External Memory Arbitration Configuration: Direction Arbiter: Covers */
@@ -554,12 +547,12 @@ namespace ams::ldr {
                 /* BIT 15:8  - RCD_R_COVER: 8(1600MHz), 7(1331.2MHz) */
                 /* BIT 7:0   - RC_COVER: approx. mc_emem_arb_timing_rc, 12(1600MHz), 9(1331.2MHz) */
                 {
-                    uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_da_covers;
-                    uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_da_covers;
-                    uint8_t rcd_w_cover = ADJUST_BIT(param_1600, param_1331, 23,16);
-                    uint8_t rcd_r_cover = ADJUST_BIT(param_1600, param_1331, 15,8);
-                    uint8_t rc_cover    = ADJUST_BIT(param_1600, param_1331, 7,0);
-                    target_table->burst_mc_regs.mc_emem_arb_da_covers = rcd_w_cover << 16 | rcd_r_cover << 8 | rc_cover;
+                    u32 param_max = table->burst_mc_regs.mc_emem_arb_da_covers;
+                    u32 param_ref = ref->burst_mc_regs.mc_emem_arb_da_covers;
+                    u8 rcd_w_cover = ADJUST_BIT(param_max, param_ref, 23,16);
+                    u8 rcd_r_cover = (ADJUST_BIT(param_max, param_ref, 23,16) + 3) / 2;
+                    u8 rc_cover    = table->burst_mc_regs.mc_emem_arb_timing_rc;
+                    table->burst_mc_regs.mc_emem_arb_da_covers = rcd_w_cover << 16 | rcd_r_cover << 8 | rc_cover;
                 }
 
                 /* External Memory Arbitration Configuration: Miscellaneous Thresholds (0) */
@@ -567,15 +560,15 @@ namespace ams::ldr {
                 /* BIT 14:8  - PRIORITY_INVERSION_THRESHOLD: 36(1600MHz), 30(1331.2MHz) */
                 /* BIT 7:0   - BC2AA_HOLDOFF_THRESHOLD: set to mc_emem_arb_timing_rc */
                 {
-                    uint32_t param_1600 = target_table->burst_mc_regs.mc_emem_arb_misc0;
-                    uint32_t param_1331 = ref_table->burst_mc_regs.mc_emem_arb_misc0;
-                    uint8_t priority_inversion_iso_threshold = ADJUST_BIT(param_1600, param_1331, 20,16);
-                    uint8_t priority_inversion_threshold     = ADJUST_BIT(param_1600, param_1331, 14,8);
-                    uint8_t bc2aa_holdoff_threshold          = target_table->burst_mc_regs.mc_emem_arb_timing_rc;
-                    CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 20,16)
-                    CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 14,8)
-                    CLEAR_BIT(target_table->burst_mc_regs.mc_emem_arb_misc0, 7,0)
-                    target_table->burst_mc_regs.mc_emem_arb_misc0 |=
+                    u32 param_max = table->burst_mc_regs.mc_emem_arb_misc0;
+                    u32 param_ref = ref->burst_mc_regs.mc_emem_arb_misc0;
+                    u8 priority_inversion_iso_threshold = ADJUST_BIT(param_max, param_ref, 20,16);
+                    u8 priority_inversion_threshold     = 3 * ADJUST_BIT(param_max, param_ref, 20,16);
+                    u8 bc2aa_holdoff_threshold          = table->burst_mc_regs.mc_emem_arb_timing_rc;
+                    CLEAR_BIT(table->burst_mc_regs.mc_emem_arb_misc0, 20,16)
+                    CLEAR_BIT(table->burst_mc_regs.mc_emem_arb_misc0, 14,8)
+                    CLEAR_BIT(table->burst_mc_regs.mc_emem_arb_misc0, 7,0)
+                    table->burst_mc_regs.mc_emem_arb_misc0 |=
                         (priority_inversion_iso_threshold << 16 | priority_inversion_threshold << 8 | bc2aa_holdoff_threshold);
                 }
 
@@ -649,7 +642,7 @@ namespace ams::ldr {
                      *
                      * No need to care about this if Spread Spectrum (SS) is disabled
                      */
-                    // Disable PLL Spread Spectrum Control
+                    // Disable PLL Spread Spectrum Control (degrades performance)
                     table->pll_en_ssc = 0;
                     table->pllm_ss_cfg = 1 << 30;
                 }
@@ -784,7 +777,7 @@ namespace ams::ldr {
             return ResultFailure();
         }
 
-        Result PcvMemHandler(uintptr_t ptr, bool isMariko) {
+        Result PcvMemMaxClockHandler(uintptr_t ptr, bool isMariko, uintptr_t *buffer_ptr) {
             if (isMariko)
             {
                 // Mariko have 3 mtc tables (204/1331/1600 MHz), only these 3 frequencies could be set.
@@ -792,28 +785,40 @@ namespace ams::ldr {
                 u32 value_next  = *(reinterpret_cast<u32 *>(ptr) + 1);
                 u32 value_next2 = *(reinterpret_cast<u32 *>(ptr) + 2);
 
-                constexpr u32 mtc_min_volt   = 1100;
-                constexpr u32 dvb_entry_volt = 675;
-                constexpr u32 mtc_table_rev  = 3;
-                constexpr u32 mem_1331_khz   = 1331'200;
+                constexpr u32 mtc_mariko_min_volt       = 1100;
+                constexpr u32 mtc_erista_min_volt_max   = 887;
+                constexpr u32 mtc_erista_min_volt_alt   = 850;
+                constexpr u32 dvb_entry_volt            = 675;
+                constexpr u32 mtc_mariko_rev            = 3;
 
-                if (value_next == mtc_min_volt)
+                if (value_next == mtc_erista_min_volt_max && !(*buffer_ptr))
                 {
-                    uintptr_t offset_new = ptr - offsetof(MarikoMtcTable, rate_khz);
-                    uintptr_t offset_old = offset_new - sizeof(MarikoMtcTable);
-
-                    MarikoMtcTable* const mtc_table_new = reinterpret_cast<MarikoMtcTable *>(offset_new);
-                    MarikoMtcTable* const mtc_table_old = reinterpret_cast<MarikoMtcTable *>(offset_old);
-                    if (   mtc_table_new->rev != mtc_table_rev
-                        || mtc_table_old->rev != mtc_table_rev
-                        || mtc_table_old->rate_khz != mem_1331_khz )
+                    EristaMtcTable* const mtc_table_max = reinterpret_cast<EristaMtcTable *>(ptr - offsetof(EristaMtcTable, rate_khz));
+                    EristaMtcTable* const mtc_table_alt = mtc_table_max - 1;
+                    if (mtc_table_alt->rate_khz == 1331'200 && mtc_table_alt->min_volt == mtc_erista_min_volt_alt)
+                    {
+                        *buffer_ptr = reinterpret_cast<uintptr_t>(mtc_table_max);
+                        return ResultSuccess();
+                    }
+                }
+                else if (value_next == mtc_mariko_min_volt)
+                {
+                    MarikoMtcTable* const mtc_table_max = reinterpret_cast<MarikoMtcTable *>(ptr - offsetof(MarikoMtcTable, rate_khz));
+                    MarikoMtcTable* const mtc_table_alt = mtc_table_max - 1;
+                    if (   mtc_table_max->rev != mtc_mariko_rev
+                        || mtc_table_alt->rev != mtc_mariko_rev
+                        || mtc_table_alt->rate_khz != MemClkOSAlt )
                         return ResultFailure();
 
-                    std::memcpy(reinterpret_cast<void *>(mtc_table_old), reinterpret_cast<void *>(mtc_table_new), sizeof(MarikoMtcTable));
+                    if (*buffer_ptr)
+                        std::memcpy(reinterpret_cast<void *>(*buffer_ptr), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
+                    else
+                        std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
 
-                    // Adjust params for Max MHz
-                    // [!TODO] ref table is identical to new table, leaving some params unchanged
-                    AdjustMtcTable(mtc_table_new, mtc_table_old);
+                    AdjustMtcTable(mtc_table_max, mtc_table_alt);
+
+                    if (*buffer_ptr)
+                        std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(*buffer_ptr), sizeof(MarikoMtcTable));
                 }
                 else if (value_next2 == dvb_entry_volt)
                 {
@@ -821,7 +826,7 @@ namespace ams::ldr {
                     emc_dvb_dvfs_table_t* dvb_1331_entry = dvb_max_entry - 1;
 
                     u32* dvb_1331_offset = reinterpret_cast<u32 *>(dvb_1331_entry);
-                    if (*(dvb_1331_offset) != mem_1331_khz)
+                    if (*(dvb_1331_offset) != MemClkOSAlt)
                         return ResultFailure();
 
                     PatchOffset(dvb_1331_offset, MemClkOSLimit);
@@ -835,6 +840,11 @@ namespace ams::ldr {
         void ApplyAutoPcvPatch(uintptr_t mapped_nso, size_t nso_size) {
             /* Abort immediately once something goes wrong */
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
+
+            // Use erista mtc tables in pcv module as tmp buffer for further mariko mtc table copies.
+            // Erista mtc tables appear earlier than Mariko ones, no need to search for them beforehand.
+            static_assert(sizeof(MarikoMtcTable) < sizeof(EristaMtcTable));
+            uintptr_t mtcBuffer  {};
 
             u8 cpuClockVddMariko {};
             u8 cpuTableMariko    {};
@@ -882,7 +892,7 @@ namespace ams::ldr {
 
                 if (value == MemClkOSLimit)
                 {
-                    if (R_FAILED(PcvMemHandler(ptr, isMariko)))
+                    if (R_FAILED(PcvMemMaxClockHandler(ptr, isMariko, &mtcBuffer)))
                         AMS_ABORT();
                 }
 
@@ -929,6 +939,8 @@ namespace ams::ldr {
             perf_conf_entry* confTable = 0;
             constexpr u32 entryCnt     = 16;
             constexpr u32 memPtmLimit  = MemClkOSLimit * 1000;
+            constexpr u32 memPtmAlt    = MemClkOSAlt * 1000;
+            constexpr u32 memPtmClamp  = MemClkOSClampDn * 1000;
             constexpr u32 memPtmMax    = EmcClock * 1000;
 
             uintptr_t ptr = mapped_nso;
@@ -964,8 +976,8 @@ namespace ams::ldr {
                         PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmMax);
                         PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmMax);
                         break;
-                    case 1331'200'000:
-                    case 1065'600'000:
+                    case memPtmAlt:
+                    case memPtmClamp:
                         PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmLimit);
                         PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmLimit);
                         break;
