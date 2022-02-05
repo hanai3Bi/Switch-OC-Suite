@@ -16,9 +16,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
 - There is **no dynamic frequency scaling** in HOS, which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
 
-- **ONLY ramp up RAM clock** beyond HOS maximum to 1862 / 1996 MHz if you want to _stay safe_.
-
-- Higher RAM clocks (> 1996.8 MHz) could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
+- Higher RAM clocks (> 1996.8 MHz) without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
 
 
 
@@ -28,14 +26,15 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
   - Most games are **bottlenecked by RAM bandwidth**
 
-  - Safe: 1862.4 / 1996.8 MHz
-    - 1862.4 / 1996.8 MHz is stable for all (Samsung / Micron / Hynix).
-    - Adjusted memory parameters (Mariko only). [Discussion](https://github.com/KazushiMe/Switch-OC-Suite/issues/5).
+  - Timings could be auto-adjusted (default), partially customized, or overwritten with entire mtc table.
+
+  - Safe: ≤1996.8 MHz
+    - 1996.8 MHz has been tested stable for all (Samsung / Micron / Hynix), with built-in timing auto-adjustment.
 
   - Unsafe: > 1996.8 MHz or overvolting
-    - Higher RAM clocks might be stable for some chips without overvolting. [Not publicly available.](#Build)
-    - No evidence suggests that DRAM bus overvolting is useful.
-      - [Use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+    - Timing customization: No GUI tool, requires [rebuilding](#Build).
+    - DRAM bus overvolting (Erista Only).
+      - Mariko: [use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
 
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
 
@@ -96,9 +95,25 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 2. Mariko Only: Copy all files in `SdOut` to the root of SD card.
   - Erista: Use official sys-clk instead. Only `loader.kip` and some benchmark homebrew are available.
 
-3. Grab `x.x.x_loader_xxxx.x.kip` for your Atmosphere version and desired RAM frequency, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
+3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-4. **Hekate-ipl bootloader**
+4. Customization
+    | Defaults   | Mariko        | Erista       |
+    | ---------- | ------------- | ------------ |
+    | CPU OC     | 2397 MHz Max  | Disabled     |
+    | CPU Volt   | 1220 mV Max   | Disabled     |
+    | GPU OC     | 1305 MHz Max  | N/A          |
+    | RAM OC     | 1996 MHz Max  | 1996 MHz Max |
+    | RAM Volt   | N/A           | Disabled     |
+    | RAM Timing | Auto-Adjusted | Disabled     |
+
+  - No parser/editor currently, although you could easily customize those with a hex editor:
+    - Search for ASCII string `CUST`
+    - All values are little-endian
+    - Switch to override or replace mode, NOT insert mode
+    - See `ldr_oc_suite.hpp` for config struct
+
+5. **Hekate-ipl bootloader**
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
    - Erista: Minerva module conflicts with HOS DRAM training. Recompile with frequency changed is recommeded, although you could simply remove `bootloader/sys/libsys_minerva.bso`.
 
@@ -113,6 +128,8 @@ Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atm
 
 If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
 
+Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
+
 
 
 ## Why no CPU/GPU OC for Erista?
@@ -125,6 +142,7 @@ If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::a
   - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
   - CPU / GPU performance at max clocks will be worse if power supply is not enough.
 
+- CPU OC (up to ~ 2.1 GHz, depending on your CPU bin) is available mainly for emulation, but it does NOT work out of the box.
 
 
 ## Acknowledgement

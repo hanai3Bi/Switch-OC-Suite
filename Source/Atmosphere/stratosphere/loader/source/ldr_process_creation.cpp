@@ -23,7 +23,7 @@
 #include "ldr_patcher.hpp"
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
-#include "ldr_oc_patch.hpp"
+#include "ldr_oc_suite.hpp"
 
 namespace ams::ldr {
 
@@ -608,10 +608,10 @@ namespace ams::ldr {
 
                 /* Apply pcv and ptm patches. */
                 if (g_is_pcv) {
-                    pcv::ApplyAutoPcvPatch(map_address, nso_size);
+                    oc::pcv::Patch(map_address, nso_size);
                 }
                 if (g_is_ptm) {
-                    ptm::ApplyAutoPtmPatch(map_address, nso_size);
+                    oc::ptm::Patch(map_address, nso_size);
                 }
             }
 
