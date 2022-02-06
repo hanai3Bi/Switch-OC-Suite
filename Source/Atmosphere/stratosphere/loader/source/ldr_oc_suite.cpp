@@ -26,9 +26,8 @@ namespace ams::ldr::oc {
      * AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.
      * ENTIRE_TABLE_ERISTA/ENTIRE_TABLE_MARIKO:
      *                       Replace the entire max mtc table with customized one.
-     * CUSTOMIZED_MARIKO:    Override timings (partially).
      */
-    .mtcConf = AUTO_ADJ_MARIKO_SAFE;
+    .mtcConf = AUTO_ADJ_MARIKO_SAFE,
 
     /* Mariko CPU:
      * - Max Clock in kHz:
@@ -48,6 +47,18 @@ namespace ams::ldr::oc {
      */
     .marikoGpuMaxClock = 1305600,
 
+    /* Mariko EMC:
+     * - RAM Clock in kHz:
+     *   Values should be > 1600000, and divided evenly by 9600 or 12800.
+     *   [WARNING]
+     *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
+     *   - Graphical glitches
+     *   - System instabilities
+     *   - NAND corruption
+     *   Timings from auto-adjustment have been tested safe for up to 1996.8 MHz for all DRAM chips.
+     */
+    .marikoEmcMaxClock = 1996800,
+
     /* Erista CPU:
      * Untested and not enabled by default.
      * - Enable Overclock
@@ -58,24 +69,33 @@ namespace ams::ldr::oc {
     .eristaCpuMaxVolt  = 0,
 
     /* Erista EMC:
-     * - RAM Voltage in mV
-     *   Default(HOS): 1125
-     *   Not enabled by default.
-     */
-    .eristaEmcVolt     = 0,
-
-    /* Common EMC:
-     * - RAM Clock in kHz:
-     *   Values should be > 1600000, and divided evenly by 9600 or 12800.
+     * - RAM Clock in kHz
      *   [WARNING]
      *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
      *   - Graphical glitches
      *   - System instabilities
      *   - NAND corruption
-     *   Timings from auto-adjustment have been tested safe for up to 1996.8 MHz for all DRAM chips.
+     * - RAM Voltage in mV
+     *   Default(HOS): 1125
+     *   Not enabled by default.
      */
-    .commonEmcMaxClock = 1996800,
+    .eristaEmcMaxClock = 1862400,
+    .eristaEmcVolt     = 0,
     };
+
+    namespace pcv {
+        static Result MemPllmLimitHandler(u32* ptr) {
+            clk_pll_param* entry = reinterpret_cast<clk_pll_param *>(ptr);
+            if (entry->max_0 != entry->max_1)
+                return ResultFailure();
+
+            // Double the max clk simply
+            u32 max_clk = entry->max_0 * 2;
+            entry->max_0 = max_clk;
+            entry->max_1 = max_clk;
+            return ResultSuccess();
+        }
+    }
 
     namespace pcv::Mariko {
         constexpr u32 CpuClkOSLimit   = 1785'000;
@@ -84,6 +104,8 @@ namespace ams::ldr::oc {
         constexpr u32 GpuClkOfficial  = 1267'200;
         constexpr u32 MemClkOSLimit   = 1600'000;
         constexpr u32 MemClkOSAlt     = 1331'200;
+        constexpr u32 GpuClkPllLimit  = 1300'000'000;
+        constexpr u32 MemClkPllmLimit = 2133'000'000;
 
         constexpr u32 CommonDvfsEntryCnt = 32;
         /* CPU */
@@ -191,11 +213,11 @@ namespace ams::ldr::oc {
             constexpr u32 pll_osc_in = 38400;
 
             u32 divm {}, divn {};
-            const u32 remainder = C.commonEmcMaxClock % pll_osc_in;
+            const u32 remainder = C.marikoEmcMaxClock % pll_osc_in;
             for (const auto &index : div) {
                 if (remainder >= pll_osc_in * index.numerator / index.denominator) {
                     divm = index.denominator;
-                    divn = C.commonEmcMaxClock / pll_osc_in * divm + index.numerator;
+                    divn = C.marikoEmcMaxClock / pll_osc_in * divm + index.numerator;
                     break;
                 }
             }
@@ -224,7 +246,7 @@ namespace ams::ldr::oc {
              */
 
             #define ADJUST_PROP(TARGET, REF)                                                                        \
-                (u32)(std::ceil(REF + ((C.commonEmcMaxClock-MemClkOSAlt)*(TARGET-REF))/(MemClkOSLimit-MemClkOSAlt)))
+                (u32)(std::ceil(REF + ((C.marikoEmcMaxClock-MemClkOSAlt)*(TARGET-REF))/(MemClkOSLimit-MemClkOSAlt)))
 
             #define ADJUST_PARAM(TARGET, REF)     \
                 TARGET = ADJUST_PROP(TARGET, REF);
@@ -268,7 +290,7 @@ namespace ams::ldr::oc {
             {
                 const bool use_4266_spec = C.mtcConf == AUTO_ADJ_MARIKO_4266;
                 // tCK_avg (average clock period) in ns
-                const double tCK_avg = 1000'000. / C.commonEmcMaxClock;
+                const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
                 // tRPpb (row precharge time per bank) in ns
                 const u32 tRPpb = 18;
                 // tRPab (row precharge time all banks) in ns
@@ -294,7 +316,7 @@ namespace ams::ldr::oc {
                 // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
                 // emc_clk_period = dram_clk / 2;
                 // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
-                const u32 REFRESH = u32(std::ceil((double(tREFpb) * C.commonEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4;
+                const u32 REFRESH = u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4;
                 // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
                 const u32 tPDEX2 = 10;
                 // [Guessed] tACT2PDEN (timing delay from an activate, MRS or EMRS command to power-down entry) in ns
@@ -354,8 +376,6 @@ namespace ams::ldr::oc {
                 table->burst_mc_regs.mc_emem_arb_timing_rfcpb   = std::ceil(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV + 1); // ?
             }
 
-            MtcPllmbDivHandler(table);
-
             #ifdef EXPERIMENTAL
             {
                 #define ADJUST_PARAM_ROUND2_ALL_REG(TARGET_TABLE, REF_TABLE, PARAM)                                                        \
@@ -395,7 +415,7 @@ namespace ams::ldr::oc {
                         | ADJUST_BIT(TARGET_TABLE->shadow_regs_rdwr_train.PARAM, REF_TABLE->shadow_regs_rdwr_train.PARAM, HIGH2, LOW2) << LOW2;
 
                 /* For latency allowance */
-                #define ADJUST_INVERSE(TARGET) (TARGET * (MemClkOSLimit / 1000) / (C.commonEmcMaxClock / 1000))
+                #define ADJUST_INVERSE(TARGET) (TARGET * (MemClkOSLimit / 1000) / (C.marikoEmcMaxClock / 1000))
 
                 /* emc_wdv, emc_wsv, emc_wev, emc_wdv_mask,
                    emc_quse, emc_quse_width, emc_ibdly, emc_obdly,
@@ -693,173 +713,6 @@ namespace ams::ldr::oc {
             #endif
         }
 
-        static void MtcTableCustomize(MarikoMtcTable* table) {
-            #define HANDLER_COMMON(PARAM)                            \
-                if (C.marikoTiming.common.PARAM != DO_NOT_OVERRIDE) {\
-                    u32 cache = C.marikoTiming.common.PARAM;         \
-                    if (cache == OVERRIDE_WITH_ZERO)                 \
-                        cache = 0;                                   \
-                    table->burst_regs.PARAM = cache;                 \
-                    table->shadow_regs_ca_train.PARAM = cache;       \
-                    table->shadow_regs_rdwr_train.PARAM = cache;     \
-                }
-
-            #define HANDLER(PARAM)                   \
-                if (C.marikoTiming.PARAM) {          \
-                    u32 cache = C.marikoTiming.PARAM;\
-                    if (cache == OVERRIDE_WITH_ZERO) \
-                        cache = 0;                   \
-                    table->PARAM = cache;            \
-                }
-
-            HANDLER_COMMON(emc_rc);
-            HANDLER_COMMON(emc_rfc);
-            HANDLER_COMMON(emc_rfcpb);
-            HANDLER_COMMON(emc_ras);
-            HANDLER_COMMON(emc_rp);
-            HANDLER_COMMON(emc_r2w);
-            HANDLER_COMMON(emc_w2r);
-            HANDLER_COMMON(emc_r2p);
-            HANDLER_COMMON(emc_w2p);
-            HANDLER_COMMON(emc_trtm);
-            HANDLER_COMMON(emc_twtm);
-            HANDLER_COMMON(emc_tratm);
-            HANDLER_COMMON(emc_twatm);
-            HANDLER_COMMON(emc_rd_rcd);
-            HANDLER_COMMON(emc_wr_rcd);
-            HANDLER_COMMON(emc_rrd);
-            HANDLER_COMMON(emc_wdv);
-            HANDLER_COMMON(emc_wsv);
-            HANDLER_COMMON(emc_wev);
-            HANDLER_COMMON(emc_wdv_mask);
-            HANDLER_COMMON(emc_quse);
-            HANDLER_COMMON(emc_quse_width);
-            HANDLER_COMMON(emc_ibdly);
-            HANDLER_COMMON(emc_obdly);
-            HANDLER_COMMON(emc_einput);
-            HANDLER_COMMON(emc_einput_duration);
-            HANDLER_COMMON(emc_qrst);
-            HANDLER_COMMON(emc_qsafe);
-            HANDLER_COMMON(emc_rdv);
-            HANDLER_COMMON(emc_rdv_mask);
-            HANDLER_COMMON(emc_rdv_early);
-            HANDLER_COMMON(emc_rdv_early_mask);
-            HANDLER_COMMON(emc_refresh);
-            HANDLER_COMMON(emc_pre_refresh_req_cnt);
-            HANDLER_COMMON(emc_pdex2wr);
-            HANDLER_COMMON(emc_pdex2rd);
-            HANDLER_COMMON(emc_act2pden);
-            HANDLER_COMMON(emc_rw2pden);
-            HANDLER_COMMON(emc_cke2pden);
-            HANDLER_COMMON(emc_pdex2mrr);
-            HANDLER_COMMON(emc_txsr);
-            HANDLER_COMMON(emc_txsrdll);
-            HANDLER_COMMON(emc_tcke);
-            HANDLER_COMMON(emc_tckesr);
-            HANDLER_COMMON(emc_tpd);
-            HANDLER_COMMON(emc_tfaw);
-            HANDLER_COMMON(emc_trpab);
-            HANDLER_COMMON(emc_tclkstop);
-            HANDLER_COMMON(emc_trefbw);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dq_rank1_4);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dq_rank1_5);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank0_0);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank0_1);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank0_3);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank0_4);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank0_5);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank1_0);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank1_1);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank1_3);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank1_4);
-            HANDLER_COMMON(emc_pmacro_ob_ddll_long_dqs_rank1_5);
-            HANDLER_COMMON(emc_pmacro_ddll_long_cmd_0);
-            HANDLER_COMMON(emc_pmacro_ddll_long_cmd_1);
-            HANDLER_COMMON(emc_pmacro_ddll_long_cmd_2);
-            HANDLER_COMMON(emc_pmacro_ddll_long_cmd_3);
-            HANDLER_COMMON(emc_pmacro_ddll_long_cmd_4);
-            HANDLER_COMMON(emc_zcal_wait_cnt);
-            HANDLER_COMMON(emc_mrs_wait_cnt);
-            HANDLER_COMMON(emc_mrs_wait_cnt2);
-            HANDLER_COMMON(emc_auto_cal_channel);
-            HANDLER_COMMON(emc_pmacro_dll_cfg_2);
-            HANDLER_COMMON(emc_pmacro_autocal_cfg_common);
-            HANDLER_COMMON(emc_dyn_self_ref_control);
-            HANDLER_COMMON(emc_qpop);
-            HANDLER_COMMON(emc_pmacro_cmd_pad_tx_ctrl);
-            HANDLER_COMMON(emc_tr_timing_0);
-            HANDLER_COMMON(emc_tr_rdv);
-            HANDLER_COMMON(emc_tr_qpop);
-            HANDLER_COMMON(emc_tr_rdv_mask);
-            HANDLER_COMMON(emc_tr_qsafe);
-            HANDLER_COMMON(emc_tr_qrst);
-            HANDLER_COMMON(emc_training_vref_settle);
-
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_0);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_1);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_2);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_3);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_4);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank0_5);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_0);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_1);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_2);
-            HANDLER(trim_regs.emc_pmacro_ob_ddll_long_dq_rank1_3);
-
-            HANDLER(dram_timings.rl);
-
-            HANDLER(burst_mc_regs.mc_emem_arb_cfg);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_rcd);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_rp);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_rc);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_ras);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_faw);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_wap2pre);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_r2w);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_w2r);
-            HANDLER(burst_mc_regs.mc_emem_arb_timing_rfcpb);
-            HANDLER(burst_mc_regs.mc_emem_arb_da_turns);
-            HANDLER(burst_mc_regs.mc_emem_arb_da_covers);
-            HANDLER(burst_mc_regs.mc_emem_arb_misc0);
-
-            HANDLER(la_scale_regs.mc_mll_mpcorer_ptsa_rate);
-            HANDLER(la_scale_regs.mc_ptsa_grant_decrement);
-            HANDLER(la_scale_regs.mc_latency_allowance_xusb_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_xusb_1);
-            HANDLER(la_scale_regs.mc_latency_allowance_tsec_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_sdmmca_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_sdmmcaa_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_sdmmc_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_sdmmcab_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_ppcs_1);
-            HANDLER(la_scale_regs.mc_latency_allowance_mpcore_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_hc_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_hc_1);
-            HANDLER(la_scale_regs.mc_latency_allowance_avpc_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_gpu_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_gpu2_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_nvenc_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_nvdec_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_vic_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_vi2_0);
-            HANDLER(la_scale_regs.mc_latency_allowance_isp2_1);
-
-            HANDLER(pllm_ss_ctrl1);
-            HANDLER(pllm_ss_ctrl2);
-            HANDLER(pllmb_ss_ctrl1);
-            HANDLER(pllmb_ss_ctrl2);
-            HANDLER(pllmb_divm);
-            HANDLER(pllmb_divn);
-            HANDLER(min_mrs_wait);
-            HANDLER(emc_mrw);
-            HANDLER(emc_mrw2);
-            HANDLER(emc_cfg_2);
-            HANDLER(latency);
-
-            if (C.marikoTiming.pllmb_divm == DO_NOT_OVERRIDE || C.marikoTiming.pllmb_divn == DO_NOT_OVERRIDE)
-                MtcPllmbDivHandler(table);
-        }
-
         static Result CpuClockVddHandler(u32* ptr) {
             if (C.marikoCpuMaxClock) {
                 u32 value_next2 = *(ptr + 2);
@@ -974,15 +827,10 @@ namespace ams::ldr::oc {
                 return ResultSuccess();
             }
 
-            bool customized_timing = (C.mtcConf == CUSTOMIZED_MARIKO);
-            if (customized_timing) {
-                std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
-                MtcTableCustomize(mtc_table_max);
-            } else {
-                std::memcpy(reinterpret_cast<void *>(table), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
-                MtcTableAutoAdjust(mtc_table_max, mtc_table_alt);
-                std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(table), sizeof(MarikoMtcTable));
-            }
+            std::memcpy(reinterpret_cast<void *>(table), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
+            MtcTableAutoAdjust(mtc_table_max, mtc_table_alt);
+            MtcPllmbDivHandler(mtc_table_max);
+            std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(table), sizeof(MarikoMtcTable));
             return ResultSuccess();
         }
 
@@ -1015,16 +863,21 @@ namespace ams::ldr::oc {
                 rc = DvbTableHandler(ptr);
             }
 
-            PatchOffset(ptr, C.commonEmcMaxClock);
+            PatchOffset(ptr, C.marikoEmcMaxClock);
             return rc;
         }
 
-        static void Patch(uintptr_t mapped_nso, size_t nso_size) {
-            if (C.custRev != CUST_REV) {
-                AMS_ABORT();
-                __builtin_unreachable();
-            }
+        static Result GpuPllLimitHandler(u32* ptr) {
+            u32 value_next = *(ptr + 1);
+            if (value_next != 0)
+                return ResultFailure();
 
+            u32 max_clk = *(ptr) * 2;
+            PatchOffset(ptr, max_clk);
+            return ResultSuccess();
+        }
+
+        static void Patch(uintptr_t mapped_nso, size_t nso_size) {
             enum PatchSuccessCnt {
                 MEM_CLOCK,
                 CPU_CLOCK_VDD,
@@ -1032,6 +885,8 @@ namespace ams::ldr::oc {
                 GPU_TABLE,
                 CPU_MAX_VOLT,
                 GPU_MAX_CLOCK,
+                GPU_PLL_CLK,
+                MEM_PLL_CLK,
                 CNT_MAX,
             };
 
@@ -1065,6 +920,14 @@ namespace ams::ldr::oc {
                         if (R_SUCCEEDED(MemMaxClockHandler(ptr32)))
                             cnt[MEM_CLOCK]++;
                         continue;
+                    case GpuClkPllLimit: [[unlikely]]
+                        if (R_SUCCEEDED(GpuPllLimitHandler(ptr32)))
+                            cnt[GPU_PLL_CLK]++;
+                        continue;
+                    case MemClkPllmLimit:[[unlikely]]
+                        if (R_SUCCEEDED(MemPllmLimitHandler(ptr32)))
+                            cnt[MEM_PLL_CLK]++;
+                        continue;
                     default: [[likely]]
                         break;
                 }
@@ -1081,7 +944,9 @@ namespace ams::ldr::oc {
                 || cnt[CPU_TABLE]     != 1
                 || cnt[GPU_TABLE]     != 1
                 || cnt[CPU_MAX_VOLT]   > 13 || !cnt[CPU_MAX_VOLT]
-                || cnt[GPU_MAX_CLOCK] != 2)
+                || cnt[GPU_MAX_CLOCK] != 2
+                || cnt[GPU_PLL_CLK]   != 1
+                || cnt[MEM_PLL_CLK]   != 2)
             {
                 AMS_ABORT();
                 __builtin_unreachable();
@@ -1096,6 +961,7 @@ namespace ams::ldr::oc {
         constexpr u32 CpuVoltLimit3   = 1227;
         constexpr u32 MemVoltHOS      = 1125'000;
         constexpr u32 MemClkOSLimit   = 1600'000;
+        constexpr u32 MemClkPllmLimit = 1866'000'000;
 
         constexpr cpu_freq_cvb_table_t NewCpuTables[] = {
          // OldCpuTables
@@ -1178,7 +1044,7 @@ namespace ams::ldr::oc {
                 rc = MtcTableHandler(ptr);
             }
 
-            PatchOffset(ptr, C.commonEmcMaxClock);
+            PatchOffset(ptr, C.eristaEmcMaxClock);
             return rc;
         }
 
@@ -1195,6 +1061,7 @@ namespace ams::ldr::oc {
                 CPU_MAX_VOLT,
                 MEM_CLOCK,
                 MEM_VOLT,
+                MEM_PLL_CLK,
                 CNT_MAX,
             };
 
@@ -1226,12 +1093,16 @@ namespace ams::ldr::oc {
                         if (R_SUCCEEDED(MemVoltHandler(ptr32)))
                             cnt[MEM_VOLT]++;
                         continue;
+                    case MemClkPllmLimit: [[unlikely]]
+                        if (R_SUCCEEDED(MemPllmLimitHandler(ptr32)))
+                            cnt[MEM_PLL_CLK]++;
+                        continue;
                     default: [[likely]]
                         break;
                 }
             }
 
-            if (!cnt[MEM_CLOCK] || cnt[MEM_VOLT] != 2) {
+            if (!cnt[MEM_CLOCK] || cnt[MEM_VOLT] != 2 || cnt[MEM_PLL_CLK] != 2) {
                 AMS_ABORT();
                 __builtin_unreachable();
             }
@@ -1240,6 +1111,11 @@ namespace ams::ldr::oc {
 
     namespace pcv {
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
+            if (C.custRev != CUST_REV) {
+                AMS_ABORT();
+                __builtin_unreachable();
+            }
+
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
             if (isMariko)
                 Mariko::Patch(mapped_nso, nso_size);
@@ -1260,7 +1136,7 @@ namespace ams::ldr::oc {
             constexpr u32 memPtmLimit  = 1600'000'000;
             constexpr u32 memPtmAlt    = 1331'200'000;
             constexpr u32 memPtmClamp  = 1065'600'000;
-            const     u32 memPtmMax    = C.commonEmcMaxClock * 1000;
+            const     u32 memPtmMax    = C.marikoEmcMaxClock * 1000;
 
             for (uintptr_t ptr = mapped_nso;
                  ptr <= mapped_nso + nso_size - sizeof(perf_conf_entry) * entryCnt;

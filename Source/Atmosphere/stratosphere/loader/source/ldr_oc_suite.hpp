@@ -24,7 +24,6 @@ namespace ams::ldr::oc {
         AUTO_ADJ_MARIKO_4266 = 1,
         ENTIRE_TABLE_ERISTA  = 2,
         ENTIRE_TABLE_MARIKO  = 3,
-        CUSTOMIZED_MARIKO    = 4,
     };
 
     typedef struct {
@@ -34,21 +33,16 @@ namespace ams::ldr::oc {
         u32 marikoCpuMaxClock;
         u32 marikoCpuMaxVolt;
         u32 marikoGpuMaxClock;
+        u32 marikoEmcMaxClock;
         u32 eristaCpuOCEnable;
         u32 eristaCpuMaxVolt;
+        u32 eristaEmcMaxClock;
         u32 eristaEmcVolt;
-        u32 commonEmcMaxClock;
         union {
             EristaMtcTable eristaMtc;
             MarikoMtcTable marikoMtc;
-            MarikoCustomizedTable marikoTiming;
         };
     } CustomizeTable;
-
-    enum {
-        DO_NOT_OVERRIDE    = 0,
-        OVERRIDE_WITH_ZERO = UINT32_MAX,
-    };
 
     inline void PatchOffset(u32* offset, u32 value) { *(offset) = value; }
 
@@ -80,6 +74,12 @@ namespace ams::ldr::oc {
             u64 freq;
             s32 volt[4] = {0};
         } emc_dvb_dvfs_table_t;
+
+        typedef struct {
+            u32 max_0;
+            u32 unk[5];
+            u32 max_1;
+        } clk_pll_param;
 
         void Patch(uintptr_t mapped_nso, size_t nso_size);
     }

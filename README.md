@@ -16,7 +16,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
 - There is **no dynamic frequency scaling** in HOS, which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
 
-- Higher RAM clocks (> 1996.8 MHz) without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
+- Higher RAM clocks without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
 
 
 
@@ -26,13 +26,14 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
   - Most games are **bottlenecked by RAM bandwidth**
 
-  - Timings could be auto-adjusted (default), partially customized, or overwritten with entire mtc table.
-
-  - Safe: ≤1996.8 MHz
-    - 1996.8 MHz has been tested stable for all (Samsung / Micron / Hynix), with built-in timing auto-adjustment.
+  - Safe:
+    - Mariko: 1996.8 MHz has been tested stable for all (Samsung / Micron / Hynix), with built-in timing auto-adjustment.
+    - Erista: 1862.4 MHz.
 
   - Unsafe: > 1996.8 MHz or overvolting
-    - Timing customization: No GUI tool, requires [rebuilding](#Build).
+    - Timing:
+      - Timing parameters could be auto-adjusted (default) or overwritten with user-provided mtc table.
+      - Customization: No GUI tool, requires [rebuilding](#Build).
     - DRAM bus overvolting (Erista Only).
       - Mariko: [use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
 
@@ -66,7 +67,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
     - GPU: 1305 MHz (no overvolting, less than official threshold 1050 mV)
       - NVIDIA Official Maximum: 1267.2 MHz
-      - Tested with deko3d compute shaders converted from Maxwell SASS assembly. Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.
+      - ~~Tested with deko3d compute shaders converted from Maxwell SASS assembly. Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.~~
       - 1305 MHz CANNOT be set without charger connected.
 
 - **Modded sys-clk and ReverseNX**(-RT)
@@ -103,7 +104,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     | CPU OC     | 2397 MHz Max  | Disabled     |
     | CPU Volt   | 1220 mV Max   | Disabled     |
     | GPU OC     | 1305 MHz Max  | N/A          |
-    | RAM OC     | 1996 MHz Max  | 1996 MHz Max |
+    | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | N/A           | Disabled     |
     | RAM Timing | Auto-Adjusted | Disabled     |
 
