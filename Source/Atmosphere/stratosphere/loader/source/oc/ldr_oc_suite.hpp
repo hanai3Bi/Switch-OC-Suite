@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 
 #define CUST_REV 1
+#include "mtc_timing_table.hpp"
 
 namespace ams::ldr::oc {
-    #include "mtc_timing_table.hpp"
-
     enum MtcConfig {
         AUTO_ADJ_MARIKO_SAFE = 0,
         AUTO_ADJ_MARIKO_4266 = 1,
@@ -39,14 +39,20 @@ namespace ams::ldr::oc {
         u32 eristaEmcMaxClock;
         u32 eristaEmcVolt;
         union {
-            EristaMtcTable eristaMtc;
-            MarikoMtcTable marikoMtc;
+            EristaMtcTable* eristaMtc;
+            MarikoMtcTable* marikoMtc;
         };
     } CustomizeTable;
 
     inline void PatchOffset(u32* offset, u32 value) { *(offset) = value; }
 
     inline Result ResultFailure() { return -1; }
+
+    #ifndef OC_TEST
+    #define LOGGING(fmt, ...) ((void)0)
+    #endif
+
+    #define CRASH() { AMS_ABORT(); __builtin_unreachable(); }
 
     namespace pcv {
         typedef struct {

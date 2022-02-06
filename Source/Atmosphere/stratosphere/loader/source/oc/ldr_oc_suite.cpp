@@ -15,76 +15,18 @@
  */
 
 //#define EXPERIMENTAL
+
+#ifdef OC_TEST
+#include "ldr_oc_suite_test.hpp"
+#else
 #include <stratosphere.hpp>
 #include "ldr_oc_suite.hpp"
+#include "ldr_oc_customize.inc"
+#endif
 
 namespace ams::ldr::oc {
-    /* Allocate CustomizeTable in loader.kip (could be customized by user without recompiling) */
-    static const volatile CustomizeTable C = {
-    /* DRAM Timing:
-     * AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density (Default).
-     * AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.
-     * ENTIRE_TABLE_ERISTA/ENTIRE_TABLE_MARIKO:
-     *                       Replace the entire max mtc table with customized one.
-     */
-    .mtcConf = AUTO_ADJ_MARIKO_SAFE,
-
-    /* Mariko CPU:
-     * - Max Clock in kHz:
-     *   Default: 1785000
-     *   >= 2193000 will enable overvolting (> 1120 mV)
-     * - Max Voltage in mV:
-     *   Default voltage: 1120
-     *   Haven't tested anything higher than 1220.
-     */
-    .marikoCpuMaxClock = 2397000,
-    .marikoCpuMaxVolt  = 1220,
-
-    /* Mariko GPU:
-     * - Max Clock in kHz:
-     *   Default: 921600
-     *   NVIDIA Maximum: 1267200
-     */
-    .marikoGpuMaxClock = 1305600,
-
-    /* Mariko EMC:
-     * - RAM Clock in kHz:
-     *   Values should be > 1600000, and divided evenly by 9600 or 12800.
-     *   [WARNING]
-     *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
-     *   - Graphical glitches
-     *   - System instabilities
-     *   - NAND corruption
-     *   Timings from auto-adjustment have been tested safe for up to 1996.8 MHz for all DRAM chips.
-     */
-    .marikoEmcMaxClock = 1996800,
-
-    /* Erista CPU:
-     * Untested and not enabled by default.
-     * - Enable Overclock
-     *   Require modificaitions towards NewCpuTables!
-     * - Max Voltage in mV
-     */
-    .eristaCpuOCEnable = 0,
-    .eristaCpuMaxVolt  = 0,
-
-    /* Erista EMC:
-     * - RAM Clock in kHz
-     *   [WARNING]
-     *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
-     *   - Graphical glitches
-     *   - System instabilities
-     *   - NAND corruption
-     * - RAM Voltage in mV
-     *   Default(HOS): 1125
-     *   Not enabled by default.
-     */
-    .eristaEmcMaxClock = 1862400,
-    .eristaEmcVolt     = 0,
-    };
-
     namespace pcv {
-        static Result MemPllmLimitHandler(u32* ptr) {
+        Result MemPllmLimitHandler(u32* ptr) {
             clk_pll_param* entry = reinterpret_cast<clk_pll_param *>(ptr);
             if (entry->max_0 != entry->max_1)
                 return ResultFailure();
@@ -93,6 +35,25 @@ namespace ams::ldr::oc {
             u32 max_clk = entry->max_0 * 2;
             entry->max_0 = max_clk;
             entry->max_1 = max_clk;
+            return ResultSuccess();
+        }
+
+        template<typename M>
+        Result MtcOverwrite(M* des, M* src) {
+            constexpr u32 mtc_magic = 0x5F43544D;
+            if (src->rev != mtc_magic)
+                return ResultFailure();
+
+            // Ignore params from dvfs_ver to clock_src;
+            for (size_t offset = offsetof(M, clk_src_emc); offset < sizeof(M); offset += sizeof(u32)) {
+                u32* src_ent = reinterpret_cast<u32 *>(reinterpret_cast<size_t>(src) + offset);
+                u32* des_ent = reinterpret_cast<u32 *>(reinterpret_cast<size_t>(des) + offset);
+                u32 src_val = *src_ent;
+                if (src_val != UINT32_MAX) {
+                    PatchOffset(des_ent, src_val);
+                }
+            }
+
             return ResultSuccess();
         }
     }
@@ -182,6 +143,7 @@ namespace ams::ldr::oc {
             (gpuOfficialMarikoPattern[0] & 0xFFE00000) | ((C.marikoGpuMaxClock & 0xFFFF) << 5),
             (gpuOfficialMarikoPattern[1] & 0xFFE00000) | (((C.marikoGpuMaxClock >> 16) & 0xFFFF) << 5)
         };
+
         #define COMPARE_HIGH(val1, val2, bit_div) (((val1 ^ val2) >> bit_div) == 0)
 
         /* EMC */
@@ -197,7 +159,7 @@ namespace ams::ldr::oc {
         //     { 1600000, {  675,  650,  637, } },
         // };
 
-        static void MtcPllmbDivHandler(MarikoMtcTable* table) {
+        void MtcPllmbDivHandler(MarikoMtcTable* table) {
             // Calculate DIVM and DIVN (clock divisors)
             // Common PLL oscillator is 38.4 MHz
             // PLLMB_OUT = 38.4 MHz / PLLLMB_DIVM * PLLMB_DIVN
@@ -226,7 +188,7 @@ namespace ams::ldr::oc {
             table->pllmb_divn = divn;
         }
 
-        static void MtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref)
+        void MtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref)
         {
             /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download:
              *     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual
@@ -713,7 +675,7 @@ namespace ams::ldr::oc {
             #endif
         }
 
-        static Result CpuClockVddHandler(u32* ptr) {
+        Result CpuClockVddHandler(u32* ptr) {
             if (C.marikoCpuMaxClock) {
                 u32 value_next2 = *(ptr + 2);
                 constexpr u32 cpuClockVddCpuPatternNext = 0;
@@ -725,7 +687,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
+        Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
             cpu_freq_cvb_table_t* entry_1963 = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
             cpu_freq_cvb_table_t* entry_free = entry_1963 + 1;
             cpu_freq_cvb_table_t* entry_204  = entry_free - 18;
@@ -748,7 +710,7 @@ namespace ams::ldr::oc {
 
             if (C.marikoCpuMaxVolt) {
                 while (entry_current->cvb_pll_param.c0 == CpuVoltOfficial * 1000) {
-                    PatchOffset(reinterpret_cast<u32 *>(std::addressof(entry_current->cvb_pll_param)), C.marikoCpuMaxVolt * 1000);
+                    PatchOffset(reinterpret_cast<u32 *>(&(entry_current->cvb_pll_param)), C.marikoCpuMaxVolt * 1000);
                     entry_current--;
                 }
             }
@@ -756,7 +718,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result GpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
+        Result GpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
             gpu_cvb_pll_table_t* entry_1267 = reinterpret_cast<gpu_cvb_pll_table_t *>(ptr);
             gpu_cvb_pll_table_t* entry_free = entry_1267 + 1;
             gpu_cvb_pll_table_t* entry_76_8 = entry_free - 17;
@@ -774,7 +736,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result CpuVoltRangeHandler(u32* ptr) {
+        Result CpuVoltRangeHandler(u32* ptr) {
             if (!C.marikoCpuMaxVolt)
                 return ResultSuccess();
 
@@ -791,7 +753,7 @@ namespace ams::ldr::oc {
             }
         }
 
-        static Result GpuMaxClockHandler(u32* ptr) {
+        Result GpuMaxClockHandler(u32* ptr) {
             u32  value      = *(ptr);
             u32* ptr_next   = ptr + 1;
             u32  value_next = *(ptr_next);
@@ -810,7 +772,7 @@ namespace ams::ldr::oc {
             return ResultFailure();
         }
 
-        static Result MtcTableHandler(u32* ptr) {
+        Result MtcTableHandler(u32* ptr) {
             MarikoMtcTable* const mtc_table_max = reinterpret_cast<MarikoMtcTable *>(ptr - offsetof(MarikoMtcTable, rate_khz) / sizeof(u32));
             MarikoMtcTable* const mtc_table_alt = mtc_table_max - 1;
             constexpr u32 mtc_mariko_rev = 3;
@@ -819,12 +781,11 @@ namespace ams::ldr::oc {
                 || mtc_table_alt->rate_khz != MemClkOSAlt )
                 return ResultFailure();
 
-            MarikoMtcTable* const table = const_cast<MarikoMtcTable *>(std::addressof(C.marikoMtc));
+            MarikoMtcTable* const table = const_cast<MarikoMtcTable *>(C.marikoMtc);
             bool replace_entire_table = (C.mtcConf == ENTIRE_TABLE_MARIKO);
             if (replace_entire_table) {
                 std::memcpy(reinterpret_cast<void *>(mtc_table_alt), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
-                std::memcpy(reinterpret_cast<void *>(mtc_table_max), reinterpret_cast<void *>(table), sizeof(MarikoMtcTable));
-                return ResultSuccess();
+                return MtcOverwrite(mtc_table_max, table);
             }
 
             std::memcpy(reinterpret_cast<void *>(table), reinterpret_cast<void *>(mtc_table_max), sizeof(MarikoMtcTable));
@@ -834,7 +795,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result DvbTableHandler(u32* ptr) {
+        Result DvbTableHandler(u32* ptr) {
             emc_dvb_dvfs_table_t* dvb_max_entry  = reinterpret_cast<emc_dvb_dvfs_table_t *>(ptr);
             emc_dvb_dvfs_table_t* dvb_1331_entry = dvb_max_entry - 1;
 
@@ -846,7 +807,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result MemMaxClockHandler(u32* ptr) {
+        Result MemMaxClockHandler(u32* ptr) {
             u32 value_next  = *(ptr + 1);
             u32 value_next2 = *(ptr + 2);
 
@@ -867,7 +828,7 @@ namespace ams::ldr::oc {
             return rc;
         }
 
-        static Result GpuPllLimitHandler(u32* ptr) {
+        Result GpuPllLimitHandler(u32* ptr) {
             u32 value_next = *(ptr + 1);
             if (value_next != 0)
                 return ResultFailure();
@@ -877,7 +838,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static void Patch(uintptr_t mapped_nso, size_t nso_size) {
+        void Patch(uintptr_t mapped_nso, size_t nso_size) {
             enum PatchSuccessCnt {
                 MEM_CLOCK,
                 CPU_CLOCK_VDD,
@@ -939,17 +900,33 @@ namespace ams::ldr::oc {
                 }
             }
 
-            if (   !cnt[MEM_CLOCK]
-                || cnt[CPU_CLOCK_VDD] != 1
+            LOGGING("CpuClkOSLimit   Count: %u\n"\
+                    "CpuClkOfficial  Count: %u\n"\
+                    "GpuClkOfficial  Count: %u\n"\
+                    "CpuVoltOfficial Count: %u\n"\
+                    "MemClkOSLimit   Count: %u\n"\
+                    "GpuClkPllLimit  Count: %u\n"\
+                    "MemClkPllmLimit Count: %u\n"\
+                    "GpuAsmPattern   Count: %u",
+                    cnt[CPU_CLOCK_VDD],
+                    cnt[CPU_TABLE],
+                    cnt[GPU_TABLE],
+                    cnt[CPU_MAX_VOLT],
+                    cnt[MEM_CLOCK],
+                    cnt[GPU_PLL_CLK],
+                    cnt[MEM_PLL_CLK],
+                    cnt[GPU_MAX_CLOCK]);
+
+            if (   cnt[CPU_CLOCK_VDD] != 1
                 || cnt[CPU_TABLE]     != 1
                 || cnt[GPU_TABLE]     != 1
-                || cnt[CPU_MAX_VOLT]   > 13 || !cnt[CPU_MAX_VOLT]
-                || cnt[GPU_MAX_CLOCK] != 2
+                || cnt[CPU_MAX_VOLT]  > 13 || !cnt[CPU_MAX_VOLT]
+                || cnt[MEM_CLOCK]     == 0
                 || cnt[GPU_PLL_CLK]   != 1
-                || cnt[MEM_PLL_CLK]   != 2)
+                || cnt[MEM_PLL_CLK]   != 2
+                || cnt[GPU_MAX_CLOCK] != 2)
             {
-                AMS_ABORT();
-                __builtin_unreachable();
+                CRASH();
             }
         }
     }
@@ -986,7 +963,7 @@ namespace ams::ldr::oc {
             { 2091000, {}, {} },
         };
 
-        static Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
+        Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
             if (!C.eristaCpuOCEnable)
                 return ResultSuccess();
 
@@ -1007,7 +984,7 @@ namespace ams::ldr::oc {
             return ResultSuccess();
         }
 
-        static Result CpuVoltRangeHandler(u32* ptr) {
+        Result CpuVoltRangeHandler(u32* ptr) {
             if (!C.eristaCpuMaxVolt)
                 return ResultSuccess();
 
@@ -1020,22 +997,23 @@ namespace ams::ldr::oc {
                     PatchOffset(ptr, C.eristaCpuMaxVolt);
                     return ResultSuccess();
                 default:
+                    LOGGING("Invalid min voltage: %u @%p!", *(ptr-1), ptr-1);
                     return ResultFailure();
             }
         }
 
-        static Result MtcTableHandler(u32* ptr) {
+        Result MtcTableHandler(u32* ptr) {
             bool replace_entire_table = (C.mtcConf == ENTIRE_TABLE_ERISTA);
             if (replace_entire_table) {
                 EristaMtcTable* const mtc_table_max = reinterpret_cast<EristaMtcTable *>(ptr - offsetof(EristaMtcTable, rate_khz) / sizeof(u32));
-                EristaMtcTable* const table         = const_cast<EristaMtcTable *>(std::addressof(C.eristaMtc));
-                std::memcpy(reinterpret_cast<void *>(mtc_table_max), reinterpret_cast<void *>(table), sizeof(EristaMtcTable));
+                EristaMtcTable* const table         = const_cast<EristaMtcTable *>(C.eristaMtc);
+                return MtcOverwrite(mtc_table_max, table);
             }
 
             return ResultSuccess();
         }
 
-        static Result MemMaxClockHandler(u32* ptr) {
+        Result MemMaxClockHandler(u32* ptr) {
             u32 value_next = *(ptr + 1);
             constexpr u32 mtc_min_volt = 887;
 
@@ -1048,14 +1026,14 @@ namespace ams::ldr::oc {
             return rc;
         }
 
-        static Result MemVoltHandler(u32* ptr) {
+        Result MemVoltHandler(u32* ptr) {
             if (C.eristaEmcVolt)
                 PatchOffset(ptr, C.eristaEmcVolt);
 
             return ResultSuccess();
         }
 
-        static void Patch(uintptr_t mapped_nso, size_t nso_size) {
+        void Patch(uintptr_t mapped_nso, size_t nso_size) {
             enum PatchSuccessCnt {
                 CPU_CLOCK,
                 CPU_MAX_VOLT,
@@ -1102,9 +1080,24 @@ namespace ams::ldr::oc {
                 }
             }
 
-            if (!cnt[MEM_CLOCK] || cnt[MEM_VOLT] != 2 || cnt[MEM_PLL_CLK] != 2) {
-                AMS_ABORT();
-                __builtin_unreachable();
+            LOGGING("CpuClkOSLimit   Count: %u\n"\
+                    "CpuVoltLimit*   Count: %u\n"\
+                    "MemClkOSLimit   Count: %u\n"\
+                    "MemVoltHOS      Count: %u\n"\
+                    "MemClkPllmLimit Count: %u",
+                    cnt[CPU_CLOCK],
+                    cnt[CPU_MAX_VOLT],
+                    cnt[MEM_CLOCK],
+                    cnt[MEM_VOLT],
+                    cnt[MEM_PLL_CLK]);
+
+            if (   cnt[CPU_CLOCK]    != 1
+                || cnt[CPU_MAX_VOLT]  < 2
+                || cnt[MEM_CLOCK]    == 0
+                || cnt[MEM_VOLT]     != 2
+                || cnt[MEM_PLL_CLK]  != 2)
+            {
+                CRASH();
             }
         }
     }
@@ -1112,24 +1105,34 @@ namespace ams::ldr::oc {
     namespace pcv {
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
             if (C.custRev != CUST_REV) {
-                AMS_ABORT();
-                __builtin_unreachable();
+                CRASH();
             }
 
+            #ifdef OC_TEST
+            void* buf = malloc(nso_size);
+            uintptr_t mapped_exe = reinterpret_cast<uintptr_t>(buf);
+            std::memcpy(buf, reinterpret_cast<void *>(mapped_nso), nso_size);
+            Erista::Patch(mapped_exe, nso_size);
+            std::memcpy(buf, reinterpret_cast<void *>(mapped_nso), nso_size);
+            Mariko::Patch(mapped_exe, nso_size);
+            free(buf);
+            #else
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
             if (isMariko)
                 Mariko::Patch(mapped_nso, nso_size);
             else
                 Erista::Patch(mapped_nso, nso_size);
+            #endif
         }
     }
 
     namespace ptm {
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
-            /* No abort here as ptm is not that critical */
+            #ifndef OC_TEST
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
             if (!isMariko)
                 return;
+            #endif
 
             perf_conf_entry* confTable = 0;
             constexpr u32 entryCnt     = 16;
@@ -1151,29 +1154,34 @@ namespace ams::ldr::oc {
                 }
             }
 
-            if (!confTable)
-                return;
+            if (!confTable) {
+                LOGGING("confTable not found!");
+                CRASH();
+            }
 
             for (u32 i = 0; i < entryCnt; i++)
             {
                 perf_conf_entry* entry_current = confTable + i;
 
-                if (entry_current->emc_freq_1 != entry_current->emc_freq_2)
-                    return;
+                if (entry_current->emc_freq_1 != entry_current->emc_freq_2) {
+                    LOGGING("@%p: emc_freq_1(%u) != emc_freq_2(%u)", &(entry_current->emc_freq_1), entry_current->emc_freq_1, entry_current->emc_freq_2);
+                    CRASH();
+                }
 
                 switch (entry_current->emc_freq_1)
                 {
                     case memPtmLimit:
-                        PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmMax);
-                        PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmMax);
+                        PatchOffset(&(entry_current->emc_freq_1), memPtmMax);
+                        PatchOffset(&(entry_current->emc_freq_2), memPtmMax);
                         break;
                     case memPtmAlt:
                     case memPtmClamp:
-                        PatchOffset(std::addressof(entry_current->emc_freq_1), memPtmLimit);
-                        PatchOffset(std::addressof(entry_current->emc_freq_2), memPtmLimit);
+                        PatchOffset(&(entry_current->emc_freq_1), memPtmLimit);
+                        PatchOffset(&(entry_current->emc_freq_2), memPtmLimit);
                         break;
                     default:
-                        return;
+                        LOGGING("Wrong mem freq: %u @%p!", entry_current->emc_freq_1, &(entry_current->emc_freq_1));
+                        CRASH();
                 }
             }
         }

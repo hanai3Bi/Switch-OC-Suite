@@ -23,7 +23,7 @@
 #include "ldr_patcher.hpp"
 #include "ldr_process_creation.hpp"
 #include "ldr_ro_manager.hpp"
-#include "ldr_oc_suite.hpp"
+#include "oc/ldr_oc_suite.hpp"
 
 namespace ams::ldr {
 
