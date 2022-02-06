@@ -1027,8 +1027,13 @@ namespace ams::ldr::oc {
         }
 
         Result MemVoltHandler(u32* ptr) {
-            if (C.eristaEmcVolt)
-                PatchOffset(ptr, C.eristaEmcVolt);
+            u32 emc_uv = C.eristaEmcVolt;
+            if (emc_uv) {
+                constexpr u32 uv_step = 12'500;
+                if (emc_uv % uv_step)
+                    emc_uv = emc_uv / uv_step * uv_step;
+                    PatchOffset(ptr, emc_uv);
+            }
 
             return ResultSuccess();
         }
@@ -1103,10 +1108,18 @@ namespace ams::ldr::oc {
     }
 
     namespace pcv {
-        void Patch(uintptr_t mapped_nso, size_t nso_size) {
-            if (C.custRev != CUST_REV) {
+        void SafetyCheck() {
+            if (   C.custRev != CUST_REV
+                || C.marikoCpuMaxVolt >= 1300
+                || C.eristaCpuMaxVolt >= 1400
+                || (C.eristaEmcVolt && (C.eristaEmcVolt < 600'000 || C.eristaEmcVolt > 1250'000)))
+            {
                 CRASH();
             }
+        }
+
+        void Patch(uintptr_t mapped_nso, size_t nso_size) {
+            SafetyCheck();
 
             #ifdef OC_TEST
             void* buf = malloc(nso_size);

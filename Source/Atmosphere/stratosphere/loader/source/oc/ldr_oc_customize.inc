@@ -55,8 +55,10 @@ static const volatile CustomizeTable C = {
  *   - Graphical glitches
  *   - System instabilities
  *   - NAND corruption
- * - RAM Voltage in mV
- *   Default(HOS): 1125
+ * - RAM Voltage in uV
+ *   Range: 600'000 to 1250'000 uV
+ *   Value should be divided evenly by 12'500
+ *   Default(HOS): 1125'000
  *   Not enabled by default.
  */
 .eristaEmcMaxClock = 1862400,

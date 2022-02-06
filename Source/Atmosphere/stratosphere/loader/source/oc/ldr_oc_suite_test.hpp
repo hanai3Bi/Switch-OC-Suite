@@ -12,8 +12,9 @@ typedef uint64_t u64;
 typedef int      Result;
 
 #define R_SUCCEEDED(arg)  (arg == ResultSuccess())
+#define R_FAILED(arg)     (!R_SUCCEEDED(arg))
 #define LOGGING(fmt, ...) { printf(fmt "\n\tin %s\n", ##__VA_ARGS__, __PRETTY_FUNCTION__); }
-#define AMS_ABORT()       { fprintf(stderr, "Failed!\n"); exit(-1); }
+#define AMS_ABORT()       { fprintf(stderr, "Failed in %s!\n", __PRETTY_FUNCTION__); exit(-1); }
 
 inline Result ResultSuccess() { return 0; }
 
@@ -30,7 +31,7 @@ namespace ams::ldr::oc {
     .eristaCpuOCEnable = 1,
     .eristaCpuMaxVolt  = 1300,
     .eristaEmcMaxClock = 1862400,
-    .eristaEmcVolt     = 1250,
+    .eristaEmcVolt     = 1200'000,
     .eristaMtc = reinterpret_cast<EristaMtcTable *>(const_cast<u8 *>(EmptyMtcTable)),
     };
 }
