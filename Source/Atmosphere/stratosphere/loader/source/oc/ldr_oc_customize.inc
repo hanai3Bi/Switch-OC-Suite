@@ -5,7 +5,7 @@ static const volatile CustomizeTable C = {
  * AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density (Default).
  * AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.
  * ENTIRE_TABLE_ERISTA/ENTIRE_TABLE_MARIKO:
- *                       Replace the entire max mtc table with customized one.
+ *                       Replace the entire max mtc table with customized one (provided by user).
  */
 .mtcConf = AUTO_ADJ_MARIKO_SAFE,
 

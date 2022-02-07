@@ -108,11 +108,9 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     | RAM Volt   | N/A           | Disabled     |
     | RAM Timing | Auto-Adjusted | Disabled     |
 
-  - No parser/editor currently, although you could easily customize those with a hex editor:
-    - Search for ASCII string `CUST`
-    - All values are little-endian
-    - Switch to override or replace mode, NOT insert mode
-    - See `ldr_oc_suite.hpp` for config struct
+  - Loader configurator
+    - Grab `ldr_config.py` from the root of repo and modify values in `cust_conf` dict.
+    - `python ldr_config.py loader.kip -s` will save your configuration in-place.
 
 5. **Hekate-ipl bootloader**
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`

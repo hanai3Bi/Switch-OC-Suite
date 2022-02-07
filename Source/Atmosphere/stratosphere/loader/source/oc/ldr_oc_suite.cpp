@@ -1032,7 +1032,7 @@ namespace ams::ldr::oc {
                 constexpr u32 uv_step = 12'500;
                 if (emc_uv % uv_step)
                     emc_uv = emc_uv / uv_step * uv_step;
-                    PatchOffset(ptr, emc_uv);
+                PatchOffset(ptr, emc_uv);
             }
 
             return ResultSuccess();
