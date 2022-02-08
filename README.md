@@ -109,7 +109,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     | RAM Timing | Auto-Adjusted | Disabled     |
 
   - Loader configurator
-    - Grab `ldr_config.py` from the root of repo and modify values in `cust_conf` dict.
+    - Grab [ldr_config.py](https://github.com/KazushiMe/Switch-OC-Suite/raw/master/ldr_config.py) and modify values in `cust_conf` dict.
     - `python ldr_config.py loader.kip -s` will save your configuration in-place.
 
 5. **Hekate-ipl bootloader**

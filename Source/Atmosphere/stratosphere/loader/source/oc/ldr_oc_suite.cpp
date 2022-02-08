@@ -62,6 +62,7 @@ namespace ams::ldr::oc {
         constexpr u32 CpuClkOSLimit   = 1785'000;
         constexpr u32 CpuClkOfficial  = 1963'500;
         constexpr u32 CpuVoltOfficial = 1120;
+        constexpr u32 GpuClkOSLimit   = 921'600;
         constexpr u32 GpuClkOfficial  = 1267'200;
         constexpr u32 MemClkOSLimit   = 1600'000;
         constexpr u32 MemClkOSAlt     = 1331'200;
@@ -676,14 +677,15 @@ namespace ams::ldr::oc {
         }
 
         Result CpuClockVddHandler(u32* ptr) {
-            if (C.marikoCpuMaxClock) {
-                u32 value_next2 = *(ptr + 2);
-                constexpr u32 cpuClockVddCpuPatternNext = 0;
-                if (value_next2 != cpuClockVddCpuPatternNext)
-                    return ResultFailure();
+            u32 value_1 = *(ptr + 2);
+            u32 value_2 = *(ptr + 12);
+            constexpr u32 pattern_1 = 0;
+            constexpr u32 pattern_2 = 1525000;
+            if (value_1 != pattern_1 || value_2 != pattern_2)
+                return ResultFailure();
 
+            if (C.marikoCpuMaxClock)
                 PatchOffset(ptr, C.marikoCpuMaxClock);
-            }
             return ResultSuccess();
         }
 
@@ -691,6 +693,7 @@ namespace ams::ldr::oc {
             cpu_freq_cvb_table_t* entry_1963 = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
             cpu_freq_cvb_table_t* entry_free = entry_1963 + 1;
             cpu_freq_cvb_table_t* entry_204  = entry_free - 18;
+            cpu_freq_cvb_table_t* entry_1020 = entry_204 + 8;
             uintptr_t entry_end_offset = reinterpret_cast<uintptr_t>(entry_free) + sizeof(NewCpuTables) - sizeof(u32);
 
             if (   entry_end_offset >= nso_end_offset
@@ -701,17 +704,18 @@ namespace ams::ldr::oc {
                 return ResultFailure();
             }
 
-            std::memcpy(reinterpret_cast<void *>(entry_free), NewCpuTables, sizeof(NewCpuTables));
+            if (C.marikoCpuMaxClock > CpuClkOfficial)
+                std::memcpy(reinterpret_cast<void *>(entry_free), NewCpuTables, sizeof(NewCpuTables));
 
             // Patch CPU max volt in CPU dvfs table
-            cpu_freq_cvb_table_t* entry_current = entry_1963 + sizeof(NewCpuTables) / sizeof(cpu_freq_cvb_table_t);
+            cpu_freq_cvb_table_t* entry_current = entry_1020;
             if (entry_current->cvb_pll_param.c0 != CpuVoltOfficial * 1000)
                 return ResultFailure();
 
             if (C.marikoCpuMaxVolt) {
                 while (entry_current->cvb_pll_param.c0 == CpuVoltOfficial * 1000) {
                     PatchOffset(reinterpret_cast<u32 *>(&(entry_current->cvb_pll_param)), C.marikoCpuMaxVolt * 1000);
-                    entry_current--;
+                    entry_current++;
                 }
             }
 
@@ -732,21 +736,20 @@ namespace ams::ldr::oc {
                 return ResultFailure();
             }
 
-            std::memcpy(reinterpret_cast<void *>(entry_free), NewGpuTables, sizeof(NewGpuTables));
+            if (C.marikoGpuMaxClock > GpuClkOfficial)
+                std::memcpy(reinterpret_cast<void *>(entry_free), NewGpuTables, sizeof(NewGpuTables));
             return ResultSuccess();
         }
 
         Result CpuVoltRangeHandler(u32* ptr) {
-            if (!C.marikoCpuMaxVolt)
-                return ResultSuccess();
-
             u32 value_cpu_min_volt = *(ptr - 1);
             switch (value_cpu_min_volt) {
                 case 800:
                 case 637:
                 case 620:
                 case 610:
-                    PatchOffset(ptr, C.marikoCpuMaxVolt);
+                    if (C.marikoCpuMaxVolt)
+                        PatchOffset(ptr, C.marikoCpuMaxVolt);
                     return ResultSuccess();
                 default:
                     return ResultFailure();
@@ -763,8 +766,10 @@ namespace ams::ldr::oc {
                 u32 reg_id_next = value_next & ((1 << 5) - 1);
                 if (reg_id == reg_id_next)
                 {
-                    PatchOffset(ptr     , gpuMaxClockMarikoPattern[0] | reg_id);
-                    PatchOffset(ptr_next, gpuMaxClockMarikoPattern[1] | reg_id);
+                    if (C.marikoGpuMaxClock) {
+                        PatchOffset(ptr     , gpuMaxClockMarikoPattern[0] | reg_id);
+                        PatchOffset(ptr_next, gpuMaxClockMarikoPattern[1] | reg_id);
+                    }
 
                     return ResultSuccess();
                 }
@@ -964,9 +969,6 @@ namespace ams::ldr::oc {
         };
 
         Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
-            if (!C.eristaCpuOCEnable)
-                return ResultSuccess();
-
             cpu_freq_cvb_table_t* entry_1785 = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
             cpu_freq_cvb_table_t* entry_free = entry_1785 + 1;
             cpu_freq_cvb_table_t* entry_204  = entry_free - 16;
@@ -980,21 +982,21 @@ namespace ams::ldr::oc {
                 return ResultFailure();
             }
 
-            std::memcpy(reinterpret_cast<void *>(entry_free), NewCpuTables, sizeof(NewCpuTables));
+            if (C.eristaCpuOCEnable)
+                std::memcpy(reinterpret_cast<void *>(entry_free), NewCpuTables, sizeof(NewCpuTables));
+
             return ResultSuccess();
         }
 
         Result CpuVoltRangeHandler(u32* ptr) {
-            if (!C.eristaCpuMaxVolt)
-                return ResultSuccess();
-
             u32 value_cpu_min_volt = *(ptr - 1);
             switch (value_cpu_min_volt) {
                 case 950:
                 case 850:
                 case 825:
                 case 810:
-                    PatchOffset(ptr, C.eristaCpuMaxVolt);
+                    if (C.eristaCpuMaxVolt)
+                        PatchOffset(ptr, C.eristaCpuMaxVolt);
                     return ResultSuccess();
                 default:
                     LOGGING("Invalid min voltage: %u @%p!", *(ptr-1), ptr-1);
@@ -1022,7 +1024,8 @@ namespace ams::ldr::oc {
                 rc = MtcTableHandler(ptr);
             }
 
-            PatchOffset(ptr, C.eristaEmcMaxClock);
+            if (C.eristaEmcMaxClock > MemClkOSLimit)
+                PatchOffset(ptr, C.eristaEmcMaxClock);
             return rc;
         }
 
