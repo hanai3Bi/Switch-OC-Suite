@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifdef OC_TEST
+#ifndef ATMOSPHERE_IS_STRATOSPHERE
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

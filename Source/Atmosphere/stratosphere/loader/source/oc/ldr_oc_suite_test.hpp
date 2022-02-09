@@ -1,4 +1,4 @@
-#ifdef OC_TEST
+#ifndef ATMOSPHERE_IS_STRATOSPHERE
 #include <iostream>
 #include <cstdint>
 #include <cstring>

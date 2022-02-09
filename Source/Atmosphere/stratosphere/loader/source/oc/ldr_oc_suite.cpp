@@ -16,7 +16,7 @@
 
 //#define EXPERIMENTAL
 
-#ifdef OC_TEST
+#ifndef ATMOSPHERE_IS_STRATOSPHERE
 #include "ldr_oc_suite_test.hpp"
 #else
 #include <stratosphere.hpp>
@@ -170,7 +170,7 @@ namespace ams::ldr::oc {
             } pllmb_div;
 
             constexpr pllmb_div div[] = {
-                {3, 4}, {2, 3}, {1, 2}, {1, 3}, {1, 4}, {0, 1}
+                {3, 4}, {1, 2}, {1, 4}, {0, 1}
             };
 
             constexpr u32 pll_osc_in = 38400;
@@ -1124,7 +1124,7 @@ namespace ams::ldr::oc {
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
             SafetyCheck();
 
-            #ifdef OC_TEST
+            #ifndef ATMOSPHERE_IS_STRATOSPHERE
             void* buf = malloc(nso_size);
             uintptr_t mapped_exe = reinterpret_cast<uintptr_t>(buf);
             std::memcpy(buf, reinterpret_cast<void *>(mapped_nso), nso_size);
@@ -1144,7 +1144,7 @@ namespace ams::ldr::oc {
 
     namespace ptm {
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
-            #ifndef OC_TEST
+            #ifdef ATMOSPHERE_IS_STRATOSPHERE
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
             if (!isMariko)
                 return;

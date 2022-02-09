@@ -29,7 +29,7 @@ static const volatile CustomizeTable C = {
 
 /* Mariko EMC:
  * - RAM Clock in kHz:
- *   Values should be > 1600000, and divided evenly by 9600 or 12800.
+ *   Values should be > 1600000, and divided evenly by 9600.
  *   [WARNING]
  *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
  *   - Graphical glitches

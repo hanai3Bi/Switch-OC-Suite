@@ -48,7 +48,7 @@ namespace ams::ldr::oc {
 
     inline Result ResultFailure() { return -1; }
 
-    #ifndef OC_TEST
+    #ifdef ATMOSPHERE_IS_STRATOSPHERE
     #define LOGGING(fmt, ...) ((void)0)
     #endif
 
