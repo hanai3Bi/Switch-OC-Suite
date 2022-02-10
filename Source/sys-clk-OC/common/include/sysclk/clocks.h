@@ -57,6 +57,7 @@ typedef enum
     ReverseNX_SystemDefault = 0,
     ReverseNX_NotFound = 0,
     ReverseNX_NotValid = 0,
+    ReverseNX_GotValue = 0,
     ReverseNX_Handheld,
     ReverseNX_Docked,
     ReverseNX_RTResetToDefault,
@@ -65,11 +66,7 @@ typedef enum
 typedef struct
 {
     bool systemCoreBoostCPU;
-    bool systemCoreCheckStuck;
-
-    ReverseNXMode  reverseNXMode;
-
-    uint64_t tickWaitTimeMs;
+    ReverseNXMode reverseNXMode;
     uint32_t maxMEMFreq;
 } SysClkOcExtra;
 
@@ -81,7 +78,9 @@ typedef struct
     };
 } SysClkTitleProfileList;
 
-#define SYSCLK_GPU_HANDHELD_MAX_HZ 1267200000
+#define SYSCLK_CPU_HANDHELD_MAX_HZ      1963500000
+#define SYSCLK_GPU_HANDHELD_MAX_HZ      921600000
+#define SYSCLK_GPU_CHARGING_USB_MAX_HZ  1267200000
 
 extern uint32_t sysclk_g_freq_table_mem_hz[];
 extern uint32_t sysclk_g_freq_table_cpu_hz[];

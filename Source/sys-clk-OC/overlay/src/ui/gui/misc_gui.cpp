@@ -14,12 +14,14 @@
 
 MiscGui::MiscGui()
 {
+    this->configList = new SysClkConfigValueList {};
     this->chargeInfo = new ChargeInfo {};
     this->i2cInfo    = new I2cInfo {};
 }
 
 MiscGui::~MiscGui()
 {
+    delete this->configList;
     delete this->chargeInfo;
     delete this->i2cInfo;
 }
@@ -28,11 +30,36 @@ void MiscGui::preDraw(tsl::gfx::Renderer* render)
 {
     BaseMenuGui::preDraw(render);
 
-    render->drawString(this->infoOutput, false, 40, 300, SMALL_TEXT_SIZE, DESC_COLOR);
+    render->drawString(this->infoOutput, false, 40, 440, SMALL_TEXT_SIZE, DESC_COLOR);
+}
+
+tsl::elm::ToggleListItem* MiscGui::addConfigToggle(SysClkConfigValue configVal, std::string labelName) {
+    tsl::elm::ToggleListItem* toggle = new tsl::elm::ToggleListItem(labelName, this->configList->values[configVal]);
+    toggle->setStateChangedListener([this, configVal](bool state) {
+        this->configList->values[configVal] = uint64_t(state);
+        Result rc = sysclkIpcSetConfigValues(this->configList);
+        if (R_FAILED(rc))
+            FatalGui::openWithResultCode("sysclkIpcSetConfigValues", rc);
+
+        this->lastContextUpdate = armGetSystemTick();
+    });
+    this->listElement->addItem(toggle);
+    return toggle;
+}
+
+void MiscGui::updateConfigToggle(tsl::elm::ToggleListItem *toggle, SysClkConfigValue configVal) {
+    if (toggle != nullptr) {
+        toggle->setState(this->configList->values[configVal]);
+    }
 }
 
 void MiscGui::listUI()
 {
+    sysclkIpcGetConfigValues(this->configList);
+
+    this->cpuBoostToggle = addConfigToggle(SysClkConfigValue_AutoCPUBoost, "Auto CPU Boost");
+    this->syncModeToggle = addConfigToggle(SysClkConfigValue_SyncReverseNXMode, "Sync ReverseNX Mode");
+
     // Charging
     this->chargingToggle = new tsl::elm::ToggleListItem("Charging", false);
     chargingToggle->setStateChangedListener([this](bool state) {
@@ -63,9 +90,14 @@ void MiscGui::listUI()
     this->listElement->addItem(this->fastChargingToggle);
 }
 
-void MiscGui::update()
-{
-    BaseMenuGui::update();
+void MiscGui::refresh() {
+    BaseMenuGui::refresh();
+
+    if (this->context) {
+        sysclkIpcGetConfigValues(this->configList);
+        updateConfigToggle(this->cpuBoostToggle, SysClkConfigValue_AutoCPUBoost);
+        updateConfigToggle(this->syncModeToggle, SysClkConfigValue_SyncReverseNXMode);
+    }
 
     if (++frameCounter >= 60)
     {

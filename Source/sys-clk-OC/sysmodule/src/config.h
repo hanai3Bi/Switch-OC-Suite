@@ -47,6 +47,8 @@ class Config
     const char* GetConfigValueName(SysClkConfigValue val, bool pretty);
     void GetConfigValues(SysClkConfigValueList* out_configValues);
     bool SetConfigValues(SysClkConfigValueList* configValues, bool immediate);
+    ReverseNXMode GetReverseNXRTModeAndClear();
+    void SetReverseNXRTMode(ReverseNXMode);
   protected:
     void Load();
     void Close();
@@ -63,7 +65,9 @@ class Config
     time_t mtime;
     LockableMutex configMutex;
     LockableMutex overrideMutex;
+    LockableMutex reverseNXRTMutex;
     std::atomic_bool enabled;
     std::uint32_t overrideFreqs[SysClkModule_EnumMax];
     std::uint64_t configValues[SysClkConfigValue_EnumMax];
+    ReverseNXMode reverseNXRTMode;
 };

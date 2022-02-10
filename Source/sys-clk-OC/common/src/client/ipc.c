@@ -114,3 +114,8 @@ Result sysclkIpcSetConfigValues(SysClkConfigValueList* configValues)
 {
     return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetConfigValues, *configValues);
 }
+
+Result sysclkIpcSetReverseNXRTMode(ReverseNXMode mode)
+{
+    return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetReverseNXRTMode, mode);
+}

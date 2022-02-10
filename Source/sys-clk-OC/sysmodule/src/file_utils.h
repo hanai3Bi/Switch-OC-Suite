@@ -22,9 +22,7 @@
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
 #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
-#define FILE_BOOST_FLAG_PATH FILE_CONFIG_DIR "/boost.flag"
 #define FILE_SALTYNX_PATH "/atmosphere/contents/0000000000534C56/flags/boot2.flag" // Just check for SaltyNX boot flag
-#define FILE_REVERSENX_SYNC_FLAG_PATH FILE_CONFIG_DIR "/ReverseNX_sync.flag"
 #define FILE_REVERSENX_RT_CONF_PATH FILE_CONFIG_DIR "/ReverseNX-RT.conf"
 
 class FileUtils
@@ -34,8 +32,6 @@ class FileUtils
     static Result Initialize();
     static bool IsInitialized();
     static bool IsLogEnabled();
-    static bool IsBoostEnabled();
-    static bool IsReverseNXSyncEnabled();
     static bool ExistReverseNXTool();
     static void InitializeAsync();
     static void LogLine(const char *format, ...);

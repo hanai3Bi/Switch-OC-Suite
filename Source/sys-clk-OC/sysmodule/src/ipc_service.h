@@ -36,6 +36,7 @@ class IpcService
     Result SetOverride(SysClkIpc_SetOverride_Args* args);
     Result GetConfigValues(SysClkConfigValueList* out_configValues);
     Result SetConfigValues(SysClkConfigValueList* configValues);
+    Result SetReverseNXRTMode(ReverseNXMode mode);
 
     bool running;
     Thread thread;

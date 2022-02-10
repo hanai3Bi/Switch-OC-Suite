@@ -35,6 +35,8 @@ Config::Config(std::string path)
     {
         this->configValues[i] = sysclkDefaultConfigValue((SysClkConfigValue)i);
     }
+
+    this->reverseNXRTMode = ReverseNX_NotFound;
 }
 
 Config::~Config()
@@ -479,4 +481,16 @@ bool Config::SetConfigValues(SysClkConfigValueList* configValues, bool immediate
     }
 
     return true;
+}
+
+ReverseNXMode Config::GetReverseNXRTModeAndClear() {
+    std::scoped_lock lock{this->reverseNXRTMutex};
+    ReverseNXMode mode = this->reverseNXRTMode;
+    this->reverseNXRTMode = ReverseNX_GotValue;
+    return mode;
+}
+
+void Config::SetReverseNXRTMode(ReverseNXMode mode) {
+    std::scoped_lock lock{this->reverseNXRTMutex};
+    this->reverseNXRTMode = mode;
 }

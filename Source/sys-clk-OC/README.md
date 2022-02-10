@@ -77,8 +77,8 @@ To protect the battery from excessive strain, clocks requested from config may b
 |         | Handheld | Charging (USB) | Charging (Official) | Docked |
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
-| **CPU** | -        | -              | -                   | -      |
-| **GPU** | 1267     | -              | -                   | -      |
+| **CPU** | 1963     | -              | -                   | -      |
+| **GPU** | 921      | 1267           | -                   | -      |
 
 
 ## Installation
@@ -180,6 +180,8 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 
 | Key                     | Desc                                                                          | Default |
 |:-----------------------:|-------------------------------------------------------------------------------|:-------:|
+|**auto_cpu_boost**       | Auto-boost CPU when system Core #3 utilization is high                        | ON      |
+|**sync_reversenx_mode**  | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON      |
 |**temp_log_interval_ms** | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms    |
 |**csv_write_interval_ms**| Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms    |
 |**poll_interval_ms**     | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms  |

@@ -14,8 +14,6 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
 - Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
 
-- There is **no dynamic frequency scaling** in HOS, which makes _overclocking acts differently than PC_ or other mobile devices. The console will be _sticking to what frequency you've set in the long term_, until you close the game or put it into sleep.
-
 - Higher RAM clocks without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
 
 
@@ -53,6 +51,9 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     - It has been proved safe without charger (not reaching battery power draw threshold)
 
   - Unsafe: CPU/GPU @ 2397/1305 MHz
+    - Without chargers, CPU/GPU would be capped @ 1963/921 MHz.
+
+    - Without official chargers, GPU would be capped @ 1267 MHz.
 
     - Why **NOT RECOMMENDED**?
       - See `Current Flow` in sys-clk-OC overlay `Miscellaneous` (on battery) or measure power draw from charger yourself.
@@ -68,24 +69,22 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     - GPU: 1305 MHz (no overvolting, less than official threshold 1050 mV)
       - NVIDIA Official Maximum: 1267.2 MHz
       - ~~Tested with deko3d compute shaders converted from Maxwell SASS assembly. Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.~~
-      - 1305 MHz CANNOT be set without charger connected.
 
 - **Modded sys-clk and ReverseNX**(-RT)
-
-  - No need to change clocks manually after toggling modes in ReverseNX (Optional)
-    - To disable this feature, use original version of ReverseNX-RT and remove `/config/sys-clk/ReverseNX_sync.flag`.
-
-  - Auto-Boost CPU for faster game loading (Optional)
-    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
-    - Auto-Boost will be enabled only when charger is connected.
-    - To disable this feature, remove `/config/sys-clk/boost.flag`.
 
   - Permanent global clock override
     - Expected usage: set maximum DRAM clocks for all games and profiles.
 
-  - View charger & battery info, toggle charging/fast-charging(2A) in overlay
-    - Extend battery life expectancy by maintaining battery charge at 40% - 60% and disabling fast charging if possible.
-    - Known issue: Fast charging toggle will be reset in-game.
+  - Miscellaneous
+    - Auto CPU Boost: For faster game loading
+      - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
+      - Auto-Boost will be enabled only when charger is connected.
+
+    - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
+
+    - View charger & battery info, toggle charging/fast-charging(2A) in overlay
+      - Extend battery life expectancy by maintaining battery charge at 40% - 60% and disabling fast charging if possible.
+      - Known issue: Fast charging toggle will be reset in-game.
 
 
 

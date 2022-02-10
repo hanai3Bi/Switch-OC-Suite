@@ -20,7 +20,7 @@ class MiscGui : public BaseMenuGui
         ~MiscGui();
         void preDraw(tsl::gfx::Renderer* render) override;
         void listUI() override;
-        void update() override;
+        void refresh() override;
 
     protected:
         typedef enum {
@@ -307,8 +307,12 @@ class MiscGui : public BaseMenuGui
             return PsmIsFastCharging() == enable;
         }
 
-        tsl::elm::ToggleListItem *chargingToggle, *fastChargingToggle;
+        tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue, std::string);
+        void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
 
+        tsl::elm::ToggleListItem *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle;
+
+        SysClkConfigValueList* configList;
         ChargeInfo* chargeInfo;
         I2cInfo*    i2cInfo;
         bool isEnoughPowerSupplied = false;

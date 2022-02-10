@@ -1,5 +1,5 @@
 {
-	"name": "sys:clk",
+	"name": "sysclkOC",
 	"title_id": "0x00FF0000636C6BFF",
 	"title_id_range_min": "0x00FF0000636C6BFF",
 	"title_id_range_max": "0x00FF0000636C6BFF",
@@ -18,7 +18,7 @@
 		"*"
 	],
 	"service_host": [
-		"sys:clk"
+		"sysclkOC"
 	],
 	"kernel_capabilities": [
 		{

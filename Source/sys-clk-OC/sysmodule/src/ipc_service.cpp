@@ -153,6 +153,13 @@ Result IpcService::ServiceHandlerFunc(void* arg, const IpcServerRequest* r, u8* 
                 return ipcSrv->SetConfigValues((SysClkConfigValueList*)r->data.ptr);
             }
             break;
+
+        case SysClkIpcCmd_SetReverseNXRTMode:
+            if (r->data.size >= sizeof(ReverseNXMode)) {
+                ReverseNXMode mode = *((ReverseNXMode*)r->data.ptr);
+                return ipcSrv->SetReverseNXRTMode(mode);
+            }
+            break;
     }
 
     return SYSCLK_ERROR(Generic);
@@ -287,5 +294,11 @@ Result IpcService::SetConfigValues(SysClkConfigValueList* configValues)
         return SYSCLK_ERROR(ConfigSaveFailed);
     }
 
+    return 0;
+}
+
+Result IpcService::SetReverseNXRTMode(ReverseNXMode mode) {
+    Config* config = ClockManager::GetInstance()->GetConfig();
+    config->SetReverseNXRTMode(mode);
     return 0;
 }

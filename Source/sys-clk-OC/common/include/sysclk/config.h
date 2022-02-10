@@ -17,6 +17,8 @@ typedef enum {
     SysClkConfigValue_PollingIntervalMs = 0,
     SysClkConfigValue_TempLogIntervalMs,
     SysClkConfigValue_CsvWriteIntervalMs,
+    SysClkConfigValue_AutoCPUBoost,
+    SysClkConfigValue_SyncReverseNXMode,
     SysClkConfigValue_EnumMax,
 } SysClkConfigValue;
 
@@ -34,6 +36,10 @@ static inline const char* sysclkFormatConfigValue(SysClkConfigValue val, bool pr
             return pretty ? "Temperature logging interval (ms)" : "temp_log_interval_ms";
         case SysClkConfigValue_CsvWriteIntervalMs:
             return pretty ? "CSV write interval (ms)" : "csv_write_interval_ms";
+        case SysClkConfigValue_AutoCPUBoost:
+            return pretty ? "Enable Auto CPU Boost" : "auto_cpu_boost";
+        case SysClkConfigValue_SyncReverseNXMode:
+            return pretty ? "Enable ReverseNX Mode Sync" : "sync_reversenx_mode";
         default:
             return NULL;
     }
@@ -44,10 +50,13 @@ static inline uint64_t sysclkDefaultConfigValue(SysClkConfigValue val)
     switch(val)
     {
         case SysClkConfigValue_PollingIntervalMs:
-            return 300ULL;
+            return 500ULL;
         case SysClkConfigValue_TempLogIntervalMs:
         case SysClkConfigValue_CsvWriteIntervalMs:
             return 0ULL;
+        case SysClkConfigValue_AutoCPUBoost:
+        case SysClkConfigValue_SyncReverseNXMode:
+            return 1ULL;
         default:
             return 0ULL;
     }
@@ -62,6 +71,9 @@ static inline uint64_t sysclkValidConfigValue(SysClkConfigValue val, uint64_t in
         case SysClkConfigValue_TempLogIntervalMs:
         case SysClkConfigValue_CsvWriteIntervalMs:
             return true;
+        case SysClkConfigValue_AutoCPUBoost:
+        case SysClkConfigValue_SyncReverseNXMode:
+            return (input & 0x1) == input;
         default:
             return false;
     }

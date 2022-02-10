@@ -50,20 +50,13 @@ class ClockManager
     const uint32_t CPU_BOOST_FREQ = 1785'000'000;
 
     bool IsCpuBoostMode();
-    bool IsReverseNXEnabled();
+    bool IsReverseNXModeValid();
     bool IsReverseNXDocked();
 
     uint32_t GetHz(SysClkModule);
     SysClkProfile ReverseNXProfileHandler();
-    ReverseNXMode ReverseNXFileHandler(bool, const char*);
+    ReverseNXMode ReverseNXFileHandler(const char*);
 
     void CheckReverseNXTool();
     bool CheckReverseNXRT();
-
-    // LockableMutex systemCoreStuckCountMutex;
-    // Thread t_CheckSystemCoreStuck_0, t_CheckSystemCoreStuck_1, t_CheckSystemCoreStuck_2;
-
-    // static void CheckSystemCoreStuck(void *arg);
-    // void StartCheckSystemCore();
-    // void StopCheckSystemCore();
 };
