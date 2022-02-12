@@ -200,7 +200,7 @@ void ClockManager::WaitForNextTick()
     uint64_t tickWaitTimeMs = this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs);
     uint64_t tickWaitTimeNs = tickWaitTimeMs * 1000000ULL;
 
-    uint64_t isAutoBoostEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost);
+    bool isAutoBoostEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost);
     if (   isAutoBoostEnabled
         && this->context->realProfile != SysClkProfile_Handheld
         && this->context->enabled
@@ -242,6 +242,10 @@ void ClockManager::WaitForNextTick()
     }
     else
     {
+        if (this->oc->systemCoreBoostCPU) {
+            this->oc->systemCoreBoostCPU = false;
+            Clocks::SetHz(SysClkModule_CPU, GetHz(SysClkModule_CPU));
+        }
         svcSleepThread(tickWaitTimeNs);
     }
 }
@@ -341,7 +345,7 @@ bool ClockManager::RefreshContext()
 {
     bool hasChanged = false;
     bool enabled = this->GetConfig()->Enabled();
-    uint64_t isReverseNXSyncEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode);
+    bool isReverseNXSyncEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode);
     if(enabled != this->context->enabled)
     {
         this->context->enabled = enabled;
