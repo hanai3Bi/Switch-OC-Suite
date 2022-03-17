@@ -10,11 +10,15 @@ cust_conf  = {
 # - Max Clock in kHz:
 #   Default: 1785000
 #   >= 2193000 will enable overvolting (> 1120 mV)
+# - Boost Clock in kHz:
+#   Default: 1785000
+#   Boost clock will be applied when applications request higher CPU frequency for quicker loading.
 # - Max Voltage in mV:
 #   Default voltage: 1120
 #   Haven't tested anything higher than 1220.
-    "marikoCpuMaxClock": 2397000,
-    "marikoCpuMaxVolt":  1220,
+    "marikoCpuMaxClock":   2397000,
+    "marikoCpuBoostClock": 1785000,
+    "marikoCpuMaxVolt":    1220,
 # Mariko GPU:
 # - Max Clock in kHz:
 #   Default: 921600
@@ -54,23 +58,24 @@ cust_conf  = {
 }
 
 cust_range = {
-    "mtcConf":           (0, 3),
-    "marikoCpuMaxClock": (1785000, 3000000),
-    "marikoCpuMaxVolt":  (1100, 1300),
-    "marikoGpuMaxClock": (768000, 1536000),
-    "marikoEmcMaxClock": (1612800, 2400000),
-    "eristaCpuMaxVolt":  (1100, 1400),
-    "eristaEmcMaxClock": (1600000, 2400000),
-    "eristaEmcVolt":     (1100000, 1250000)
+    "mtcConf":             (0, 3),
+    "marikoCpuMaxClock":   (1785000, 3000000),
+    "marikoCpuBoostClock": (1785000, 3000000),
+    "marikoCpuMaxVolt":    (1100, 1300),
+    "marikoGpuMaxClock":   (768000, 1536000),
+    "marikoEmcMaxClock":   (1612800, 2400000),
+    "eristaCpuMaxVolt":    (1100, 1400),
+    "eristaEmcMaxClock":   (1600000, 2400000),
+    "eristaEmcVolt":       (1100000, 1250000)
 }
 
 import struct
 import argparse
 
-cust_rev  = 1
+cust_rev  = 2
 cust_head = ["cust", "custRev"]
 cust_body = ["mtcConf",
-    "marikoCpuMaxClock", "marikoCpuMaxVolt", "marikoGpuMaxClock", "marikoEmcMaxClock",
+    "marikoCpuMaxClock", "marikoCpuBoostClock", "marikoCpuMaxVolt", "marikoGpuMaxClock", "marikoEmcMaxClock",
     "eristaCpuOCEnable", "eristaCpuMaxVolt", "eristaEmcMaxClock", "eristaEmcVolt"]
 cust_key  = [*cust_head, *cust_body]
 
@@ -92,7 +97,7 @@ def KIPCustParse(file_loc, conf_print=True) -> (int, dict):
             raise Exception("\n  Invalid kip file!")
 
         file.seek(cust_pos)
-        cust_fmt  = '<4s2H8I'
+        cust_fmt  = '<4s2H9I'
         cust_size = struct.calcsize(cust_fmt)
         cust_buf  = file.read(cust_size)
         cust_val  = struct.unpack(cust_fmt, cust_buf)
@@ -105,7 +110,7 @@ def KIPCustParse(file_loc, conf_print=True) -> (int, dict):
 
         if conf_print:
             print("Configuration from file")
-            [print(f"- {i:18s} : {cust_dict[i]:8d}") for i in cust_dict]
+            [print(f"- {i:20s} : {cust_dict[i]:8d}") for i in cust_dict]
 
         return (cust_pos, cust_dict)
 
@@ -115,7 +120,7 @@ def CustRangeCheck(cust):
     for i in cust_range:
         val = int(cust[i])
         if val and (val < cust_range[i][0] or val > cust_range[i][1]) :
-            range_error_str += f"\n- {i:18s} = {val:8d}, Expected range: {[*cust_range[i]]}"
+            range_error_str += f"\n- {i:20s} = {val:8d}, Expected range: {[*cust_range[i]]}"
 
     if range_error_str:
         raise ValueError(range_error_str)
@@ -138,7 +143,7 @@ def KIPCustSave(file_loc, cust_pos, cust_dict, range_check=True, cust_to_save={}
         if cust_dict[i] != cust_conf[i]:
             diff_str = f"-> {cust_conf[i]:8d}"
             diff_count += 1
-        print(f"- {i:18s} : {cust_dict[i]:8d} {diff_str}")
+        print(f"- {i:20s} : {cust_dict[i]:8d} {diff_str}")
 
     if not diff_count:
         print("Cust is identical, abort saving!")

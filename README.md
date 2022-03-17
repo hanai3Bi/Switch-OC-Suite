@@ -2,12 +2,9 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for Nintendo Switch™ running on Atmosphere CFW. Should support Horizon OS (HOS) >= 1.0.
+Overclocking suite for Nintendo Switch™ Horizon OS (HOS) running on Atmosphere CFW.
 
 This project will not be actively maintained or regularly updated along with Atmosphere CFW.
-
-I'd appreciate if someone is willing to contribute or upload latest binaries. But if you are releasing somewhere else (with or without your own modifications), be sure you are complying with GPL v2 license and _include necessary warnings for users_.
-
 
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
@@ -16,6 +13,20 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
 - Higher RAM clocks without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
 
+- Why no CPU/GPU OC for Erista?
+  <details>
+
+  - Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
+    - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.
+    - Snapdragon 810 (4 x A57 @ 2.0GHz + 4 x A53) also uses 20nm HPM, see how it plagued Android phones in 2014.
+
+  - The board power supply is quite limited, even if you've done cooling mod.
+    - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
+    - CPU / GPU performance at max clocks will be worse if power supply is not enough.
+
+  - CPU OC (up to ~ 2.1 GHz, depending on your CPU bin) is available mainly for emulation, but it does NOT work out of the box.
+
+  </details>
 
 
 ## Features
@@ -28,12 +39,17 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     - Mariko: 1996.8 MHz has been tested stable for all (Samsung / Micron / Hynix), with built-in timing auto-adjustment.
     - Erista: 1862.4 MHz.
 
-  - Unsafe: > 1996.8 MHz or overvolting
+  - Unsafe: higher than 1996.8 MHz or overvolting
+    <details>
+
     - Timing:
       - Timing parameters could be auto-adjusted (default) or overwritten with user-provided mtc table.
       - Customization: No GUI tool, requires [rebuilding](#Build).
+
     - DRAM bus overvolting (Erista Only).
       - Mariko: [use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+
+    </details>
 
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
 
@@ -51,6 +67,8 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
     - It has been proved safe without charger (not reaching battery power draw threshold)
 
   - Unsafe: CPU/GPU @ 2397/1305 MHz
+    <details>
+
     - Without chargers, CPU/GPU would be capped @ 1963/921 MHz.
 
     - Without official chargers, GPU would be capped @ 1267 MHz.
@@ -70,6 +88,8 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
       - NVIDIA Official Maximum: 1267.2 MHz
       - ~~Tested with deko3d compute shaders converted from Maxwell SASS assembly. Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.~~
 
+    </details>
+
 - **Modded sys-clk and ReverseNX**(-RT)
 
   - Permanent global clock override
@@ -77,7 +97,7 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 
   - Miscellaneous
     - Auto CPU Boost: For faster game loading
-      - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
+      - Enable CPU Boost (1785 MHz, could be configured higher) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
       - Auto-Boost will be enabled only when charger is connected.
 
     - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
@@ -98,14 +118,19 @@ I'd appreciate if someone is willing to contribute or upload latest binaries. Bu
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
 4. Customization
+    <details>
+
     | Defaults   | Mariko        | Erista       |
     | ---------- | ------------- | ------------ |
     | CPU OC     | 2397 MHz Max  | Disabled     |
+    | CPU Boost  | 1785 MHz      | N/A          |
     | CPU Volt   | 1220 mV Max   | Disabled     |
     | GPU OC     | 1305 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | N/A           | Disabled     |
     | RAM Timing | Auto-Adjusted | Disabled     |
+
+    </details>
 
   - Loader configurator
     - Grab [ldr_config.py](https://github.com/KazushiMe/Switch-OC-Suite/raw/master/ldr_config.py) and modify values in `cust_conf` dict.
@@ -128,19 +153,6 @@ If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::a
 
 Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
 
-
-
-## Why no CPU/GPU OC for Erista?
-
-- Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
-  - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.
-  - Snapdragon 810 (4 x A57 @ 2.0GHz + 4 x A53) also uses 20nm HPM, see how it plagued Android phones in 2014.
-
-- The board power supply is quite limited, even if you've done cooling mod.
-  - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
-  - CPU / GPU performance at max clocks will be worse if power supply is not enough.
-
-- CPU OC (up to ~ 2.1 GHz, depending on your CPU bin) is available mainly for emulation, but it does NOT work out of the box.
 
 
 ## Acknowledgement

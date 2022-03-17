@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#define CUST_REV 1
+#define CUST_REV 2
 #include "mtc_timing_table.hpp"
 
 namespace ams::ldr::oc {
@@ -31,6 +31,7 @@ namespace ams::ldr::oc {
         u16 custRev = CUST_REV;
         u16 mtcConf = AUTO_ADJ_MARIKO_SAFE;
         u32 marikoCpuMaxClock;
+        u32 marikoCpuBoostClock;
         u32 marikoCpuMaxVolt;
         u32 marikoGpuMaxClock;
         u32 marikoEmcMaxClock;

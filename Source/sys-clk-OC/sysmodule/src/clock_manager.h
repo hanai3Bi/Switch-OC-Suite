@@ -47,7 +47,6 @@ class ClockManager
     std::uint64_t lastCsvWriteNs;
 
     SysClkOcExtra *oc;
-    const uint32_t CPU_BOOST_FREQ = 1785'000'000;
 
     bool IsCpuBoostMode();
     bool IsReverseNXModeValid();

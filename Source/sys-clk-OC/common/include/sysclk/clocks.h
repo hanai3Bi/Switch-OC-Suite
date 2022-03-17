@@ -66,8 +66,10 @@ typedef enum
 typedef struct
 {
     bool systemCoreBoostCPU;
+    bool gotBoostCPUFreq;
     ReverseNXMode reverseNXMode;
     uint32_t maxMEMFreq;
+    uint32_t boostCPUFreq;
 } SysClkOcExtra;
 
 typedef struct

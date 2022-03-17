@@ -59,8 +59,10 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
+    this->oc->gotBoostCPUFreq = false;
     this->oc->reverseNXMode = ReverseNX_NotFound;
     this->oc->maxMEMFreq = 0;
+    this->oc->boostCPUFreq = 1785'000'000;
 }
 
 ClockManager::~ClockManager()
@@ -73,7 +75,13 @@ ClockManager::~ClockManager()
 bool ClockManager::IsCpuBoostMode()
 {
     std::uint32_t confId = this->context->perfConfId;
-    return (confId == 0x92220009 || confId == 0x9222000A);
+    bool isCpuBoostMode = (confId == 0x92220009 || confId == 0x9222000A);
+    if (isCpuBoostMode && !this->oc->gotBoostCPUFreq)
+    {
+        this->oc->gotBoostCPUFreq = true;
+        this->oc->boostCPUFreq = std::max(this->context->freqs[SysClkModule_CPU], this->oc->boostCPUFreq);
+    }
+    return isCpuBoostMode;
 }
 
 bool ClockManager::IsReverseNXModeValid()
@@ -158,8 +166,8 @@ uint32_t ClockManager::GetHz(SysClkModule module)
 
     if (module == SysClkModule_CPU)
     {
-        if (this->oc->systemCoreBoostCPU && hz < CPU_BOOST_FREQ)
-            return CPU_BOOST_FREQ;
+        if (this->oc->systemCoreBoostCPU && hz < this->oc->boostCPUFreq)
+            return this->oc->boostCPUFreq;
         else if (!hz)
             /* Prevent crash when hz = 0 in SetHz(0), trigger RefreshContext() and Tick() */
             return 1020'000'000;
@@ -180,8 +188,8 @@ void ClockManager::Tick()
 
             if (hz && hz != this->context->freqs[module])
             {
-                // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= 1963.5MHz or GPU >= 76.8MHz
-                if (IsCpuBoostMode() && ((module == SysClkModule_CPU && hz <= CPU_BOOST_FREQ) || module == SysClkModule_GPU))
+                // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
+                if (IsCpuBoostMode() && ((module == SysClkModule_CPU && hz <= this->oc->boostCPUFreq) || module == SysClkModule_GPU))
                 {
                     continue;
                 }
@@ -204,7 +212,7 @@ void ClockManager::WaitForNextTick()
     if (   isAutoBoostEnabled
         && this->context->realProfile != SysClkProfile_Handheld
         && this->context->enabled
-        && this->context->freqs[SysClkModule_CPU] <= CPU_BOOST_FREQ)
+        && this->context->freqs[SysClkModule_CPU] <= this->oc->boostCPUFreq)
     {
         uint64_t systemCoreIdleTickPrev = 0, systemCoreIdleTickNext = 0;
         svcGetInfo(&systemCoreIdleTickPrev, InfoType_IdleTickCount, INVALID_HANDLE, 3);
@@ -237,7 +245,7 @@ void ClockManager::WaitForNextTick()
         }
         else if (!systemCoreBoostCPUPrevState && this->oc->systemCoreBoostCPU)
         {
-            Clocks::SetHz(SysClkModule_CPU, CPU_BOOST_FREQ);
+            Clocks::SetHz(SysClkModule_CPU, this->oc->boostCPUFreq);
         }
     }
     else

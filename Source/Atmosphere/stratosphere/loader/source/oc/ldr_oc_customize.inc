@@ -13,12 +13,16 @@ static const volatile CustomizeTable C = {
  * - Max Clock in kHz:
  *   Default: 1785000
  *   >= 2193000 will enable overvolting (> 1120 mV)
+ * - Boost Clock in kHz:
+ *   Default: 1785000
+ *   Boost clock will be applied when applications request higher CPU frequency for quicker loading.
  * - Max Voltage in mV:
  *   Default voltage: 1120
  *   Haven't tested anything higher than 1220.
  */
-.marikoCpuMaxClock = 2397000,
-.marikoCpuMaxVolt  = 1220,
+.marikoCpuMaxClock   = 2397000,
+.marikoCpuBoostClock = 1785000,
+.marikoCpuMaxVolt    = 1220,
 
 /* Mariko GPU:
  * - Max Clock in kHz:

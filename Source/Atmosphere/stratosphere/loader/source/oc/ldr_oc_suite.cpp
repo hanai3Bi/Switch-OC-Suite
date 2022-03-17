@@ -1150,22 +1150,31 @@ namespace ams::ldr::oc {
                 return;
             #endif
 
-            perf_conf_entry* confTable = 0;
-            constexpr u32 entryCnt     = 16;
-            constexpr u32 memPtmLimit  = 1600'000'000;
-            constexpr u32 memPtmAlt    = 1331'200'000;
-            constexpr u32 memPtmClamp  = 1065'600'000;
-            const     u32 memPtmMax    = C.marikoEmcMaxClock * 1000;
+            perf_conf_entry* confTable   = 0;
+            constexpr u32 entryCnt       = 16;
+            constexpr u32 cpuPtmDefault  = 1020'000'000;
+            constexpr u32 cpuPtmDevOC    = 1224'000'000;
+            constexpr u32 cpuPtmBoost    = 1785'000'000;
+            const     u32 cpuPtmBoostNew = C.marikoCpuBoostClock * 1000;
+            constexpr u32 memPtmLimit    = 1600'000'000;
+            constexpr u32 memPtmAlt      = 1331'200'000;
+            constexpr u32 memPtmClamp    = 1065'600'000;
+            const     u32 memPtmMax      = C.marikoEmcMaxClock * 1000;
 
             for (uintptr_t ptr = mapped_nso;
                  ptr <= mapped_nso + nso_size - sizeof(perf_conf_entry) * entryCnt;
                  ptr += sizeof(u32))
             {
-                u32 value = *(reinterpret_cast<u32 *>(ptr));
+                u32* ptr32 = reinterpret_cast<u32 *>(ptr);
+                u32  value = *(ptr32);
 
-                if (value == memPtmLimit)
+                if (value == cpuPtmDefault)
                 {
-                    confTable = reinterpret_cast<perf_conf_entry *>(ptr - offsetof(perf_conf_entry, emc_freq_1));
+                    u32 value_next = *(ptr32 + 1);
+                    if (value_next != cpuPtmDefault)
+                        continue;
+
+                    confTable = reinterpret_cast<perf_conf_entry *>(ptr - offsetof(perf_conf_entry, cpu_freq_1));
                     break;
                 }
             }
@@ -1179,9 +1188,27 @@ namespace ams::ldr::oc {
             {
                 perf_conf_entry* entry_current = confTable + i;
 
-                if (entry_current->emc_freq_1 != entry_current->emc_freq_2) {
-                    LOGGING("@%p: emc_freq_1(%u) != emc_freq_2(%u)", &(entry_current->emc_freq_1), entry_current->emc_freq_1, entry_current->emc_freq_2);
+                if (entry_current->cpu_freq_1 != entry_current->cpu_freq_2 ||
+                    entry_current->gpu_freq_1 != entry_current->gpu_freq_2 ||
+                    entry_current->emc_freq_1 != entry_current->emc_freq_2)
+                {
+                    LOGGING("@%p: Invalid confTable entry", &entry_current);
                     CRASH();
+                }
+
+                switch (entry_current->cpu_freq_1)
+                {
+                    case cpuPtmBoost:
+                        PatchOffset(&(entry_current->cpu_freq_1), cpuPtmBoostNew);
+                        PatchOffset(&(entry_current->cpu_freq_2), cpuPtmBoostNew);
+                        LOGGING("0x%x: CPU: Boost Freq", entry_current->conf_id);
+                        break;
+                    case cpuPtmDefault:
+                    case cpuPtmDevOC:
+                        break;
+                    default:
+                        LOGGING("Unknown CPU Freq: %u @%p!", entry_current->cpu_freq_1, &(entry_current->cpu_freq_1));
+                        CRASH();
                 }
 
                 switch (entry_current->emc_freq_1)
@@ -1189,14 +1216,16 @@ namespace ams::ldr::oc {
                     case memPtmLimit:
                         PatchOffset(&(entry_current->emc_freq_1), memPtmMax);
                         PatchOffset(&(entry_current->emc_freq_2), memPtmMax);
+                        LOGGING("0x%x: MEM: Max Freq", entry_current->conf_id);
                         break;
                     case memPtmAlt:
                     case memPtmClamp:
                         PatchOffset(&(entry_current->emc_freq_1), memPtmLimit);
                         PatchOffset(&(entry_current->emc_freq_2), memPtmLimit);
+                        LOGGING("0x%x: MEM: Alt Freq", entry_current->conf_id);
                         break;
                     default:
-                        LOGGING("Wrong mem freq: %u @%p!", entry_current->emc_freq_1, &(entry_current->emc_freq_1));
+                        LOGGING("Unknown MEM Freq: %u @%p!", entry_current->emc_freq_1, &(entry_current->emc_freq_1));
                         CRASH();
                 }
             }
