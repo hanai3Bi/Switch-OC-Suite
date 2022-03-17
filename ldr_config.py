@@ -69,6 +69,7 @@ cust_range = {
     "eristaEmcVolt":       (1100000, 1250000)
 }
 
+
 import struct
 import argparse
 
@@ -78,6 +79,10 @@ cust_body = ["mtcConf",
     "marikoCpuMaxClock", "marikoCpuBoostClock", "marikoCpuMaxVolt", "marikoGpuMaxClock", "marikoEmcMaxClock",
     "eristaCpuOCEnable", "eristaCpuMaxVolt", "eristaEmcMaxClock", "eristaEmcVolt"]
 cust_key  = [*cust_head, *cust_body]
+cust_val_num  = len(cust_conf) - 1
+cust_fmt      = '<4s2H' + str(cust_val_num) + 'I'
+cust_head_fmt = '<4s1H'
+cust_body_fmt = '<1H' + str(cust_val_num) + 'I'
 
 parser = argparse.ArgumentParser(description='Loader Configurator v'+str(cust_rev))
 parser.add_argument("file", help="Path of loader.kip")
@@ -97,7 +102,6 @@ def KIPCustParse(file_loc, conf_print=True) -> (int, dict):
             raise Exception("\n  Invalid kip file!")
 
         file.seek(cust_pos)
-        cust_fmt  = '<4s2H9I'
         cust_size = struct.calcsize(cust_fmt)
         cust_buf  = file.read(cust_size)
         cust_val  = struct.unpack(cust_fmt, cust_buf)
@@ -150,8 +154,6 @@ def KIPCustSave(file_loc, cust_pos, cust_dict, range_check=True, cust_to_save={}
         return
 
     with open(file_loc, "rb+") as file:
-        cust_head_fmt = '<4s1H'
-        cust_body_fmt = '<1H8I'
         cust_bin = struct.pack(cust_body_fmt, *[cust_to_save[i] for i in cust_body])
         file.seek(cust_pos + struct.calcsize(cust_head_fmt))
         file.write(cust_bin)
