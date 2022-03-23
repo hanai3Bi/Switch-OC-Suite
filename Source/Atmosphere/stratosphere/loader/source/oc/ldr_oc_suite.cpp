@@ -1155,11 +1155,22 @@ namespace ams::ldr::oc {
             constexpr u32 cpuPtmDefault  = 1020'000'000;
             constexpr u32 cpuPtmDevOC    = 1224'000'000;
             constexpr u32 cpuPtmBoost    = 1785'000'000;
-            const     u32 cpuPtmBoostNew = C.marikoCpuBoostClock * 1000;
+            const     u32 cpuPtmBoostNew = (C.marikoCpuBoostClock ?
+                                            C.marikoCpuBoostClock * 1000 : cpuPtmBoost);
             constexpr u32 memPtmLimit    = 1600'000'000;
             constexpr u32 memPtmAlt      = 1331'200'000;
             constexpr u32 memPtmClamp    = 1065'600'000;
-            const     u32 memPtmMax      = C.marikoEmcMaxClock * 1000;
+            const     u32 memPtmMax      = (C.marikoEmcMaxClock ?
+                                            C.marikoEmcMaxClock * 1000 : memPtmLimit);
+
+            enum PatchSuccessCnt {
+                CPU_BOOST,
+                MEM_MAX,
+                MEM_ALT,
+                CNT_MAX
+            };
+
+            u8 cnt[CNT_MAX] = {};
 
             for (uintptr_t ptr = mapped_nso;
                  ptr <= mapped_nso + nso_size - sizeof(perf_conf_entry) * entryCnt;
@@ -1201,7 +1212,8 @@ namespace ams::ldr::oc {
                     case cpuPtmBoost:
                         PatchOffset(&(entry_current->cpu_freq_1), cpuPtmBoostNew);
                         PatchOffset(&(entry_current->cpu_freq_2), cpuPtmBoostNew);
-                        LOGGING("0x%x: CPU: Boost Freq", entry_current->conf_id);
+                        cnt[CPU_BOOST]++;
+                        // LOGGING("0x%08x: CPU: Boost Freq", entry_current->conf_id);
                         break;
                     case cpuPtmDefault:
                     case cpuPtmDevOC:
@@ -1216,18 +1228,34 @@ namespace ams::ldr::oc {
                     case memPtmLimit:
                         PatchOffset(&(entry_current->emc_freq_1), memPtmMax);
                         PatchOffset(&(entry_current->emc_freq_2), memPtmMax);
-                        LOGGING("0x%x: MEM: Max Freq", entry_current->conf_id);
+                        cnt[MEM_MAX]++;
+                        // LOGGING("0x%08x: MEM: Max Freq", entry_current->conf_id);
                         break;
                     case memPtmAlt:
                     case memPtmClamp:
                         PatchOffset(&(entry_current->emc_freq_1), memPtmLimit);
                         PatchOffset(&(entry_current->emc_freq_2), memPtmLimit);
-                        LOGGING("0x%x: MEM: Alt Freq", entry_current->conf_id);
+                        cnt[MEM_ALT]++;
+                        // LOGGING("0x%08x: MEM: Alt Freq", entry_current->conf_id);
                         break;
                     default:
                         LOGGING("Unknown MEM Freq: %u @%p!", entry_current->emc_freq_1, &(entry_current->emc_freq_1));
                         CRASH();
                 }
+            }
+
+            LOGGING("cpuPtmBoost Count: %u\n"\
+                    "memPtmMax   Count: %u\n"\
+                    "memPtmAlt   Count: %u",
+                    cnt[CPU_BOOST],
+                    cnt[MEM_MAX],
+                    cnt[MEM_ALT]);
+
+            if (cnt[CPU_BOOST] > 2 ||
+                cnt[MEM_MAX]   > 9 ||
+                cnt[MEM_ALT]   > 7)
+            {
+                CRASH();
             }
         }
     }

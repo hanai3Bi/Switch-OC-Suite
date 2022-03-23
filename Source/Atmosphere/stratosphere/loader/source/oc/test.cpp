@@ -55,8 +55,8 @@ static void* ReadFile(const char* file_loc, long* out_size) {
 }
 
 int main(int argc, char** argv) {
-    const char* pcv_opt = "-pcv";
-    const char* ptm_opt = "-ptm";
+    const char* pcv_opt = "pcv";
+    const char* ptm_opt = "ptm";
     enum {
         EXE_PCV,
         EXE_PTM,
@@ -81,14 +81,16 @@ int main(int argc, char** argv) {
     size_t exe_size = reinterpret_cast<size_t>(file_size * sizeof(char));
     switch (option) {
         case EXE_PCV:
+            printf("Patching %s...\n", pcv_opt);
             ams::ldr::oc::pcv::Patch(mapped_exe, exe_size);
             break;
         case EXE_PTM:
+            printf("Patching %s...\n", ptm_opt);
             ams::ldr::oc::ptm::Patch(mapped_exe, exe_size);
             break;
     }
     free(file_buffer);
-    printf("Passed!\n");
+    printf("Passed!\n\n");
     return 0;
 }
 #endif
