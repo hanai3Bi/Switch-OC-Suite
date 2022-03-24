@@ -569,7 +569,7 @@ namespace ams::ldr {
             /* Check hash if necessary. */
             if (check_hash) {
                 u8 hash[crypto::Sha256Generator::HashSize];
-                crypto::GenerateSha256Hash(hash, sizeof(hash), reinterpret_cast<void *>(map_base), segment->size);
+                crypto::GenerateSha256(hash, sizeof(hash), reinterpret_cast<void *>(map_base), segment->size);
 
                 R_UNLESS(std::memcmp(hash, file_hash, sizeof(hash)) == 0, ldr::ResultInvalidNso());
             }
@@ -698,13 +698,10 @@ namespace ams::ldr {
         /* Load NSOs into process memory. */
         {
             /* Ensure we close the process handle, if we fail. */
-            auto process_guard = SCOPE_GUARD { os::CloseNativeHandle(info.process_handle); };
+            ON_RESULT_FAILURE { os::CloseNativeHandle(info.process_handle); };
 
             /* Load all NSOs. */
             R_TRY(LoadAutoLoadModules(std::addressof(info), g_nso_headers, g_has_nso, argument));
-
-            /* We don't need to close the process handle, since we succeeded. */
-            process_guard.Cancel();
         }
 
         /* Register NSOs with the RoManager. */
@@ -739,7 +736,7 @@ namespace ams::ldr {
         /* Move the process handle to output. */
         *out = info.process_handle;
 
-        return ResultSuccess();
+        R_SUCCEED();
     }
 
     Result GetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc, const char *path) {
