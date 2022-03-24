@@ -60,6 +60,7 @@ ClockManager::ClockManager()
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
     this->oc->gotBoostCPUFreq = false;
+    this->oc->handheldEmulatorMode = false;
     this->oc->reverseNXMode = ReverseNX_NotFound;
     this->oc->maxMEMFreq = 0;
     this->oc->boostCPUFreq = 1785'000'000;
@@ -162,8 +163,26 @@ uint32_t ClockManager::GetHz(SysClkModule module)
 
             return this->oc->maxMEMFreq;
         }
+
+        /* Handle Handheld Emulator-Mode limit */
+        if (this->context->realProfile == SysClkProfile_Handheld)
+        {
+            switch (module)
+            {
+                case SysClkModule_CPU:
+                    this->oc->handheldEmulatorMode = (hz > SYSCLK_CPU_HANDHELD_MAX_HZ);
+                    break;
+                case SysClkModule_GPU:
+                    if (this->oc->handheldEmulatorMode)
+                        hz = std::min(hz, SYSCLK_GPU_HANDHELD_EMULATOR_HZ);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
+    /* Handle CPU Auto Boost, no user-defined hz required */
     if (module == SysClkModule_CPU)
     {
         if (this->oc->systemCoreBoostCPU && hz < this->oc->boostCPUFreq)

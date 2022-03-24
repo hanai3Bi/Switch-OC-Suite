@@ -74,11 +74,11 @@ From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blo
 
 To protect the battery from excessive strain, clocks requested from config may be capped before applying, depending on your current profile:
 
-|         | Handheld | Charging (USB) | Charging (Official) | Docked |
-|:-------:|:--------:|:--------------:|:-------------------:|:------:|
-| **MEM** | -        | -              | -                   | -      |
-| **CPU** | 1963     | -              | -                   | -      |
-| **GPU** | 921      | 1267           | -                   | -      |
+|         | Handheld | Handheld (Emulator) | Charging (USB) | Charging (Official) | Docked |
+|:-------:|:--------:|:-------------------:|:--------------:|:-------------------:|:------:|
+| **MEM** | -        | -                   | -              | -                   | -      |
+| **CPU** | 1963     | -                   | -              | -                   | -      |
+| **GPU** | 921      | 460                 | 1267           | -                   | -      |
 
 
 ## Installation

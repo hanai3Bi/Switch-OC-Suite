@@ -69,7 +69,7 @@ This project will not be actively maintained or regularly updated along with Atm
   - Unsafe: CPU/GPU @ 2397/1305 MHz
     <details>
 
-    - Without chargers, CPU/GPU would be capped @ 1963/921 MHz.
+    - Without chargers, CPU/GPU would be capped @ 1963/921 MHz or -/460 MHz (Emulator mode).
 
     - Without official chargers, GPU would be capped @ 1267 MHz.
 
