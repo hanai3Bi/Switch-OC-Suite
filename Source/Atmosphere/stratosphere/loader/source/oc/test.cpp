@@ -17,10 +17,19 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 
 namespace ams::ldr::oc {
     namespace pcv {
-        void Patch(uintptr_t mapped_nso, size_t nso_size);
+        namespace Erista {
+            void Patch(uintptr_t mapped_exe, size_t nso_size);
+        }
+
+        namespace Mariko {
+            void Patch(uintptr_t mapped_exe, size_t nso_size);
+        }
+
+        void SafetyCheck();
     }
 
     namespace ptm {
@@ -28,25 +37,24 @@ namespace ams::ldr::oc {
     }
 }
 
-static void* ReadFile(const char* file_loc, long* out_size) {
-    FILE* fp;
-    void* buf;
-    long size;
-
-    fp = fopen(file_loc, "r");
+void* loadExec(const char* file_loc, size_t* out_size) {
+    FILE* fp = fopen(file_loc, "rb");
     if (!fp) {
-        fprintf(stderr, "Cannot open file: %s\n", file_loc);
+        fprintf(stderr, "Cannot open file: \"%s\"\n", file_loc);
         exit(-1);
     }
 
     fseek(fp, 0, SEEK_END);
-    size = ftell(fp);
+    size_t size = ftell(fp);
+
     fseek(fp, 0, SEEK_SET);
-    buf = malloc((size + 1) * sizeof(char));
-    fread(buf, sizeof(char), size, fp);
+    void* buf = malloc(size);
+
+    fread(buf, size, 1, fp);
     fclose(fp);
+
     if (size < 8192) {
-        fprintf(stderr, "File is too small to process: %u Bytes\n", size);
+        fprintf(stderr, "File is too small to process: \"%s\" (%lu B)\n", file_loc, size);
         exit(-1);
     }
 
@@ -54,41 +62,110 @@ static void* ReadFile(const char* file_loc, long* out_size) {
     return buf;
 }
 
+void saveExec(const char* file_loc, const void* buf, size_t size) {
+    FILE* fp = fopen(file_loc, "wb");
+    if (!fp) {
+        fprintf(stderr, "Cannot write to \"%s\"\n", file_loc);
+        exit(-1);
+    }
+    printf("Saving to \"%s\"...\n", file_loc);
+    fwrite(buf, size, 1, fp);
+    fclose(fp);
+}
+
 int main(int argc, char** argv) {
-    const char* pcv_opt = "pcv";
-    const char* ptm_opt = "ptm";
-    enum {
+    const char* pcv_opt    = "pcv";
+    const char* ptm_opt    = "ptm";
+    const char* save_opt   = "-s";
+    const char* mariko_ext = ".mariko";
+    const char* erista_ext = ".erista";
+    enum EXE_OPTION {
         EXE_PCV,
         EXE_PTM,
         UNKNOWN
     };
-    int option = UNKNOWN;
-    if (argc == 3) {
+    EXE_OPTION exe_opt = UNKNOWN;
+    if (argc > 2) {
         if (!strcmp(argv[1], pcv_opt))
-            option = EXE_PCV;
+            exe_opt = EXE_PCV;
 
         if (!strcmp(argv[1], ptm_opt))
-            option = EXE_PTM;
+            exe_opt = EXE_PTM;
     }
-    if (option == UNKNOWN) {
-        fprintf(stderr, "Usage: %s %s/%s <executable>\n", argv[0], pcv_opt, ptm_opt);
+    if ((argc != 3 && argc != 4) || exe_opt == UNKNOWN) {
+        fprintf(stderr, "Usage:\n"\
+                        "    %s  %s | %s  [%s]  <exec_path>\n\n"\
+                        "    %s : Save patched executable with extension \"%s\" / \"%s\"\n"
+                        , argv[0], pcv_opt, ptm_opt, save_opt
+                        , save_opt, mariko_ext, erista_ext);
         return -1;
     }
 
-    long file_size;
-    void* file_buffer = ReadFile(argv[2], &file_size);
-    uintptr_t mapped_exe = reinterpret_cast<uintptr_t>(file_buffer);
-    size_t exe_size = reinterpret_cast<size_t>(file_size * sizeof(char));
-    switch (option) {
-        case EXE_PCV:
-            printf("Patching %s...\n", pcv_opt);
-            ams::ldr::oc::pcv::Patch(mapped_exe, exe_size);
-            break;
-        case EXE_PTM:
-            printf("Patching %s...\n", ptm_opt);
-            ams::ldr::oc::ptm::Patch(mapped_exe, exe_size);
-            break;
+    bool save_patched = false;
+    char* exec_path = argv[2];
+    if (argc == 4 && !strcmp(argv[2], save_opt)) {
+        save_patched = true;
+        exec_path = argv[3];
     }
+
+    size_t file_size;
+    void* file_buffer = loadExec(exec_path, &file_size);
+
+    size_t exec_path_len = strlen(reinterpret_cast<const char *>(exec_path));
+    size_t exec_path_patched_len = exec_path_len + std::max(strlen(mariko_ext), strlen(erista_ext)) + 1;
+
+    if (exe_opt == EXE_PCV) {
+        ams::ldr::oc::pcv::SafetyCheck();
+
+        {
+            void* erista_buf = malloc(file_size);
+            std::memcpy(erista_buf, file_buffer, file_size);
+
+            printf("Patching %s for Erista...\n", pcv_opt);
+            ams::ldr::oc::pcv::Erista::Patch(reinterpret_cast<uintptr_t>(erista_buf), file_size);
+            if (save_patched) {
+                char* exec_path_erista = reinterpret_cast<char *>(malloc(exec_path_patched_len));
+                strlcpy(exec_path_erista, exec_path, exec_path_patched_len);
+                strlcat(exec_path_erista, erista_ext, exec_path_patched_len);
+                saveExec(exec_path_erista, erista_buf, file_size);
+                free(exec_path_erista);
+            }
+            free(erista_buf);
+        }
+
+        {
+            void* mariko_buf = malloc(file_size);
+            std::memcpy(mariko_buf, file_buffer, file_size);
+
+            printf("Patching %s for Mariko...\n", pcv_opt);
+            ams::ldr::oc::pcv::Mariko::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
+            if (save_patched) {
+                char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));
+                strlcpy(exec_path_mariko, exec_path, exec_path_patched_len);
+                strlcat(exec_path_mariko, mariko_ext, exec_path_patched_len);
+                saveExec(exec_path_mariko, mariko_buf, file_size);
+                free(exec_path_mariko);
+            }
+            free(mariko_buf);
+        }
+    }
+
+    if (exe_opt == EXE_PTM) {
+        void* mariko_buf = malloc(file_size);
+        std::memcpy(mariko_buf, file_buffer, file_size);
+
+        printf("Patching %s (Mariko Only)...", ptm_opt);
+        ams::ldr::oc::ptm::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
+        if (save_patched) {
+            char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));
+            strlcpy(exec_path_mariko, exec_path, exec_path_patched_len);
+            strlcat(exec_path_mariko, mariko_ext, exec_path_patched_len);
+            saveExec(exec_path_mariko, mariko_buf, file_size);
+            free(exec_path_mariko);
+        }
+        free(mariko_buf);
+    }
+
     free(file_buffer);
     printf("Passed!\n\n");
     return 0;

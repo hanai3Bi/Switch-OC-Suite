@@ -1122,17 +1122,8 @@ namespace ams::ldr::oc {
         }
 
         void Patch(uintptr_t mapped_nso, size_t nso_size) {
+            #ifdef ATMOSPHERE_IS_STRATOSPHERE
             SafetyCheck();
-
-            #ifndef ATMOSPHERE_IS_STRATOSPHERE
-            void* buf = malloc(nso_size);
-            uintptr_t mapped_exe = reinterpret_cast<uintptr_t>(buf);
-            std::memcpy(buf, reinterpret_cast<void *>(mapped_nso), nso_size);
-            Erista::Patch(mapped_exe, nso_size);
-            std::memcpy(buf, reinterpret_cast<void *>(mapped_nso), nso_size);
-            Mariko::Patch(mapped_exe, nso_size);
-            free(buf);
-            #else
             bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
             if (isMariko)
                 Mariko::Patch(mapped_nso, nso_size);

@@ -154,6 +154,29 @@ If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::a
 Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
 
 
+### [DEPRECATED] Patching sysmodules manually
+
+This method is NOT RECOMMENDED and NOT SUPPORTED ANY MORE, only served as reference.
+
+<details>
+
+  Tools:
+  - Lockpick_RCM
+  - TegraExplorer
+  - [hactool](https://github.com/SciresM/hactool)
+  - [nx2elf](https://github.com/shuffle2/nx2elf)
+  - elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/)
+  - [hacpack](https://github.com/The-4n/hacPack)
+
+  1. Dump `prod.keys` with Lockpick_RCM
+  2. Dump HOS firmware with TegraExplorer
+  3. Configure and run `test.sh` in `/Source/Atmosphere/stratosphere/loader/source/oc/` to generate patched pcv & ptm
+  4. Replace nca in `SYSTEM:/Contents/registered/` with TegraExplorer
+  5. `ValidateAcidSignature()` should be stubbed to allow unsigned sysmodules to load (a.k.a. `loader_patch`)
+
+</details>
+
+
 
 ## Acknowledgement
 
