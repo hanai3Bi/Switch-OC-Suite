@@ -144,19 +144,11 @@ This project will not be actively maintained or regularly updated along with Atm
    - Fusee will load any kips in `/atmosphere/kips/` automatically.
 
 
+### Patching sysmodules manually
 
-## Build
+This method is only served as reference.
 
-Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
-
-If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
-
-Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
-
-
-### [DEPRECATED] Patching sysmodules manually
-
-This method is NOT RECOMMENDED and NOT SUPPORTED ANY MORE, only served as reference.
+Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (usually in `x.0.0`).
 
 <details>
 
@@ -175,6 +167,18 @@ This method is NOT RECOMMENDED and NOT SUPPORTED ANY MORE, only served as refere
   5. `ValidateAcidSignature()` should be stubbed to allow unsigned sysmodules to load (a.k.a. `loader_patch`)
 
 </details>
+
+
+
+## Build
+
+### Loader KIP
+
+Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
+
+If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
+
+Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
 
 
 

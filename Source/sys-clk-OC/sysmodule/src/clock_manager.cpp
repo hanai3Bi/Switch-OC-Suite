@@ -163,22 +163,22 @@ uint32_t ClockManager::GetHz(SysClkModule module)
 
             return this->oc->maxMEMFreq;
         }
+    }
 
-        /* Handle Handheld Emulator-Mode limit */
-        if (this->context->realProfile == SysClkProfile_Handheld)
+    /* Handle Handheld Emulator-Mode limit */
+    if (this->context->realProfile == SysClkProfile_Handheld)
+    {
+        switch (module)
         {
-            switch (module)
-            {
-                case SysClkModule_CPU:
-                    this->oc->handheldEmulatorMode = (hz > SYSCLK_CPU_HANDHELD_MAX_HZ);
-                    break;
-                case SysClkModule_GPU:
-                    if (this->oc->handheldEmulatorMode)
-                        hz = std::min(hz, SYSCLK_GPU_HANDHELD_EMULATOR_HZ);
-                    break;
-                default:
-                    break;
-            }
+            case SysClkModule_CPU:
+                this->oc->handheldEmulatorMode = (hz > SYSCLK_CPU_HANDHELD_MAX_HZ);
+                break;
+            case SysClkModule_GPU:
+                if (this->oc->handheldEmulatorMode)
+                    hz = std::min(hz, SYSCLK_GPU_HANDHELD_EMULATOR_HZ);
+                break;
+            default:
+                break;
         }
     }
 
