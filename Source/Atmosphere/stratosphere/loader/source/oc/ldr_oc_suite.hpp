@@ -14,9 +14,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "mtc_timing_table.hpp"
 
 #define CUST_REV 2
-#include "mtc_timing_table.hpp"
+
+#ifdef ATMOSPHERE_IS_STRATOSPHERE
+#include <vapours/results/results_common.hpp>
+#define LOGGING(fmt, ...) ((void)0)
+#endif
+
+#define CRASH() { AMS_ABORT(); __builtin_unreachable(); }
+
+namespace ams::ldr {
+    R_DEFINE_ERROR_RESULT(OutOfRange,               1000);
+    R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,      1001);
+    R_DEFINE_ERROR_RESULT(InvalidMtcMagic,          1002);
+    R_DEFINE_ERROR_RESULT(InvalidMtcTable,          1003);
+    R_DEFINE_ERROR_RESULT(InvalidDvbTable,          1004);
+    R_DEFINE_ERROR_RESULT(InvalidCpuClockVddEntry,  1005);
+    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,           1006);
+    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,        1007);
+    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1008);
+    R_DEFINE_ERROR_RESULT(InvalidGpuMaxClkPattern,  1009);
+    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1010);
+}
 
 namespace ams::ldr::oc {
     enum MtcConfig {
@@ -26,7 +47,7 @@ namespace ams::ldr::oc {
         ENTIRE_TABLE_MARIKO  = 3,
     };
 
-    typedef struct {
+    typedef struct CustomizeTable {
         u8  cust[4] = {'C', 'U', 'S', 'T'};
         u16 custRev = CUST_REV;
         u16 mtcConf = AUTO_ADJ_MARIKO_SAFE;
@@ -47,16 +68,8 @@ namespace ams::ldr::oc {
 
     inline void PatchOffset(u32* offset, u32 value) { *(offset) = value; }
 
-    inline Result ResultFailure() { return -1; }
-
-    #ifdef ATMOSPHERE_IS_STRATOSPHERE
-    #define LOGGING(fmt, ...) ((void)0)
-    #endif
-
-    #define CRASH() { AMS_ABORT(); __builtin_unreachable(); }
-
     namespace pcv {
-        typedef struct {
+        typedef struct cvb_coefficients {
             s32 c0 = 0;
             s32 c1 = 0;
             s32 c2 = 0;
@@ -65,24 +78,24 @@ namespace ams::ldr::oc {
             s32 c5 = 0;
         } cvb_coefficients;
 
-        typedef struct {
+        typedef struct cpu_freq_cvb_table_t {
             u64 freq;
             cvb_coefficients cvb_dfll_param;
             cvb_coefficients cvb_pll_param;  // only c0 is reserved
         } cpu_freq_cvb_table_t;
 
-        typedef struct {
+        typedef struct gpu_cvb_pll_table_t {
             u64 freq;
             cvb_coefficients cvb_dfll_param; // empty, dfll clock source not selected
             cvb_coefficients cvb_pll_param;
         } gpu_cvb_pll_table_t;
 
-        typedef struct {
+        typedef struct emc_dvb_dvfs_table_t {
             u64 freq;
             s32 volt[4] = {0};
         } emc_dvb_dvfs_table_t;
 
-        typedef struct {
+        typedef struct clk_pll_param {
             u32 max_0;
             u32 unk[5];
             u32 max_1;

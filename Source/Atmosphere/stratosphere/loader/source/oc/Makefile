@@ -1,4 +1,4 @@
-export CC := g++-11
+export CC := g++
 
 all: test
 

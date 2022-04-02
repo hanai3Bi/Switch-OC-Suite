@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 
 namespace ams::ldr::oc {
     namespace pcv {

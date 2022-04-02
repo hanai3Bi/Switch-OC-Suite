@@ -11,12 +11,17 @@ typedef int32_t  s32;
 typedef uint64_t u64;
 typedef int      Result;
 
-#define R_SUCCEEDED(arg)  (arg == ResultSuccess())
-#define R_FAILED(arg)     (!R_SUCCEEDED(arg))
-#define LOGGING(fmt, ...) { printf(fmt "\n\tin %s\n", ##__VA_ARGS__, __PRETTY_FUNCTION__); }
-#define AMS_ABORT()       { fprintf(stderr, "Failed in %s!\n", __PRETTY_FUNCTION__); exit(-1); }
+#define R_SUCCEEDED(arg)   (arg == 0)
+#define R_FAILED(arg)      (arg != 0)
+#define LOGGING(fmt, ...)  { printf(fmt "\n\tin %s\n", ##__VA_ARGS__, __PRETTY_FUNCTION__); }
+#define AMS_ABORT()        { fprintf(stderr, "Failed in %s!\n", __PRETTY_FUNCTION__); exit(-1); }
+#define R_SUCCEED()        { return 0; }
+#define R_THROW(err)       { return err; }
+#define R_TRY(expr)        { Result _rc = (expr); if (R_FAILED(_rc)) { return _rc; } }
+#define R_UNLESS(expr, rc) { if (!(expr)) { return rc; } }
 
-inline Result ResultSuccess() { return 0; }
+#define R_DEFINE_ERROR_RESULT(name, rc)        \
+    inline Result Result##name() { return rc; }
 
 #include "ldr_oc_suite.hpp"
 

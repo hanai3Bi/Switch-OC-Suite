@@ -146,9 +146,9 @@ This project will not be actively maintained or regularly updated along with Atm
 
 ### Patching sysmodules manually
 
-This method is only served as reference.
+This method is only served as reference as it could damage your MMC file system if not handled properly.
 
-Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (usually in `x.0.0`).
+Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (normally in `x.0.0`).
 
 <details>
 
@@ -162,7 +162,7 @@ Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (
 
   1. Dump `prod.keys` with Lockpick_RCM
   2. Dump HOS firmware with TegraExplorer
-  3. Configure and run `test.sh` in `/Source/Atmosphere/stratosphere/loader/source/oc/` to generate patched pcv & ptm
+  3. Configure and run `test_patch.sh` to generate patched pcv & ptm sysmodules in nca
   4. Replace nca in `SYSTEM:/Contents/registered/` with TegraExplorer
   5. `ValidateAcidSignature()` should be stubbed to allow unsigned sysmodules to load (a.k.a. `loader_patch`)
 
