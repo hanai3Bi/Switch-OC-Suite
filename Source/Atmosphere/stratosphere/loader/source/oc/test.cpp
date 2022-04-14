@@ -45,8 +45,16 @@ void* loadExec(const char* file_loc, size_t* out_size) {
         exit(-1);
     }
 
-    fseek(fp, 0, SEEK_END);
-    size_t size = ftell(fp);
+    if (fseek(fp, 0, SEEK_END) < 0) {
+        fprintf(stderr, "fseek error\n");
+        exit(-1);
+    }
+
+    long size = ftell(fp);
+    if (size == -1L) {
+        fprintf(stderr, "\"%s\" is a directory", file_loc);
+        exit(-1);
+    }
 
     fseek(fp, 0, SEEK_SET);
     void* buf = malloc(size);
@@ -55,7 +63,7 @@ void* loadExec(const char* file_loc, size_t* out_size) {
     fclose(fp);
 
     if (size < 8192) {
-        fprintf(stderr, "File is too small to process: \"%s\" (%lu B)\n", file_loc, size);
+        fprintf(stderr, "File is too small to process: \"%s\" (%ld B)\n", file_loc, size);
         exit(-1);
     }
 

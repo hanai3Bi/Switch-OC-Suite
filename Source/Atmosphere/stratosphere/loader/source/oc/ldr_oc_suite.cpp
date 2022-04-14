@@ -909,7 +909,17 @@ namespace ams::ldr::oc {
                     cnt[MEM_PLL_CLK],
                     cnt[GPU_MAX_CLOCK]);
 
-            if (cnt[CPU_CLOCK_VDD] > 1  ||
+            if (
+                #ifndef ATMOSPHERE_IS_STRATOSPHERE
+                !cnt[CPU_CLOCK_VDD] ||
+                !cnt[CPU_TABLE]     ||
+                !cnt[GPU_TABLE]     ||
+                !cnt[CPU_MAX_VOLT]  ||
+                !cnt[GPU_PLL_CLK]   ||
+                !cnt[MEM_PLL_CLK]   ||
+                !cnt[GPU_MAX_CLOCK] ||
+                #endif
+                cnt[CPU_CLOCK_VDD] > 1  ||
                 cnt[CPU_TABLE]     > 1  ||
                 cnt[GPU_TABLE]     > 1  ||
                 cnt[CPU_MAX_VOLT]  > 13 ||
@@ -1082,7 +1092,15 @@ namespace ams::ldr::oc {
                     cnt[MEM_VOLT],
                     cnt[MEM_PLL_CLK]);
 
-            if (cnt[CPU_CLOCK]    > 1 ||
+            if (
+                #ifndef ATMOSPHERE_IS_STRATOSPHERE
+                !cnt[CPU_CLOCK]    ||
+                !cnt[CPU_MAX_VOLT] ||
+                !cnt[MEM_CLOCK]    ||
+                !cnt[MEM_VOLT]     ||
+                !cnt[MEM_PLL_CLK]  ||
+                #endif
+                cnt[CPU_CLOCK]    > 1 ||
                 cnt[MEM_VOLT]     > 2 ||
                 cnt[MEM_PLL_CLK]  > 2)
             {

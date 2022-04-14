@@ -244,16 +244,7 @@ void ClockManager::WaitForNextTick()
         uint64_t freeIdleTick = 19'200 * tickWaitTimeMs;
         uint8_t  freePerc = systemCoreIdleTick / (freeIdleTick / 100);
 
-        uint8_t systemCoreBoostFreeThreshold = 5;
-        switch (this->context->realProfile)
-        {
-            case SysClkProfile_HandheldChargingOfficial:
-            case SysClkProfile_Docked:
-                systemCoreBoostFreeThreshold = 10;
-                break;
-            default:
-                break;
-        }
+        constexpr uint8_t systemCoreBoostFreeThreshold = 5;
 
         bool systemCoreBoostCPUPrevState = this->oc->systemCoreBoostCPU;
         this->oc->systemCoreBoostCPU = (freePerc <= systemCoreBoostFreeThreshold);
@@ -416,7 +407,8 @@ bool ClockManager::RefreshContext()
     }
 
     // restore clocks to stock values on app or profile change
-    if(hasChanged)
+    // and let ptm module handle boost clocks rather than resetting
+    if (hasChanged && !IsCpuBoostMode())
         Clocks::ResetToStock();
 
     /* Check ReverseNX-RT and adjust nominal profile when context changes */

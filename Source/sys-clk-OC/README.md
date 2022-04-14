@@ -180,7 +180,7 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 
 | Key                     | Desc                                                                          | Default |
 |:-----------------------:|-------------------------------------------------------------------------------|:-------:|
-|**auto_cpu_boost**       | Auto-boost CPU when system Core #3 utilization is high                        | ON      |
+|**auto_cpu_boost**       | Auto-boost CPU when system Core #3 utilization ≥ 95%             | ON      |
 |**sync_reversenx_mode**  | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON      |
 |**temp_log_interval_ms** | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms    |
 |**csv_write_interval_ms**| Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms    |
