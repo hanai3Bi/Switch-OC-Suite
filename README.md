@@ -6,6 +6,8 @@ Overclocking suite for Nintendo Switch™ Horizon OS (HOS) running on Atmosphere
 
 This project will not be actively maintained or regularly updated along with Atmosphere CFW.
 
+For users in China mainland facing connection or downloading issues on GitHub, go to [Gitee mirror](https://gitee.com/kazushi/Switch-OC-Suite/).
+
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
 
@@ -176,9 +178,9 @@ Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (
 
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
 
-If you are to install nro forwarders, remove `R_TRY(ValidateAcidSignature(std::addressof(g_original_meta_cache.meta)));` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
+If you are to install nro forwarders, stub `ValidateAcidSignature()` with `R_SUCCEED();` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
 
-Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/loader.kip --uncompress=Atmosphere/stratosphere/loader/loader.kip`
+Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
 
 
 
