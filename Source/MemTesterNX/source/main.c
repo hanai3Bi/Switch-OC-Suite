@@ -124,7 +124,7 @@ int testJobId[4] = {0};
 int testWorkerReport[4] = {0};
 size_t bufsize[4], wantbytes[4];
 void volatile *aligned[4];
-Thread threads[4];
+Thread threads[5];
 struct test* test_select = tests;
 
 void testWorker(int div)
@@ -158,7 +158,8 @@ void testWorker(int div)
             while (testJobId[div] != currentJobId)
                 svcSleepThread(10000000ULL);
 
-            if (!test_select[currentJobId].fp(aligned[div], ((size_t)aligned[div] + bufsize[div]/2), bufsize[div]/sizeof(ul)/2))
+            int test_rc = test_select[currentJobId].fp(aligned[div], ((size_t)aligned[div] + bufsize[div]/2), bufsize[div]/sizeof(ul)/2);
+            if (!test_rc)
             {
                 testWorkerReport[div] = 1;
                 currentJobId++;
@@ -183,6 +184,35 @@ void* workers[] = {
     testWorker2,
     testWorker3,
 };
+
+void LblUpdate()
+{
+    smInitialize();
+    lblInitialize();
+    LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
+    lblGetBacklightSwitchStatus(&lblstatus);
+    if (lblstatus) {
+        lblSwitchBacklightOff(0);
+    } else {
+        lblSwitchBacklightOn(0);
+    }
+    lblExit();
+    smExit();
+}
+
+void keyListener()
+{
+    while (true)
+    {
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
+        if (kDown & HidNpadButton_Minus)
+        {
+            LblUpdate();
+        }
+        svcSleepThread(10000000ULL);
+    }
+}
 
 // Main program entrypoint
 int main(int argc, char* argv[])
@@ -312,6 +342,18 @@ int main(int argc, char* argv[])
         {
             totalmem -= 0x1000;
         }
+    }
+
+    // keyListener
+    {
+        const int kl = testThreads;
+        Result rc = threadCreate(&threads[kl], keyListener, NULL, NULL, 0x1000, 0x20, -2);
+        if (R_FAILED(rc))
+        {
+            printf("Fatal: threadCreate[%d] failed: 0x%X\n", div, rc);
+            consoleUpdate(NULL);
+        }
+        threadStart(&threads[kl]);
     }
 
     printf("\nTotal RAM available: %lldMB\n\n", totalmem >> memshift);

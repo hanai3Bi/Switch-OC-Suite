@@ -26,13 +26,6 @@ MiscGui::~MiscGui()
     delete this->i2cInfo;
 }
 
-void MiscGui::preDraw(tsl::gfx::Renderer* render)
-{
-    BaseMenuGui::preDraw(render);
-
-    render->drawString(this->infoOutput, false, 40, 440, SMALL_TEXT_SIZE, DESC_COLOR);
-}
-
 tsl::elm::ToggleListItem* MiscGui::addConfigToggle(SysClkConfigValue configVal, std::string labelName) {
     tsl::elm::ToggleListItem* toggle = new tsl::elm::ToggleListItem(labelName, this->configList->values[configVal]);
     toggle->setStateChangedListener([this, configVal](bool state) {
@@ -88,6 +81,17 @@ void MiscGui::listUI()
         }
     });
     this->listElement->addItem(this->fastChargingToggle);
+
+    // Backlight
+    this->backlightToggle = new tsl::elm::ToggleListItem("Screen Backlight", false);
+    backlightToggle->setStateChangedListener([this](bool state) {
+        LblUpdate(true);
+    });
+    this->listElement->addItem(this->backlightToggle);
+
+    this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+        renderer->drawString(this->infoOutput, false, x, y, SMALL_TEXT_SIZE, DESC_COLOR);
+    }), SMALL_TEXT_SIZE * 13);
 }
 
 void MiscGui::refresh() {
@@ -103,6 +107,8 @@ void MiscGui::refresh() {
     {
         frameCounter = 0;
         PsmUpdate();
+        LblUpdate();
+        this->backlightToggle->setState(lblstatus);
         I2cGetInfo(this->i2cInfo);
         PrintInfo(this->infoOutput, sizeof(this->infoOutput));
         this->chargingToggle->setState(this->PsmIsCharging());

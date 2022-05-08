@@ -18,7 +18,6 @@ class MiscGui : public BaseMenuGui
     public:
         MiscGui();
         ~MiscGui();
-        void preDraw(tsl::gfx::Renderer* render) override;
         void listUI() override;
         void refresh() override;
 
@@ -307,14 +306,32 @@ class MiscGui : public BaseMenuGui
             return PsmIsFastCharging() == enable;
         }
 
+        void LblUpdate(bool shouldSwitch = false)
+        {
+            smInitialize();
+            lblInitialize();
+            lblGetBacklightSwitchStatus(&lblstatus);
+            if (shouldSwitch)
+            {
+                if (lblstatus) {
+                    lblSwitchBacklightOff(0);
+                } else {
+                    lblSwitchBacklightOn(0);
+                }
+            }
+            lblExit();
+            smExit();
+        }
+
         tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue, std::string);
         void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
 
-        tsl::elm::ToggleListItem *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle;
+        tsl::elm::ToggleListItem *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle, *backlightToggle;
 
         SysClkConfigValueList* configList;
         ChargeInfo* chargeInfo;
         I2cInfo*    i2cInfo;
+        LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
         bool isEnoughPowerSupplied = false;
         char infoOutput[800] = "";
         int frameCounter = 60;
