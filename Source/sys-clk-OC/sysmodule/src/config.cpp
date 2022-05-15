@@ -483,10 +483,9 @@ bool Config::SetConfigValues(SysClkConfigValueList* configValues, bool immediate
     return true;
 }
 
-ReverseNXMode Config::GetReverseNXRTModeAndClear() {
+ReverseNXMode Config::GetReverseNXRTMode() {
     std::scoped_lock lock{this->reverseNXRTMutex};
     ReverseNXMode mode = this->reverseNXRTMode;
-    this->reverseNXRTMode = ReverseNX_GotValue;
     return mode;
 }
 

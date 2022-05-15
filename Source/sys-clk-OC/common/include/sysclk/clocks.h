@@ -67,7 +67,7 @@ typedef struct
 {
     bool systemCoreBoostCPU;
     bool gotBoostCPUFreq;
-    bool handheldEmulatorMode;
+    bool allowUnsafeFreq;
     ReverseNXMode reverseNXMode;
     uint32_t maxMEMFreq;
     uint32_t boostCPUFreq;
@@ -81,8 +81,7 @@ typedef struct
     };
 } SysClkTitleProfileList;
 
-#define SYSCLK_CPU_HANDHELD_MAX_HZ      1963500000U
-#define SYSCLK_GPU_HANDHELD_EMULATOR_HZ 460800000U
+#define SYSCLK_CPU_SAFE_MAX_HZ          1963500000U
 #define SYSCLK_GPU_HANDHELD_MAX_HZ      921600000U
 #define SYSCLK_GPU_CHARGING_USB_MAX_HZ  1267200000U
 

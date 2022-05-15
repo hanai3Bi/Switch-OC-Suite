@@ -47,7 +47,7 @@ class Config
     const char* GetConfigValueName(SysClkConfigValue val, bool pretty);
     void GetConfigValues(SysClkConfigValueList* out_configValues);
     bool SetConfigValues(SysClkConfigValueList* configValues, bool immediate);
-    ReverseNXMode GetReverseNXRTModeAndClear();
+    ReverseNXMode GetReverseNXRTMode();
     void SetReverseNXRTMode(ReverseNXMode);
   protected:
     void Load();

@@ -60,7 +60,7 @@ ClockManager::ClockManager()
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
     this->oc->gotBoostCPUFreq = false;
-    this->oc->handheldEmulatorMode = false;
+    this->oc->allowUnsafeFreq = false;
     this->oc->reverseNXMode = ReverseNX_NotFound;
     this->oc->maxMEMFreq = 0;
     this->oc->boostCPUFreq = 1785'000'000;
@@ -148,7 +148,7 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     if (hz)
     {
         /* Considering realProfile frequency limit */
-        hz = Clocks::GetNearestHz(module, this->context->realProfile, hz);
+        hz = Clocks::GetNearestHz(module, this->context->realProfile, hz, this->oc->allowUnsafeFreq);
 
         if (module == SysClkModule_MEM && hz == MAX_MEM_CLOCK)
         {
@@ -162,23 +162,6 @@ uint32_t ClockManager::GetHz(SysClkModule module)
             }
 
             return this->oc->maxMEMFreq;
-        }
-    }
-
-    /* Handle Handheld Emulator-Mode limit */
-    if (this->context->realProfile == SysClkProfile_Handheld)
-    {
-        switch (module)
-        {
-            case SysClkModule_CPU:
-                this->oc->handheldEmulatorMode = (hz > SYSCLK_CPU_HANDHELD_MAX_HZ);
-                break;
-            case SysClkModule_GPU:
-                if (this->oc->handheldEmulatorMode)
-                    hz = std::min(hz, SYSCLK_GPU_HANDHELD_EMULATOR_HZ);
-                break;
-            default:
-                break;
         }
     }
 
@@ -199,7 +182,11 @@ void ClockManager::Tick()
 {
     std::scoped_lock lock{this->contextMutex};
 
-    if ((this->RefreshContext() || this->config->Refresh()) && this->context->enabled)
+    bool setClock = false;
+    setClock |= this->config->Refresh();
+    setClock |= this->RefreshContext();
+    setClock &= this->context->enabled;
+    if (setClock)
     {
         for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
         {
@@ -344,26 +331,64 @@ bool ClockManager::CheckReverseNXRT()
 {
     bool shouldAdjustProfile = false;
 
-    ReverseNXMode getMode = this->GetConfig()->GetReverseNXRTModeAndClear();
+    ReverseNXMode getMode = this->GetConfig()->GetReverseNXRTMode();
     if (getMode)
     {
-        this->oc->reverseNXMode = getMode;
+        this->GetConfig()->SetReverseNXRTMode(ReverseNX_GotValue);
+        this->oc->reverseNXMode = (getMode == ReverseNX_RTResetToDefault) ?
+                                    ReverseNX_SystemDefault : getMode;
         shouldAdjustProfile = true;
-    }
-
-    if (getMode == ReverseNX_RTResetToDefault)
-    {
-        this->oc->reverseNXMode = ReverseNX_SystemDefault;
     }
 
     return shouldAdjustProfile;
 }
 
+void ClockManager::ChargingHandler()
+{
+    smInitialize();
+    psmInitialize();
+    ChargeInfo* chargeInfoField = new ChargeInfo;
+    Service* session = psmGetServiceSession();
+    serviceDispatchOut(session, GetBatteryChargeInfoFields, *(chargeInfoField));
+
+    bool fastChargingEnabled = chargeInfoField->ChargeCurrentLimit > 768;
+    bool fastChargingConfig  = !(this->GetConfig()->GetConfigValue(SysClkConfigValue_DisableFastCharging));
+    if (fastChargingEnabled != fastChargingConfig)
+    {
+        serviceDispatch(session, fastChargingConfig ? EnableFastBatteryCharging : DisableFastBatteryCharging);
+    }
+
+    // bool isChargerConnected = (chargeInfoField->ChargerType != ChargerType_None);
+    // if (isChargerConnected)
+    // {
+    //     u32 chargeNow = 0;
+
+    //     if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow)))
+    //     {
+    //         bool isCharging = ((chargeInfoField->unk_x14 >> 8) & 1);
+    //         u32 chargeLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
+    //         if (isCharging && chargeLimit < chargeNow) {
+    //             serviceDispatch(session, DisableBatteryCharging);
+    //         } else if (!isCharging && chargeNow < 100 && chargeLimit > chargeNow) {
+    //             serviceDispatch(session, EnableBatteryCharging);
+    //         }
+    //     }
+    // }
+
+    delete chargeInfoField;
+    psmExit();
+    smExit();
+}
+
 bool ClockManager::RefreshContext()
 {
+    ChargingHandler();
+
     bool hasChanged = false;
-    bool enabled = this->GetConfig()->Enabled();
     bool isReverseNXSyncEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode);
+    this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+
+    bool enabled = this->GetConfig()->Enabled();
     if(enabled != this->context->enabled)
     {
         this->context->enabled = enabled;

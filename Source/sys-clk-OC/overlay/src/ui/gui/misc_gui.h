@@ -13,6 +13,23 @@
 #include "base_menu_gui.h"
 #include <inttypes.h>
 
+class MultiStepTrackBar : public tsl::elm::StepTrackBar {
+public:
+    MultiStepTrackBar(const char icon[3], size_t numSteps)
+        : tsl::elm::StepTrackBar(icon, numSteps) { }
+
+    virtual ~MultiStepTrackBar() {}
+
+    virtual inline u8 getProgress() override {
+        return this->m_value / (100.0F / (this->m_numSteps - 1));
+    }
+
+    virtual void setProgress(u8 value) override {
+        value = std::min(value, u8(this->m_numSteps - 1));
+        this->m_value = value * (100.0F / (this->m_numSteps - 1));
+    }
+};
+
 class MiscGui : public BaseMenuGui
 {
     public:
@@ -147,11 +164,6 @@ class MiscGui : public BaseMenuGui
         bool PsmIsCharging()
         {
             return PsmIsChargerConnected() && ((this->chargeInfo->unk_x14 >> 8) & 1);
-        }
-
-        bool PsmIsFastCharging()
-        {
-            return this->chargeInfo->ChargeCurrentLimit > 768;
         }
 
         bool PsmIsEnoughPowerSupplied()
@@ -289,21 +301,17 @@ class MiscGui : public BaseMenuGui
             );
         }
 
-        bool PsmChargingToggler(bool enable)
+        void PsmChargingToggler(bool* enable)
         {
             if (!PsmIsChargerConnected())
-                return false;
+            {
+                *enable = false;
+                return;
+            }
 
-            PsmUpdate(enable ? 2 : 3);
+            PsmUpdate(*enable ? 2 : 3);
 
-            return PsmIsCharging() == enable;
-        }
-
-        bool PsmFastChargingToggler(bool enable)
-        {
-            PsmUpdate(enable ? 10 : 11);
-
-            return PsmIsFastCharging() == enable;
+            *enable = (PsmIsCharging() == *enable);
         }
 
         void LblUpdate(bool shouldSwitch = false)
@@ -325,8 +333,12 @@ class MiscGui : public BaseMenuGui
 
         tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue, std::string);
         void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
+        void updateLiftChargingLimitToggle();
 
-        tsl::elm::ToggleListItem *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle, *backlightToggle;
+        tsl::elm::ToggleListItem *unsafeFreqToggle, *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle, *backlightToggle;
+        // tsl::elm::CategoryHeader *chargingLimitHeader;
+        // MultiStepTrackBar *chargingLimitBar;
+        // char chargingLimitBarDesc[50] = "";
 
         SysClkConfigValueList* configList;
         ChargeInfo* chargeInfo;

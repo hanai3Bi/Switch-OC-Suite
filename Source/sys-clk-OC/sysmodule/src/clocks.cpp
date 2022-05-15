@@ -282,10 +282,10 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
     return hz;
 }
 
-std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz)
+std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz, bool allowUnsafe)
 {
     std::uint32_t hz = GetNearestHz(module, inHz);
-    std::uint32_t maxHz = GetMaxAllowedHz(module, profile);
+    std::uint32_t maxHz = GetMaxAllowedHz(module, profile, allowUnsafe);
 
     if(maxHz != 0)
     {
@@ -295,11 +295,15 @@ std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, s
     return hz;
 }
 
-std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile)
+std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile, bool allowUnsafe)
 {
     switch (module) {
+        case SysClkModule_CPU:
+            if (!allowUnsafe)
+                return SYSCLK_CPU_SAFE_MAX_HZ;
+            break;
         case SysClkModule_GPU:
-            if (profile == SysClkProfile_Handheld)
+            if (profile == SysClkProfile_Handheld || !allowUnsafe)
                 return SYSCLK_GPU_HANDHELD_MAX_HZ;
             if (profile == SysClkProfile_HandheldChargingUSB)
                 return SYSCLK_GPU_CHARGING_USB_MAX_HZ;

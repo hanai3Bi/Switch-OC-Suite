@@ -65,10 +65,11 @@ For users in China mainland facing connection or downloading issues on GitHub, g
 
 - **CPU/GPU Overclock**
 
-  - Safe: CPU/GPU @ 1785/921 MHz (HOS maximum)
+  - Safe: CPU/GPU @ 1963/921 MHz
     - It has been proved safe without charger (not reaching battery power draw threshold)
 
-  - Unsafe: CPU/GPU @ 2397/1305 MHz
+  - Unsafe: CPU/GPU up to 2397/1305 MHz
+    - **Disabled by default**, toggle "Allow Unsafe Frequencies" on in overlay or add `allow_unsafe_freq=1` to `config.ini`
     <details>
 
     - Without chargers, CPU/GPU would be capped @ 1963/921 MHz or -/460 MHz (Emulator mode).
