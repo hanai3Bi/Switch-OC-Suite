@@ -6,8 +6,6 @@ Overclocking suite for Nintendo Switch™ Horizon OS (HOS) running on Atmosphere
 
 This project will not be actively maintained or regularly updated along with Atmosphere CFW.
 
-For users in China mainland facing connection or downloading issues on GitHub, go to [Gitee mirror](https://gitee.com/kazushi/Switch-OC-Suite/).
-
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
 
