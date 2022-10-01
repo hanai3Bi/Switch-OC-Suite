@@ -76,7 +76,7 @@ typedef struct
 typedef struct
 {
     union {
-        uint32_t mhz[SysClkProfile_EnumMax * SysClkModule_EnumMax];
+        uint32_t mhz[(size_t)SysClkProfile_EnumMax * (size_t)SysClkModule_EnumMax];
         uint32_t mhzMap[SysClkProfile_EnumMax][SysClkModule_EnumMax];
     };
 } SysClkTitleProfileList;

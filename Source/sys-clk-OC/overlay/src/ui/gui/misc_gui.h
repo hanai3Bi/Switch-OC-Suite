@@ -13,21 +13,12 @@
 #include "base_menu_gui.h"
 #include <inttypes.h>
 
-class MultiStepTrackBar : public tsl::elm::StepTrackBar {
+class StepTrackBarIcon : public tsl::elm::StepTrackBar {
 public:
-    MultiStepTrackBar(const char icon[3], size_t numSteps)
-        : tsl::elm::StepTrackBar(icon, numSteps) { }
-
-    virtual ~MultiStepTrackBar() {}
-
-    virtual inline u8 getProgress() override {
-        return this->m_value / (100.0F / (this->m_numSteps - 1));
-    }
-
-    virtual void setProgress(u8 value) override {
-        value = std::min(value, u8(this->m_numSteps - 1));
-        this->m_value = value * (100.0F / (this->m_numSteps - 1));
-    }
+    StepTrackBarIcon(const char icon[3], size_t numSteps):
+        tsl::elm::StepTrackBar(icon, numSteps) { }
+    const char* getIcon() { return this->m_icon; }
+    void setIcon(const char* icon) { this->m_icon = icon; }
 };
 
 class MiscGui : public BaseMenuGui
@@ -258,7 +249,7 @@ class MiscGui : public BaseMenuGui
 
             char chargeVoltLimit[20] = "";
             if (chargeInfo->ChargeVoltageLimit)
-                snprintf(chargeVoltLimit, sizeof(chargeVoltLimit), ", %u mV", chargeInfo->ChargeVoltageLimit);
+                snprintf(chargeVoltLimit, sizeof(chargeVoltLimit), ", %umV", chargeInfo->ChargeVoltageLimit);
 
             char chargWattsInfo[50] = "";
             if (chargeInfo->ChargerType)
@@ -266,24 +257,24 @@ class MiscGui : public BaseMenuGui
 
             char batCurInfo[30] = "";
             if (std::abs(i2cInfo->batCurrent) < 10)
-                snprintf(batCurInfo, sizeof(batCurInfo), "0 mA");
+                snprintf(batCurInfo, sizeof(batCurInfo), "0mA");
             else
-                snprintf(batCurInfo, sizeof(batCurInfo), "%+.2f mA (%+.2f W)",
+                snprintf(batCurInfo, sizeof(batCurInfo), "%+.2fmA (%+.2fW)",
                     i2cInfo->batCurrent, i2cInfo->batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
 
             snprintf(out, outsize,
                 "%s"
                 "\nCharger:             %s%s"
                 "\nBattery:               %.3fV %.2f\u00B0C"
-                "\nCurrent Limit:     %u mA IN, %u mA OUT"
-                "\nCharging Limit:  %u mA%s"
+                "\nCurrent Limit:     +%umA, -%umA"
+                "\nCharging Limit:  +%umA%s"
                 "\nRaw Charge:     %.2f%%"
                 "\nBattery Age:      %.2f%%"
                 "\nPower Role:       %s"
                 "\nCurrent Flow:    %s\n"
-                "\nCPU    Volt:       %d mV"
-                "\nGPU    Volt:       %d mV"
-                "\nDRAM Volt:       %d mV"
+                "\nCPU    Volt:       %dmV"
+                "\nGPU    Volt:       %dmV"
+                "\nDRAM Volt:       %dmV"
                 ,
                 PsmIsEnoughPowerSupplied() ? "Enough Power Supplied" : "",
                 ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargWattsInfo,
@@ -331,14 +322,40 @@ class MiscGui : public BaseMenuGui
             smExit();
         }
 
+        typedef enum {
+            Discharging,
+            NotCharging,
+            SlowCharging,
+            FastCharging
+        } BatteryState;
+
+        BatteryState getBatteryState() {
+            if (!PsmIsChargerConnected())
+                return Discharging;
+
+            if (!PsmIsCharging())
+                return NotCharging;
+
+            return chargeInfo->ChargeCurrentLimit > 768 ? FastCharging : SlowCharging;
+        }
+
+        const char* getBatteryStateIcon() {
+            switch (getBatteryState()) {
+                case Discharging:   return "\u25c0"; // ◀
+                case NotCharging:   return "\u2016"; // ‖
+                case SlowCharging:  return "\u25b6"; // ▶
+                case FastCharging:  return "\u25b6\u25b6"; // ▶▶
+                default:            return "?";
+            }
+        }
+
         tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue, std::string);
         void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
         void updateLiftChargingLimitToggle();
 
         tsl::elm::ToggleListItem *unsafeFreqToggle, *cpuBoostToggle, *syncModeToggle, *chargingToggle, *fastChargingToggle, *backlightToggle;
-        // tsl::elm::CategoryHeader *chargingLimitHeader;
-        // MultiStepTrackBar *chargingLimitBar;
-        // char chargingLimitBarDesc[50] = "";
+        tsl::elm::CategoryHeader *chargingLimitHeader;
+        StepTrackBarIcon *chargingLimitBar;
 
         SysClkConfigValueList* configList;
         ChargeInfo* chargeInfo;
@@ -346,5 +363,6 @@ class MiscGui : public BaseMenuGui
         LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
         bool isEnoughPowerSupplied = false;
         char infoOutput[800] = "";
-        int frameCounter = 60;
+        char chargingLimitBarDesc[30] = "";
+        u8 frameCounter = 60;
 };

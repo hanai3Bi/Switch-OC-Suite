@@ -103,9 +103,8 @@ This project will not be actively maintained or regularly updated along with Atm
 
     - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
 
-    - View charger & battery info, toggle charging/fast-charging(2A) in overlay
-      - Extend battery life expectancy by maintaining battery charge at 40% - 60% and disabling fast charging if possible.
-      - Known issue: Fast charging toggle will be reset in-game.
+    - View charger & battery info, toggle fast-charging(2A) or set charge limit (20% - 100%) in overlay
+      - Note: Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
 
 

@@ -358,22 +358,22 @@ void ClockManager::ChargingHandler()
         serviceDispatch(session, fastChargingConfig ? EnableFastBatteryCharging : DisableFastBatteryCharging);
     }
 
-    // bool isChargerConnected = (chargeInfoField->ChargerType != ChargerType_None);
-    // if (isChargerConnected)
-    // {
-    //     u32 chargeNow = 0;
-
-    //     if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow)))
-    //     {
-    //         bool isCharging = ((chargeInfoField->unk_x14 >> 8) & 1);
-    //         u32 chargeLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
-    //         if (isCharging && chargeLimit < chargeNow) {
-    //             serviceDispatch(session, DisableBatteryCharging);
-    //         } else if (!isCharging && chargeNow < 100 && chargeLimit > chargeNow) {
-    //             serviceDispatch(session, EnableBatteryCharging);
-    //         }
-    //     }
-    // }
+    u32 chargeLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
+    bool isChargerConnected = (chargeInfoField->ChargerType != ChargerType_None);
+    if (isChargerConnected)
+    {
+        u32 chargeNow = 0;
+        if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow)))
+        {
+            bool isCharging = ((chargeInfoField->unk_x14 >> 8) & 1);
+            if (isCharging && chargeLimit < chargeNow) {
+                serviceDispatch(session, DisableBatteryCharging);
+            }
+            if (!isCharging && chargeLimit > chargeNow) {
+                serviceDispatch(session, EnableBatteryCharging);
+            }
+        }
+    }
 
     delete chargeInfoField;
     psmExit();

@@ -178,12 +178,13 @@ handheld_gpu=153
 
 The `[values]` section allows you to alter timings in sys-clk, you should not need to edit any of these unless you know what you are doing. Possible values are:
 
-| Key                     | Desc                                                                          | Default |
-|:-----------------------:|-------------------------------------------------------------------------------|:-------:|
-|**allow_unsafe_freq**    | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF     |
-|**auto_cpu_boost**       | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | ON      |
-|**sync_reversenx_mode**  | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON      |
-|**disable_fast_charging**| Disable Fast Charging (2000mA -> 500 mA)                                      | OFF     |
-|**temp_log_interval_ms** | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms    |
-|**csv_write_interval_ms**| Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms    |
-|**poll_interval_ms**     | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms  |
+| Key                     | Desc                                                                          | Default   |
+|:-----------------------:|-------------------------------------------------------------------------------|:---------:|
+|**allow_unsafe_freq**    | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF       |
+|**auto_cpu_boost**       | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | ON        |
+|**sync_reversenx_mode**  | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON        |
+|**disable_fast_charging**| Disable Fast Charging (2000mA -> 500 mA)                                      | OFF       |
+|**charging_limit_perc**  | Charging Limit (20% - 100%)                                                   | 100%(OFF) |
+|**temp_log_interval_ms** | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms      |
+|**csv_write_interval_ms**| Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms      |
+|**poll_interval_ms**     | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms    |

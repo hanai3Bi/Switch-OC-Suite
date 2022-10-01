@@ -56,31 +56,33 @@ void MiscGui::listUI()
     this->syncModeToggle = addConfigToggle(SysClkConfigValue_SyncReverseNXMode, "Sync ReverseNX Mode");
     this->fastChargingToggle = addConfigToggle(SysClkConfigValue_DisableFastCharging, "Disable Fast Charging");
 
-    // this->chargingLimitHeader = new tsl::elm::CategoryHeader("");
-    // this->listElement->addItem(this->chargingLimitHeader);
-    // this->chargingLimitBar = new MultiStepTrackBar("", 100 - 20 + 1);
-    // this->chargingLimitBar->setProgress((this->configList->values[SysClkConfigValue_ChargingLimitPercentage] - 20.0F) * 100 / (100 - 20));
-    // this->chargingLimitBar->setValueChangedListener([this](u8 val) {
-    //     this->configList->values[SysClkConfigValue_ChargingLimitPercentage] = val + 20;
+    this->chargingLimitHeader = new tsl::elm::CategoryHeader("");
+    this->listElement->addItem(this->chargingLimitHeader);
+    this->chargingLimitBar = new StepTrackBarIcon("", 100 + 1);
+    this->chargingLimitBar->setProgress(this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
+    this->chargingLimitBar->setValueChangedListener([this](u8 val) {
+        if (val < 20) {
+            val = 20;
+            this->chargingLimitBar->setProgress(val);
+        }
+        this->configList->values[SysClkConfigValue_ChargingLimitPercentage] = val;
 
-    //     snprintf(chargingLimitBarDesc, 50, "Battery Charging Limit: %lu%%", this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
-    //     this->chargingLimitHeader->setText(chargingLimitBarDesc);
-    //     Result rc = sysclkIpcSetConfigValues(this->configList);
-    //     if (R_FAILED(rc))
-    //         FatalGui::openWithResultCode("sysclkIpcSetConfigValues", rc);
+        snprintf(chargingLimitBarDesc, 30, "Battery Charging Limit: %lu%%", this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
+        this->chargingLimitHeader->setText(chargingLimitBarDesc);
+        this->chargingLimitBar->setIcon(getBatteryStateIcon());
 
-    //     this->lastContextUpdate = armGetSystemTick();
-    // });
-    // this->listElement->addItem(this->chargingLimitBar);
+        Result rc = sysclkIpcSetConfigValues(this->configList);
+        if (R_FAILED(rc))
+            FatalGui::openWithResultCode("sysclkIpcSetConfigValues", rc);
+
+        this->lastContextUpdate = armGetSystemTick();
+    });
+    this->listElement->addItem(this->chargingLimitBar);
+    this->listElement->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer* renderer, s32 x, s32 y, s32 w, s32 h) {
+      renderer->drawString("\uE016 Long-term use may render the battery gauge \ninaccurate!", false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
+    }), SMALL_TEXT_SIZE * 2 + 20);
 
     this->listElement->addItem(new tsl::elm::CategoryHeader("Temporary toggles"));
-
-    this->chargingToggle = new tsl::elm::ToggleListItem("Charging", false);
-    chargingToggle->setStateChangedListener([this](bool state) {
-        PsmChargingToggler(&state);
-        this->chargingToggle->setState(state);
-    });
-    this->listElement->addItem(this->chargingToggle);
 
     this->backlightToggle = new tsl::elm::ToggleListItem("Screen Backlight", false);
     backlightToggle->setStateChangedListener([this](bool state) {
@@ -90,8 +92,8 @@ void MiscGui::listUI()
 
     this->listElement->addItem(new tsl::elm::CategoryHeader("Battery & Charging Info"));
     this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
-        renderer->drawString(this->infoOutput, false, x, y, SMALL_TEXT_SIZE, DESC_COLOR);
-    }), SMALL_TEXT_SIZE * 13);
+        renderer->drawString(this->infoOutput, false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
+    }), SMALL_TEXT_SIZE * 13 + 20);
 }
 
 void MiscGui::refresh() {
@@ -106,15 +108,17 @@ void MiscGui::refresh() {
         updateConfigToggle(this->syncModeToggle, SysClkConfigValue_SyncReverseNXMode);
         updateConfigToggle(this->fastChargingToggle, SysClkConfigValue_DisableFastCharging);
 
-        // this->chargingLimitBar->setProgress(this->configList->values[SysClkConfigValue_ChargingLimitPercentage] - 20);
-        // snprintf(chargingLimitBarDesc, 50, "Battery Charging Limit: %u%%", u8(this->configList->values[SysClkConfigValue_ChargingLimitPercentage]));
-        // this->chargingLimitHeader->setText(chargingLimitBarDesc);
+        this->chargingLimitBar->setProgress(this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
+        snprintf(chargingLimitBarDesc, 30, "Battery Charging Limit: %lu%%", this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
+        this->chargingLimitHeader->setText(chargingLimitBarDesc);
 
         PsmUpdate();
+        this->chargingLimitBar->setIcon(getBatteryStateIcon());
+
         LblUpdate();
         this->backlightToggle->setState(lblstatus);
+
         I2cGetInfo(this->i2cInfo);
         PrintInfo(this->infoOutput, sizeof(this->infoOutput));
-        this->chargingToggle->setState(this->PsmIsCharging());
     }
 }
