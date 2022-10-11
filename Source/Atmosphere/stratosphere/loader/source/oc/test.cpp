@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
         void* mariko_buf = malloc(file_size);
         std::memcpy(mariko_buf, file_buffer, file_size);
 
-        printf("Patching %s (Mariko Only)...", ptm_opt);
+        printf("Patching %s (Mariko Only)...\n", ptm_opt);
         ams::ldr::oc::ptm::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
         if (save_patched) {
             char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-fw_dir="/Volumes/RAM/NX-14.0.0/"
-tmp_dir="/Volumes/RAM/"
-repack_out_dir="/Volumes/RAM/out/"
+fw_dir="/Volumes/RAMDISK/NX-15.0.0/"
+tmp_dir="/Volumes/RAMDISK/"
+repack_out_dir="/Volumes/RAMDISK/out/"
 oc_test_dir="$HOME/Source/Switch-OC-Suite/Source/Atmosphere/stratosphere/loader/source/oc"
 prodkeys="$HOME/.switch/prod.keys"
 hactool_exe="$HOME/Source/hactool/hactool"

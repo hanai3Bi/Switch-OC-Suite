@@ -90,10 +90,11 @@ void MiscGui::listUI()
     });
     this->listElement->addItem(this->backlightToggle);
 
-    this->listElement->addItem(new tsl::elm::CategoryHeader("Battery & Charging Info"));
+    this->listElement->addItem(new tsl::elm::CategoryHeader("Info"));
     this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
-        renderer->drawString(this->infoOutput, false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
-    }), SMALL_TEXT_SIZE * 13 + 20);
+        renderer->drawString(this->infoNames, false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString(this->infoVals, false, x + 120, y + 20, SMALL_TEXT_SIZE, VALUE_COLOR);
+    }), SMALL_TEXT_SIZE * 12 + 20);
 }
 
 void MiscGui::refresh() {
@@ -119,6 +120,6 @@ void MiscGui::refresh() {
         this->backlightToggle->setState(lblstatus);
 
         I2cGetInfo(this->i2cInfo);
-        PrintInfo(this->infoOutput, sizeof(this->infoOutput));
+        UpdateInfo(this->infoVals, sizeof(this->infoVals));
     }
 }

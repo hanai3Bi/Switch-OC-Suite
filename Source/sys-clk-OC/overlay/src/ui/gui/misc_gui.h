@@ -108,20 +108,6 @@ class MiscGui : public BaseMenuGui
             ChargeInfoFlags Flags;              //Unknown flags
         } ChargeInfo;
 
-        typedef enum
-        {
-            Max17050Reg_Current     = 0x0A,
-            Max17050Reg_AvgCurrent  = 0x0B,
-            Max17050Reg_Cycle       = 0x17,
-        } Max17050Reg;
-
-        typedef enum
-        {
-            Max77812Reg_CPUVolt     = 0x26,
-            Max77812Reg_GPUVolt     = 0x23,
-            Max77812Reg_DRAMVolt    = 0x25,
-        } Max77812Reg;
-
         typedef struct {
             float batCurrent;
             u32 cpuVolt  = 620;
@@ -141,7 +127,6 @@ class MiscGui : public BaseMenuGui
             }
 
             serviceDispatchOut(psmGetServiceSession(), 17, *(this->chargeInfo));
-            psmIsEnoughPowerSupplied(&(this->isEnoughPowerSupplied));
 
             psmExit();
             smExit();
@@ -157,12 +142,7 @@ class MiscGui : public BaseMenuGui
             return PsmIsChargerConnected() && ((this->chargeInfo->unk_x14 >> 8) & 1);
         }
 
-        bool PsmIsEnoughPowerSupplied()
-        {
-            return this->isEnoughPowerSupplied;
-        }
-
-        Result I2cReadRegHandler(u8 reg, I2cDevice dev, u16 *out)
+        Result I2cRead_OutU16(u8 reg, I2cDevice dev, u16 *out)
         {
             // ams::fatal::srv::StopSoundTask::StopSound()
             // I2C Bus Communication Reference: https://www.ti.com/lit/an/slva704/slva704.pdf
@@ -195,53 +175,83 @@ class MiscGui : public BaseMenuGui
             return 0;
         }
 
+        Result I2cRead_OutU8(u8 reg, I2cDevice dev, u8 *out)
+        {
+            struct { u8 reg; } __attribute__((packed)) cmd;
+            struct { u8 val; } __attribute__((packed)) rec;
+
+            I2cSession _session;
+
+            Result res = i2cOpenSession(&_session, dev);
+            if (res)
+                return res;
+
+            cmd.reg = reg;
+            res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+            if (res)
+            {
+                i2csessionClose(&_session);
+                return res;
+            }
+
+            res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+            if (res)
+            {
+                i2csessionClose(&_session);
+                return res;
+            }
+
+            *out = rec.val;
+            i2csessionClose(&_session);
+            return 0;
+        }
+
         void I2cGetInfo(I2cInfo* i2cInfo)
         {
             smInitialize();
             i2cInitialize();
-            u16 data = 0;
 
-            // Read max17050 furl gauge regs. Sense resistor and CGain are from Hekate, too lazy to query configuration from reg
+            // Max17050 fuel gauge regs. Sense resistor and CGain are from Hekate, too lazy to query configuration from reg
+            constexpr float SenseResistor       = 5.; // in uOhm
+            constexpr float CGain               = 1.99993;
+            constexpr u8 Max17050Reg_Current    = 0x0A;
+            // constexpr u8 Max17050Reg_AvgCurrent = 0x0B;
+            // constexpr u8 Max17050Reg_Cycle      = 0x17;
+            u16 tmp = 0;
+            if (R_SUCCEEDED(I2cRead_OutU16(Max17050Reg_Current, I2cDevice_Max17050, &tmp)))
+                i2cInfo->batCurrent = (s16)tmp * (1.5625 / (SenseResistor * CGain));
+
+            auto I2cRead_Max77812_M_VOUT = [this](u8 reg)
             {
-                constexpr float SenseResistor = 5.; // in uOhm
-                constexpr float CGain = 1.99993;
+                constexpr u32 MIN_MV    = 250;
+                constexpr u32 MV_STEP   = 5;
+                constexpr u8  RESET_VAL = 0x78;
 
-                if (R_SUCCEEDED(I2cReadRegHandler(Max17050Reg_Current, I2cDevice_Max17050, &data)))
-                    i2cInfo->batCurrent = (s16)data * (1.5625 / (SenseResistor * CGain));
-            }
+                u8 tmp = RESET_VAL;
+                // Retry 3 times if received RESET_VAL
+                for (int i = 0; i < 3; i++) {
+                    if (R_FAILED(I2cRead_OutU8(reg, I2cDevice_Max77812_2, &tmp)))
+                        return 0u;
+                    if (tmp != RESET_VAL)
+                        break;
+                    usleep(10);
+                }
 
-            // Read max77812 volt regs
-            {
-                auto ConvertToMVolt = [](u32 *out, u16 data)
-                {
-                    constexpr u32 MinMVolt  = 250;
-                    constexpr u32 StepMVolt = 5;
-                    constexpr u32 VoltMask  = 0xFF;
+                return tmp * MV_STEP + MIN_MV;
+            };
 
-                    u32 mvolt = (data & VoltMask) * StepMVolt + MinMVolt;
-
-                    // Ignore 850 mV as it is questionable
-                    if (mvolt == 850)
-                        return;
-
-                    *out = mvolt;
-                };
-
-                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_CPUVolt, I2cDevice_Max77812_2, &data)))
-                    ConvertToMVolt(&(i2cInfo->cpuVolt), data);
-
-                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_GPUVolt, I2cDevice_Max77812_2, &data)))
-                    ConvertToMVolt(&(i2cInfo->gpuVolt), data);
-
-                if (R_SUCCEEDED(I2cReadRegHandler(Max77812Reg_DRAMVolt, I2cDevice_Max77812_2, &data)))
-                    ConvertToMVolt(&(i2cInfo->dramVolt), data);
-            }
+            constexpr u8 Max77812Reg_CPUVolt  = 0x26;
+            constexpr u8 Max77812Reg_GPUVolt  = 0x23;
+            constexpr u8 Max77812Reg_DRAMVolt = 0x25;
+            i2cInfo->cpuVolt  = I2cRead_Max77812_M_VOUT(Max77812Reg_CPUVolt);
+            i2cInfo->gpuVolt  = I2cRead_Max77812_M_VOUT(Max77812Reg_GPUVolt);
+            i2cInfo->dramVolt = I2cRead_Max77812_M_VOUT(Max77812Reg_DRAMVolt);
 
             i2cExit();
             smExit();
         }
 
-        void PrintInfo(char* out, size_t outsize)
+        void UpdateInfo(char* out, size_t outsize)
         {
             float chargerVoltLimit = (float)chargeInfo->ChargerVoltageLimit / 1000;
             float chargerCurrLimit = (float)chargeInfo->ChargerCurrentLimit / 1000;
@@ -263,20 +273,18 @@ class MiscGui : public BaseMenuGui
                     i2cInfo->batCurrent, i2cInfo->batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
 
             snprintf(out, outsize,
-                "%s"
-                "\nCharger:             %s%s"
-                "\nBattery:               %.3fV %.2f\u00B0C"
-                "\nCurrent Limit:     +%umA, -%umA"
-                "\nCharging Limit:  +%umA%s"
-                "\nRaw Charge:     %.2f%%"
-                "\nBattery Age:      %.2f%%"
-                "\nPower Role:       %s"
-                "\nCurrent Flow:    %s\n"
-                "\nCPU    Volt:       %dmV"
-                "\nGPU    Volt:       %dmV"
-                "\nDRAM Volt:       %dmV"
+                "%s%s\n"
+                "%.3fV %.2f\u00B0C\n"
+                "+%umA, -%umA\n"
+                "+%umA%s\n"
+                "%.2f%%\n"
+                "%.2f%%\n"
+                "%s\n"
+                "%s\n\n"
+                "%dmV\n"
+                "%dmV\n"
+                "%dmV\n"
                 ,
-                PsmIsEnoughPowerSupplied() ? "Enough Power Supplied" : "",
                 ChargeInfoChargerTypeToStr(chargeInfo->ChargerType), chargWattsInfo,
                 (float)chargeInfo->VoltageAvg / 1000,
                 (float)chargeInfo->BatteryTemperature / 1000,
@@ -311,20 +319,14 @@ class MiscGui : public BaseMenuGui
             lblInitialize();
             lblGetBacklightSwitchStatus(&lblstatus);
             if (shouldSwitch)
-            {
-                if (lblstatus) {
-                    lblSwitchBacklightOff(0);
-                } else {
-                    lblSwitchBacklightOn(0);
-                }
-            }
+                lblstatus ? lblSwitchBacklightOff(0) : lblSwitchBacklightOn(0);
             lblExit();
             smExit();
         }
 
         typedef enum {
             Discharging,
-            NotCharging,
+            ChargingPaused,
             SlowCharging,
             FastCharging
         } BatteryState;
@@ -334,7 +336,7 @@ class MiscGui : public BaseMenuGui
                 return Discharging;
 
             if (!PsmIsCharging())
-                return NotCharging;
+                return ChargingPaused;
 
             return chargeInfo->ChargeCurrentLimit > 768 ? FastCharging : SlowCharging;
         }
@@ -342,7 +344,7 @@ class MiscGui : public BaseMenuGui
         const char* getBatteryStateIcon() {
             switch (getBatteryState()) {
                 case Discharging:   return "\u25c0"; // ◀
-                case NotCharging:   return "\u2016"; // ‖
+                case ChargingPaused:   return "| |";
                 case SlowCharging:  return "\u25b6"; // ▶
                 case FastCharging:  return "\u25b6\u25b6"; // ▶▶
                 default:            return "?";
@@ -361,8 +363,9 @@ class MiscGui : public BaseMenuGui
         ChargeInfo* chargeInfo;
         I2cInfo*    i2cInfo;
         LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
-        bool isEnoughPowerSupplied = false;
-        char infoOutput[800] = "";
+
+        const char* infoNames = "Charger:\nBattery:\nCurrent Limit:\nCharging Limit:\nRaw Charge:\nBattery Age:\nPower Role:\nCurrent Flow:\n\nCPU Volt:\nGPU Volt:\nDRAM Volt:";
+        char infoVals[300] = "";
         char chargingLimitBarDesc[30] = "";
         u8 frameCounter = 60;
 };

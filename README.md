@@ -2,7 +2,7 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Overclocking suite for Nintendo Switch™ Horizon OS (HOS) running on Atmosphere CFW.
+Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
 This project will not be actively maintained or regularly updated along with Atmosphere CFW.
 
