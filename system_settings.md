@@ -1,6 +1,6 @@
-## `system_settings.ini`
+# `system_settings.ini`
 
-### Cherry-pick from below and add them manually.
+## Cherry-pick from below and add them manually.
 
   - Fan Control Optimization (Mariko only)
     - `[tc]`
@@ -8,9 +8,8 @@
     - Replacing stock thermal paste and adding thermal pad on Wi-Fi/BT module(shielded, adjacent to antennas) is recommended.
     - Beware that Aula (OLED model) has worse cooling compared to all previous models.
 
-  - Disable background services, less heat and power consumption in standby mode
-    - `;Disable Background service`
-    - Don't add this if you **use Nintendo Online services**.
+  - Disable background services (For power saving in standby mode)
+    - Do NOT add this if online service is in use.
 
   - Game recording and SysDVR streaming @ 60fps with high video bitrate (7.5Mbps)
     - `[am.debug]`

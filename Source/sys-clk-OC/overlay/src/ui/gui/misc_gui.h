@@ -344,7 +344,7 @@ class MiscGui : public BaseMenuGui
         const char* getBatteryStateIcon() {
             switch (getBatteryState()) {
                 case Discharging:   return "\u25c0"; // ◀
-                case ChargingPaused:   return "| |";
+                case ChargingPaused:return "| |";
                 case SlowCharging:  return "\u25b6"; // ▶
                 case FastCharging:  return "\u25b6\u25b6"; // ▶▶
                 default:            return "?";

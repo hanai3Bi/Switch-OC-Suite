@@ -56,17 +56,17 @@ void MainGui::listUI()
     });
     this->listElement->addItem(globalOverrideItem);
 
-    tsl::elm::ListItem* globalPermanentOverrideItem = new tsl::elm::ListItem("Permanent overrides");
-    globalPermanentOverrideItem->setClickListener([this](u64 keys) {
+    tsl::elm::ListItem* globalProfileItem = new tsl::elm::ListItem("Global profile");
+    globalProfileItem->setClickListener([this](u64 keys) {
         if((keys & HidNpadButton_A) == HidNpadButton_A && this->context)
         {
-            AppProfileGui::changeTo(0xA111111111111111);
+            AppProfileGui::changeTo(SYSCLK_GLOBAL_PROFILE_TID);
             return true;
         }
 
         return false;
     });
-    this->listElement->addItem(globalPermanentOverrideItem);
+    this->listElement->addItem(globalProfileItem);
 
     tsl::elm::ListItem* miscItem = new tsl::elm::ListItem("Miscellaneous");
     miscItem->setClickListener([this](u64 keys) {

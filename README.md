@@ -93,8 +93,9 @@ This project will not be actively maintained or regularly updated along with Atm
 
 - **Modded sys-clk and ReverseNX**(-RT)
 
-  - Permanent global clock override
-    - Expected usage: set maximum DRAM clocks for all games and profiles.
+  - Global profile
+    - Designated a dummy title id `0xA111111111111111`.
+    - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
 
   - Miscellaneous
     - Auto CPU Boost: For faster game loading

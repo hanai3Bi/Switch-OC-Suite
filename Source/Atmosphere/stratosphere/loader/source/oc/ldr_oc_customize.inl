@@ -1,5 +1,5 @@
 namespace ams::ldr::oc {
-#include "mtc_empty_table.inc"
+#include "mtc_empty_table.inl"
 static const volatile CustomizeTable C = {
 /* DRAM Timing:
  * AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density (Default).

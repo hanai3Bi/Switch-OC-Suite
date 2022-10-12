@@ -30,9 +30,9 @@
 
 AppProfileFrame::AppProfileFrame(Title* title) : ThumbnailFrame(), title(title)
 {
-    bool isPermanent = (title->tid == 0xA111111111111111);
+    bool isGlobal = (title->tid == SYSCLK_GLOBAL_PROFILE_TID);
 
-    this->setTitle(isPermanent ? "Edit Permanent Override" : "Edit application profile");
+    this->setTitle(isGlobal ? "Edit global profile" : "Edit application profile");
     this->setIcon(new brls::MaterialIcon("\uE315"));
 
     // Get the freqs
@@ -42,7 +42,7 @@ AppProfileFrame::AppProfileFrame(Title* title) : ThumbnailFrame(), title(title)
         errorResult("sysclkIpcGetProfiles", rc);
 
     // Setup the right sidebar
-    if (!isPermanent)
+    if (!isGlobal)
     {
         this->getSidebar()->setThumbnail(title->icon, sizeof(title->icon));
         this->getSidebar()->setTitle(std::string(title->name));

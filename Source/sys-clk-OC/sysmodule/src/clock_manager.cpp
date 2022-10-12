@@ -112,13 +112,13 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     /* Temp override setting */
     hz = this->context->overrideFreqs[module];
 
-    /* Global setting */
-    if (!hz)
-        hz = this->config->GetAutoClockHz(0xA111111111111111, module, this->context->profile);
-
     /* Per-Game setting */
     if (!hz)
         hz = this->config->GetAutoClockHz(this->context->applicationId, module, this->context->profile);
+
+    /* Global profile */
+    if (!hz)
+        hz = this->config->GetAutoClockHz(SYSCLK_GLOBAL_PROFILE_TID, module, this->context->profile);
 
     /* Return pre-set hz if ReverseNX is enabled, downclock is disabled when realProfile == Docked */
     if (!hz && IsReverseNXModeValid())
@@ -312,14 +312,14 @@ void ClockManager::CheckReverseNXTool()
         const char asmFileName[] = "_ZN2nn2oe18GetPerformanceModeEv.asm64"; // Checking one asm64 file is enough
         char asmFilePath[128];
 
-        /* Check global override */
-        snprintf(asmFilePath, sizeof(asmFilePath), "/SaltySD/patches/%s", asmFileName);
+        /* Check per-game patch */
+        snprintf(asmFilePath, sizeof(asmFilePath), "/SaltySD/patches/%016lX/%s", this->context->applicationId, asmFileName);
         getMode = ReverseNXFileHandler(asmFilePath);
 
         if (!getMode)
         {
-            /* Check per-game override */
-            snprintf(asmFilePath, sizeof(asmFilePath), "/SaltySD/patches/%016lX/%s", this->context->applicationId, asmFileName);
+            /* Check global patch */
+            snprintf(asmFilePath, sizeof(asmFilePath), "/SaltySD/patches/%s", asmFileName);
             getMode = ReverseNXFileHandler(asmFilePath);
         }
     }

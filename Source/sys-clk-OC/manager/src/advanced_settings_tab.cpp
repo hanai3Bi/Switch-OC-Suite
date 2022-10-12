@@ -98,19 +98,19 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     this->addView(gpuFreqListItem);
     this->addView(memFreqListItem);
 
-    // Permanent overrides
-    this->addView(new brls::Header("Permanent overrides"));
+    // Global profile
+    this->addView(new brls::Header("Global profile"));
 
-    // Add the ListItem to Permanent override
-    Title* permTitle = (Title*) malloc(sizeof(Title));
-    permTitle->tid = 0xA111111111111111;
+    // Add the ListItem to Global profile
+    Title* globalTitle = (Title*) malloc(sizeof(Title));
+    globalTitle->tid = SYSCLK_GLOBAL_PROFILE_TID;
 
-    brls::ListItem *listItem = new brls::ListItem(std::string("Permanent Override"));
-    listItem->getClickEvent()->subscribe([permTitle](View* view) {
-        AppProfileFrame* profileFrame = new AppProfileFrame(permTitle);
+    brls::ListItem *globalList = new brls::ListItem(std::string("Set global profile"));
+    globalList->getClickEvent()->subscribe([globalTitle](View* view) {
+        AppProfileFrame* profileFrame = new AppProfileFrame(globalTitle);
         brls::Application::pushView(profileFrame, brls::ViewAnimation::SLIDE_LEFT);
     });
-    this->addView(listItem);
+    this->addView(globalList);
 
     // Config
     // Broken, only accepting single digit

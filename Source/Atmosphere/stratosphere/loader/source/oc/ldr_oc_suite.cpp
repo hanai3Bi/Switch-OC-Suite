@@ -21,7 +21,7 @@
 #else
 #include <stratosphere.hpp>
 #include "ldr_oc_suite.hpp"
-#include "ldr_oc_customize.inc"
+#include "ldr_oc_customize.inl"
 #endif
 
 namespace ams::ldr::oc {
