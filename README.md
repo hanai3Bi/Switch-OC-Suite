@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) [![Join the chat at https://gitter.im/Switch-OC-Suite/community](https://badges.gitter.im/Switch-OC-Suite/community.svg)](https://gitter.im/Switch-OC-Suite/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) 
 
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
@@ -12,22 +12,6 @@ This project will not be actively maintained or regularly updated along with Atm
 - Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
 
 - Higher RAM clocks without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
-
-- Why no CPU/GPU OC for Erista?
-  <details>
-
-  - Tegra X1 on Erista is on TSMC 20nm HPM node, consumes much more power (~2x) and generates much more heat, compared to Tegra X1+ on Mariko (TSMC 16nm FinFET).
-    - Erista Switch uses lower speedo (=== lower quality === higher voltage required) SoC from NVIDIA. You will NOT get comparable performance to NVIDIA Shield TV no matter what.
-    - Snapdragon 810 (4 x A57 @ 2.0GHz + 4 x A53) also uses 20nm HPM, see how it plagued Android phones in 2014.
-
-  - The board power supply is quite limited, even if you've done cooling mod.
-    - You could spot battery draining at higher clocks under stress test, even with official 39W PD charger.
-    - CPU / GPU performance at max clocks will be worse if power supply is not enough.
-
-  - CPU OC (up to ~ 2.1 GHz, depending on your CPU bin) is available mainly for emulation, but it does NOT work out of the box.
-
-  </details>
-
 
 ## Features
 
@@ -53,43 +37,17 @@ This project will not be actively maintained or regularly updated along with Atm
 
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
 
-- **TinyMemBenchNX**: DRAM throughput and latency test based on [tinymembench](https://github.com/ssvb/tinymembench)
-
-- **MemTesterNX**: A userspace utility for testing DRAM faults and stability based on [memtester](https://pyropus.ca/software/memtester/)
-  - Now with multi-thread support and "stress DRAM" option, it should be able to test DRAM stability with adjusted timings.
-
 
 ### Mariko Only
 
 - **CPU/GPU Overclock**
 
   - Safe: CPU/GPU @ 1963/921 MHz
-    - It has been proved safe without charger (not reaching battery power draw threshold)
 
-  - Unsafe: CPU/GPU up to 2397/1305 MHz
+  - Unsafe: **NOT RECOMMENDED**
     - **Disabled by default**, toggle "Allow Unsafe Frequencies" on in overlay or add `allow_unsafe_freq=1` to `config.ini`
-    <details>
-
-    - Without chargers, CPU/GPU would be capped @ 1963/921 MHz or -/460 MHz (Emulator mode).
-
-    - Without official chargers, GPU would be capped @ 1267 MHz.
-
-    - Why **NOT RECOMMENDED**?
-      - See `Current Flow` in sys-clk-OC overlay `Miscellaneous` (on battery) or measure power draw from charger yourself.
-      - Currently, there are no protective measures from heavy power draw.
-
-    - CPU: 2397 MHz @ 1220 mV (overvolting from 1120 mV)
-      - NVIDIA Official Maximum: 1963.5 MHz
-      - Maximum performance depends on CPU speedo.
-        - You'd get somewhere between 2360 to 2390 MHz performance for real.
-      - This is where floating point performance maxed out.
-      - ≥ 2193 MHz will _ENABLE OVERVOLTING_.
-
-    - GPU: 1305 MHz (no overvolting, less than official threshold 1050 mV)
-      - NVIDIA Official Maximum: 1267.2 MHz
-      - ~~Tested with deko3d compute shaders converted from Maxwell SASS assembly. Single-precision floating point (FP32 FFMA) performance maxes out at 1305 MHz.~~
-
-    </details>
+    - Power draw will be significant higher than what the mainboard was designed to tolerate at anything higher than 1963/921 MHz.
+    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
 - **Modded sys-clk and ReverseNX**(-RT)
 
