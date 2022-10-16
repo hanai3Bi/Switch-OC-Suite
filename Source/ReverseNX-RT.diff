@@ -44,7 +44,7 @@ index 6628524..640629f 160000
 -Subproject commit 66285245361a02e5480c7bb7dac9ef6449ae6181
 +Subproject commit 640629f49f9e8997ef0769b21b26f4fc177c736f
 diff --git a/Overlay/source/main.cpp b/Overlay/source/main.cpp
-index cec060c..90c020b 100644
+index cec060c..13818bb 100644
 --- a/Overlay/source/main.cpp
 +++ b/Overlay/source/main.cpp
 @@ -1,9 +1,12 @@
@@ -60,7 +60,7 @@ index cec060c..90c020b 100644
  bool PluginRunning = false;
  bool closed = false;
  Handle debug;
-@@ -20,6 +23,10 @@ bool plugin = false;
+@@ -20,6 +23,11 @@ bool plugin = false;
  char DockedChar[32];
  char SystemChar[32];
  char PluginChar[36];
@@ -68,10 +68,26 @@ index cec060c..90c020b 100644
 +static Service g_sysclkSrv;
 +static std::atomic<std::size_t> g_refCnt;
 +bool sysclkComm = false;
++bool sysclkSync = false;
  
  bool CheckPort () {
  	Handle saltysd;
-@@ -54,6 +61,57 @@ bool isServiceRunning(const char *serviceName) {
+@@ -43,17 +51,84 @@ bool CheckPort () {
+ 	return false;
+ }
+ 
+-bool isServiceRunning(const char *serviceName) {	
+-	Handle handle;	
+-	SmServiceName service_name = smEncodeName(serviceName);	
++bool isServiceRunning(const char *serviceName) {
++	Handle handle;
++	SmServiceName service_name = smEncodeName(serviceName);
+ 	if (R_FAILED(smRegisterService(&handle, service_name, false, 1))) return true;
+ 	else {
+-		svcCloseHandle(handle);	
++		svcCloseHandle(handle);
+ 		smUnregisterService(service_name);
+ 		return false;
  	}
  }
  
@@ -80,56 +96,81 @@ index cec060c..90c020b 100644
 +
 +enum SysClkIpcCmd
 +{
-+    SysClkIpcCmd_GetApiVersion = 0,
-+    SysClkIpcCmd_SetReverseNXRTMode = 11,
++	SysClkIpcCmd_GetApiVersion = 0,
++	SysClkIpcCmd_GetConfigValues = 9,
++	SysClkIpcCmd_SetReverseNXRTMode = 11,
++};
++
++enum SysClkConfigValue
++{
++	SysClkConfigValue_SyncReverseNXMode = 4,
++	SysClkConfigValue_EnumMax = 8,
++};
++
++enum ReverseNXMode
++{
++	ReverseNX_NotValid = 0,
++	ReverseNX_SystemDefault = 0,
++	ReverseNX_Handheld,
++	ReverseNX_Docked,
++};
++
++struct SysClkConfigValueList
++{
++	uint64_t values[SysClkConfigValue_EnumMax];
 +};
 +
 +void sysclkIpcExit(void)
 +{
-+    if (--g_refCnt == 0)
-+    {
-+        serviceClose(&g_sysclkSrv);
-+    }
++	if (--g_refCnt == 0)
++		serviceClose(&g_sysclkSrv);
 +}
 +
 +Result sysclkIpcInitialize(void)
 +{
-+    Result rc = 0;
++	Result rc = 0;
 +
-+    g_refCnt++;
++	g_refCnt++;
 +
-+    if (serviceIsActive(&g_sysclkSrv))
-+        return 0;
++	if (serviceIsActive(&g_sysclkSrv))
++		return 0;
 +
-+    rc = smGetService(&g_sysclkSrv, SYSCLK_IPC_SERVICE_NAME);
++	rc = smGetService(&g_sysclkSrv, SYSCLK_IPC_SERVICE_NAME);
 +
-+    if (R_FAILED(rc)) sysclkIpcExit();
++	if (R_FAILED(rc))
++		sysclkIpcExit();
 +
-+    return rc;
++	return rc;
 +}
 +
 +Result sysclkIpcGetAPIVersion(u32* out_ver)
 +{
-+    return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetApiVersion, *out_ver);
++	return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetApiVersion, *out_ver);
 +}
 +
-+typedef enum
++Result sysclkIpcGetConfigValues(SysClkConfigValueList* out_configValues)
 +{
-+    ReverseNX_SystemDefault = 0,
-+    ReverseNX_Handheld,
-+    ReverseNX_Docked,
-+    ReverseNX_RTResetToDefault,
-+} ReverseNXMode;
++	return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetConfigValues, *out_configValues);
++}
 +
 +Result sysclkIpcSetReverseNXRTMode(ReverseNXMode mode)
 +{
-+    return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetReverseNXRTMode, mode);
++	return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetReverseNXRTMode, mode);
 +}
 +
  class GuiTest : public tsl::Gui {
  public:
  	GuiTest(u8 arg1, u8 arg2, bool arg3) { }
-@@ -88,6 +146,7 @@ public:
+@@ -67,7 +142,7 @@ public:
+ 
+ 		// A list that can contain sub elements and handles scrolling
+ 		auto list = new tsl::elm::List();
+-		
++
+ 		list->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+ 			if (SaltySD == false) renderer->drawString("SaltyNX is not working!", false, x, y+50, 20, renderer->a(0xF33F));
+ 			else if (plugin == false) renderer->drawString("Can't detect ReverseNX-RT plugin!", false, x, y+50, 20, renderer->a(0xF33F));
+@@ -88,16 +163,18 @@ public:
  				else {
  					renderer->drawString(SystemChar, false, x, y+40, 20, renderer->a(0xFFFF));
  					renderer->drawString(DockedChar, false, x, y+60, 20, renderer->a(0xFFFF));
@@ -137,11 +178,12 @@ index cec060c..90c020b 100644
  				}
  			}
  	}), 100);
-@@ -95,9 +154,10 @@ public:
+ 
  		if (MAGIC == 0x06BA7E39) {
  			auto *clickableListItem = new tsl::elm::ListItem("Change system control");
- 			clickableListItem->setClickListener([](u64 keys) { 
+-			clickableListItem->setClickListener([](u64 keys) { 
 -				if (keys & KEY_A) {
++			clickableListItem->setClickListener([](u64 keys) {
 +				if (keys & HidNpadButton_A) {
  					if (PluginRunning == true) {
  						def = !def;
@@ -149,11 +191,16 @@ index cec060c..90c020b 100644
  						if (dmntcht == true) {
  							dmntchtWriteCheatProcessMemory(def_address, &def, 0x1);
  							dmntchtReadCheatProcessMemory(def_address, &def, 0x1);
-@@ -120,9 +180,10 @@ public:
- 			
+@@ -117,12 +194,13 @@ public:
+ 			});
+ 
+ 			list->addItem(clickableListItem);
+-			
++
  			auto *clickableListItem2 = new tsl::elm::ListItem("Change mode");
- 			clickableListItem2->setClickListener([](u64 keys) { 
+-			clickableListItem2->setClickListener([](u64 keys) { 
 -				if (keys & KEY_A) {
++			clickableListItem2->setClickListener([](u64 keys) {
 +				if (keys & HidNpadButton_A) {
  					if (PluginRunning == true && def == false) {
  						isDocked =! isDocked;
@@ -161,16 +208,44 @@ index cec060c..90c020b 100644
  						if (dmntcht == true) {
  							dmntchtWriteCheatProcessMemory(docked_address, &isDocked, 0x1);
  							dmntchtReadCheatProcessMemory(docked_address, &isDocked, 0x1);
-@@ -145,7 +206,7 @@ public:
+@@ -137,15 +215,15 @@ public:
+ 					}
+ 					else return false;
+ 				}
+-				
++
+ 				return false;
+ 			});
+ 			list->addItem(clickableListItem2);
+ 		}
  		else if (SaltySD == true && plugin == true && check == false) {
  			auto *clickableListItem = new tsl::elm::ListItem("(De)activate plugin");
- 			clickableListItem->setClickListener([](u64 keys) { 
+-			clickableListItem->setClickListener([](u64 keys) { 
 -				if (keys & KEY_A) {
++			clickableListItem->setClickListener([](u64 keys) {
 +				if (keys & HidNpadButton_A) {
  					if (bak == false) {
  						rename("sdmc:/SaltySD/plugins/ReverseNX-RT.elf", "sdmc:/SaltySD/plugins/ReverseNX-RT.elf.bak");
  						bak = true;
-@@ -179,12 +240,22 @@ public:
+@@ -156,7 +234,7 @@ public:
+ 					}
+ 					return true;
+ 				}
+-				
++
+ 				return false;
+ 			});
+ 			list->addItem(clickableListItem);
+@@ -164,7 +242,7 @@ public:
+ 
+ 		// Add the list to the frame for it to be drawn
+ 		frame->setContent(list);
+-        
++
+ 		// Return the frame to have it become the top level element of this Gui
+ 		return frame;
+ 	}
+@@ -179,30 +257,39 @@ public:
  			closed = true;
  		}
  		if (PluginRunning == true) {
@@ -188,14 +263,23 @@ index cec060c..90c020b 100644
 +					}
 +					if (def && defChanged) {
 +						defChanged = false;
-+						sysclkIpcSetReverseNXRTMode(ReverseNX_RTResetToDefault);
++						sysclkIpcSetReverseNXRTMode(ReverseNX_SystemDefault);
 +					}
 +				}
  				i = 0;
  			}
  			else i++;
-@@ -198,11 +269,10 @@ public:
- 		
+ 		}
+-		
++
+ 		if (isDocked == true) sprintf(DockedChar, "Mode: Docked");
+ 		else sprintf(DockedChar, "Mode: Handheld");
+-		
++
+ 		if (def == true) sprintf(SystemChar, "Controlled by system: Yes");
+ 		else sprintf(SystemChar, "Controlled by system: No");
+-		
++
  		if (bak == false) sprintf(PluginChar, "ReverseNX-RT plugin is activated.");
  		else sprintf(PluginChar, "ReverseNX-RT plugin is deactivated.");
 -	
@@ -207,29 +291,71 @@ index cec060c..90c020b 100644
  		return false;   // Return true here to singal the inputs have been consumed
  	}
  };
-@@ -234,6 +304,13 @@ public:
+@@ -213,10 +300,10 @@ public:
+ 	virtual void initServices() override {
+ 		smInitialize();
+ 		fsdevMountSdmc();
+-		
++
+ 		SaltySD = CheckPort();
+ 		if (SaltySD == false) return;
+-		
++
+ 		FILE* temp = fopen("sdmc:/SaltySD/plugins/ReverseNX-RT.elf", "r");
+ 		if (temp != NULL) {
+ 			fclose(temp);
+@@ -234,6 +321,20 @@ public:
  			else return;
  		}
  
-+		// Initialize sysclkIpc
++		sysclkComm = false;
++		sysclkSync = false;
 +		if (isServiceRunning(SYSCLK_IPC_SERVICE_NAME)) {
 +			uint32_t apiVer;
-+			if (R_SUCCEEDED(sysclkIpcInitialize()) && R_SUCCEEDED(sysclkIpcGetAPIVersion(&apiVer)) && apiVer == SYSCLK_IPC_API_VERSION)
++			if (R_SUCCEEDED(sysclkIpcInitialize()) && R_SUCCEEDED(sysclkIpcGetAPIVersion(&apiVer)) && apiVer == SYSCLK_IPC_API_VERSION) {
 +				sysclkComm = true;
++
++				SysClkConfigValueList* list = new SysClkConfigValueList;
++				if (R_SUCCEEDED(sysclkIpcGetConfigValues(list)))
++					sysclkSync = bool(list->values[SysClkConfigValue_SyncReverseNXMode]);
++			    delete list;
++			}
 +		}
 +
  		if (R_FAILED(pmdmntGetApplicationProcessId(&PID))) remove("sdmc:/SaltySD/ReverseNX-RT.hex");
  		else {
  			check = true;
-@@ -278,10 +355,13 @@ public:
- 		
+@@ -244,9 +345,9 @@ public:
+ 				fread(&def_address, 0x5, 1, offset);
+ 				fread(&MAGIC_address, 0x5, 1, offset);
+ 				fclose(offset);
+-				
++
+ 				dmntcht = isServiceRunning("dmnt:cht");
+-				
++
+ 				if (dmntcht == true) {
+ 					if (R_SUCCEEDED(dmntchtInitialize())) {
+ 						bool out = false;
+@@ -272,16 +373,19 @@ public:
+ 				}
+ 			}
+ 		}
+-		
++
+ 		if (isDocked == true) sprintf(DockedChar, "Mode: Docked");
+ 		else sprintf(DockedChar, "Mode: Handheld");
+-		
++
  		if (def == true) sprintf(SystemChar, "Controlled by system: Yes");
  		else sprintf(SystemChar, "Controlled by system: No");
+-	
 +
-+		sprintf(SysclkChar, "Sys-clk-OC Sync Service: %s", sysclkComm ? "ON" : "OFF");
- 	
++		sprintf(SysclkChar, "Sys-clk-OC Sync: %s", sysclkComm ? (sysclkSync ? "ON" : "OFF") : "UNAVAILABLE");
++
  	}  // Called at the start to initialize all services necessary for this Overlay
- 	
+-	
++
  	virtual void exitServices() override {
 +		sysclkIpcExit();
  		dmntchtExit();

@@ -107,15 +107,14 @@ class ClockManager
     SysClkOcExtra *oc;
 
     bool IsCpuBoostMode();
-    bool IsReverseNXModeValid();
-    bool IsReverseNXDocked();
 
     uint32_t GetHz(SysClkModule);
+
     SysClkProfile ReverseNXProfileHandler();
     ReverseNXMode ReverseNXFileHandler(const char*);
+    ReverseNXMode GetReverseNXToolMode();
+    ReverseNXMode GetReverseNXMode();
 
-    void CheckReverseNXTool();
-    bool CheckReverseNXRT();
     void ChargingHandler();
 
 };

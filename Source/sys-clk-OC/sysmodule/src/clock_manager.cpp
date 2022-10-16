@@ -45,7 +45,6 @@ ClockManager::ClockManager()
     this->context = new SysClkContext;
     this->context->applicationId = 0;
     this->context->profile = SysClkProfile_Handheld;
-    this->context->realProfile = SysClkProfile_Handheld;
     this->context->enabled = false;
     for(unsigned int i = 0; i < SysClkModule_EnumMax; i++)
     {
@@ -59,11 +58,13 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
-    this->oc->gotBoostCPUFreq = false;
     this->oc->allowUnsafeFreq = false;
-    this->oc->reverseNXMode = ReverseNX_NotFound;
+    this->oc->syncReverseNXMode = false;
+    this->oc->realProfile = SysClkProfile_Handheld;
+    this->oc->reverseNXToolMode = ReverseNX_NotFound;
+    this->oc->reverseNXRTMode = ReverseNX_NotFound;
     this->oc->maxMEMFreq = 0;
-    this->oc->boostCPUFreq = 1785'000'000;
+    this->oc->boostCPUFreq = 0;
 }
 
 ClockManager::~ClockManager()
@@ -77,22 +78,9 @@ bool ClockManager::IsCpuBoostMode()
 {
     std::uint32_t confId = this->context->perfConfId;
     bool isCpuBoostMode = (confId == 0x92220009 || confId == 0x9222000A);
-    if (isCpuBoostMode && !this->oc->gotBoostCPUFreq)
-    {
-        this->oc->gotBoostCPUFreq = true;
-        this->oc->boostCPUFreq = std::max(this->context->freqs[SysClkModule_CPU], this->oc->boostCPUFreq);
-    }
+    if (isCpuBoostMode && !this->oc->boostCPUFreq)
+        this->oc->boostCPUFreq = std::max(this->context->freqs[SysClkModule_CPU], 1785'000'000U);
     return isCpuBoostMode;
-}
-
-bool ClockManager::IsReverseNXModeValid()
-{
-    return (this->oc->reverseNXMode);
-}
-
-bool ClockManager::IsReverseNXDocked()
-{
-    return (this->oc->reverseNXMode == ReverseNX_Docked);
 }
 
 void ClockManager::SetRunning(bool running)
@@ -107,10 +95,8 @@ bool ClockManager::Running()
 
 uint32_t ClockManager::GetHz(SysClkModule module)
 {
-    uint32_t hz = 0;
-
     /* Temp override setting */
-    hz = this->context->overrideFreqs[module];
+    uint32_t hz = this->context->overrideFreqs[module];
 
     /* Per-Game setting */
     if (!hz)
@@ -120,25 +106,23 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     if (!hz)
         hz = this->config->GetAutoClockHz(SYSCLK_GLOBAL_PROFILE_TID, module, this->context->profile);
 
-    /* Return pre-set hz if ReverseNX is enabled, downclock is disabled when realProfile == Docked */
-    if (!hz && IsReverseNXModeValid())
+    /* Return pre-set hz */
+    if (!hz && this->oc->syncReverseNXMode && GetReverseNXMode())
     {
-        switch(module)
+        switch (module)
         {
             case SysClkModule_CPU:
                 hz = 1020'000'000;
                 break;
             case SysClkModule_GPU:
-                if (!IsReverseNXDocked() && this->context->realProfile != SysClkProfile_Docked)
-                    hz = 460'800'000;
-                else
-                    hz = 768'000'000;
+                hz = (GetReverseNXMode() == ReverseNX_Docked ||
+                      this->oc->realProfile == SysClkProfile_Docked) ?
+                        768'000'000 : 460'800'000;
                 break;
             case SysClkModule_MEM:
-                if (!IsReverseNXDocked() && this->context->realProfile != SysClkProfile_Docked)
-                    hz = 1600000000;
-                else
-                    hz = MAX_MEM_CLOCK;
+                hz = (GetReverseNXMode() == ReverseNX_Docked ||
+                      this->oc->realProfile == SysClkProfile_Docked) ?
+                        MAX_MEM_CLOCK : 1600'000'000;
                 break;
             default:
                 break;
@@ -148,17 +132,17 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     if (hz)
     {
         /* Considering realProfile frequency limit */
-        hz = Clocks::GetNearestHz(module, this->context->realProfile, hz, this->oc->allowUnsafeFreq);
+        hz = Clocks::GetNearestHz(module, this->oc->realProfile, hz, this->oc->allowUnsafeFreq);
 
         if (module == SysClkModule_MEM && hz == MAX_MEM_CLOCK)
         {
             /* Trigger Max Mem Clock and record it */
             if (!this->oc->maxMEMFreq)
             {
-                uint32_t CurrentHz = Clocks::GetCurrentHz(SysClkModule_MEM);
+                uint32_t currentHz = Clocks::GetCurrentHz(SysClkModule_MEM);
                 Clocks::SetHz(SysClkModule_MEM, MAX_MEM_CLOCK);
                 this->oc->maxMEMFreq = Clocks::GetCurrentHz(SysClkModule_MEM);
-                Clocks::SetHz(SysClkModule_MEM, CurrentHz);
+                Clocks::SetHz(SysClkModule_MEM, currentHz);
             }
 
             return this->oc->maxMEMFreq;
@@ -170,8 +154,8 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     {
         if (this->oc->systemCoreBoostCPU && hz < this->oc->boostCPUFreq)
             return this->oc->boostCPUFreq;
-        else if (!hz)
-            /* Prevent crash when hz = 0 in SetHz(0), trigger RefreshContext() and Tick() */
+        if (!hz)
+            /* Trigger RefreshContext() and Tick(), resetting default CPU frequency */
             return 1020'000'000;
     }
 
@@ -182,11 +166,7 @@ void ClockManager::Tick()
 {
     std::scoped_lock lock{this->contextMutex};
 
-    bool setClock = false;
-    setClock |= this->config->Refresh();
-    setClock |= this->RefreshContext();
-    setClock &= this->context->enabled;
-    if (setClock)
+    if (this->RefreshContext() && this->context->enabled)
     {
         for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
         {
@@ -216,7 +196,7 @@ void ClockManager::WaitForNextTick()
 
     bool isAutoBoostEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost);
     if (   isAutoBoostEnabled
-        && this->context->realProfile != SysClkProfile_Handheld
+        && this->oc->realProfile != SysClkProfile_Handheld
         && this->context->enabled
         && this->context->freqs[SysClkModule_CPU] <= this->oc->boostCPUFreq)
     {
@@ -257,23 +237,16 @@ void ClockManager::WaitForNextTick()
 
 SysClkProfile ClockManager::ReverseNXProfileHandler()
 {
-    if (!IsReverseNXModeValid())
+    switch (GetReverseNXMode())
     {
-        return this->context->realProfile;
+        case ReverseNX_Docked:
+            return SysClkProfile_Docked;
+        case ReverseNX_Handheld:
+            return (this->oc->realProfile == SysClkProfile_Docked) ?
+                    SysClkProfile_HandheldChargingOfficial : this->oc->realProfile;
+        default:
+            return this->oc->realProfile;
     }
-
-    if (IsReverseNXDocked())
-    {
-        return SysClkProfile_Docked;
-    }
-
-    if (// !IsReversedNXDocked() &&
-           this->context->realProfile == SysClkProfile_Docked)
-    {
-        return SysClkProfile_HandheldChargingOfficial;
-    }
-
-    return this->context->realProfile;
 }
 
 ReverseNXMode ClockManager::ReverseNXFileHandler(const char* filePath)
@@ -291,22 +264,22 @@ ReverseNXMode ClockManager::ReverseNXFileHandler(const char* filePath)
     fread(&readBuffer, 1, sizeof(readBuffer), readFile);
     fclose(readFile);
 
-    if (!memcmp(&readBuffer, &magicDocked, sizeof(readBuffer)))
+    if (R_SUCCEEDED(memcmp(&readBuffer, &magicDocked, sizeof(readBuffer))))
         return ReverseNX_Docked;
 
-    if (!memcmp(&readBuffer, &magicHandheld, sizeof(readBuffer)))
+    if (R_SUCCEEDED(memcmp(&readBuffer, &magicHandheld, sizeof(readBuffer))))
         return ReverseNX_Handheld;
 
-    return ReverseNX_NotValid;
+    return ReverseNX_NotFound;
 }
 
-void ClockManager::CheckReverseNXTool()
+ReverseNXMode ClockManager::GetReverseNXToolMode()
 {
     bool shouldCheckReverseNXTool = FileUtils::ExistReverseNXTool();
     if (!shouldCheckReverseNXTool)
-        return;
+        return ReverseNX_NotFound;
 
-    ReverseNXMode getMode = ReverseNX_NotValid;
+    ReverseNXMode getMode = ReverseNX_NotFound;
     if (this->context->applicationId != PROCESS_MANAGEMENT_QLAUNCH_TID)
     {
         const char asmFileName[] = "_ZN2nn2oe18GetPerformanceModeEv.asm64"; // Checking one asm64 file is enough
@@ -324,23 +297,14 @@ void ClockManager::CheckReverseNXTool()
         }
     }
 
-    this->oc->reverseNXMode = getMode;
+    return getMode;
 }
 
-bool ClockManager::CheckReverseNXRT()
+ReverseNXMode ClockManager::GetReverseNXMode()
 {
-    bool shouldAdjustProfile = false;
-
-    ReverseNXMode getMode = this->GetConfig()->GetReverseNXRTMode();
-    if (getMode)
-    {
-        this->GetConfig()->SetReverseNXRTMode(ReverseNX_GotValue);
-        this->oc->reverseNXMode = (getMode == ReverseNX_RTResetToDefault) ?
-                                    ReverseNX_SystemDefault : getMode;
-        shouldAdjustProfile = true;
-    }
-
-    return shouldAdjustProfile;
+    if (this->oc->reverseNXRTMode)
+        return this->oc->reverseNXRTMode;
+    return this->oc->reverseNXToolMode;
 }
 
 void ClockManager::ChargingHandler()
@@ -351,14 +315,11 @@ void ClockManager::ChargingHandler()
     Service* session = psmGetServiceSession();
     serviceDispatchOut(session, GetBatteryChargeInfoFields, *(chargeInfoField));
 
-    bool fastChargingEnabled = chargeInfoField->ChargeCurrentLimit > 768;
-    bool fastChargingConfig  = !(this->GetConfig()->GetConfigValue(SysClkConfigValue_DisableFastCharging));
-    if (fastChargingEnabled != fastChargingConfig)
-    {
+    bool fastChargingState  = chargeInfoField->ChargeCurrentLimit > 768;
+    bool fastChargingConfig = !(this->GetConfig()->GetConfigValue(SysClkConfigValue_DisableFastCharging));
+    if (fastChargingState  != fastChargingConfig)
         serviceDispatch(session, fastChargingConfig ? EnableFastBatteryCharging : DisableFastBatteryCharging);
-    }
 
-    u32 chargeLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
     bool isChargerConnected = (chargeInfoField->ChargerType != ChargerType_None);
     if (isChargerConnected)
     {
@@ -366,6 +327,7 @@ void ClockManager::ChargingHandler()
         if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow)))
         {
             bool isCharging = ((chargeInfoField->unk_x14 >> 8) & 1);
+            u32 chargeLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
             if (isCharging && chargeLimit < chargeNow) {
                 serviceDispatch(session, DisableBatteryCharging);
             }
@@ -384,8 +346,8 @@ bool ClockManager::RefreshContext()
 {
     ChargingHandler();
 
-    bool hasChanged = false;
-    bool isReverseNXSyncEnabled = this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode);
+    bool hasChanged = this->config->Refresh();
+    this->oc->syncReverseNXMode = this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode);
     this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
 
     bool enabled = this->GetConfig()->Enabled();
@@ -403,18 +365,17 @@ bool ClockManager::RefreshContext()
         this->context->applicationId = applicationId;
         hasChanged = true;
 
-        /* Clear ReverseNX state and recheck -Tool patches*/
-        if (isReverseNXSyncEnabled) {
-            this->oc->reverseNXMode = ReverseNX_SystemDefault;
-            CheckReverseNXTool();
-        }
+        /* Clear ReverseNX state */
+        this->GetConfig()->SetReverseNXRTMode(ReverseNX_NotFound);
+        this->oc->reverseNXRTMode = ReverseNX_NotFound;
+        this->oc->reverseNXToolMode = GetReverseNXToolMode();
     }
 
     SysClkProfile profile = Clocks::GetCurrentProfile();
-    if (profile != this->context->realProfile)
+    if (profile != this->oc->realProfile)
     {
         FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(profile, true));
-        this->context->realProfile = profile;
+        this->oc->realProfile = profile;
         hasChanged = true;
     }
 
@@ -431,16 +392,19 @@ bool ClockManager::RefreshContext()
         }
     }
 
-    // restore clocks to stock values on app or profile change
-    // and let ptm module handle boost clocks rather than resetting
-    if (hasChanged && !IsCpuBoostMode())
-        Clocks::ResetToStock();
+    {
+        this->oc->reverseNXRTMode = this->GetConfig()->GetReverseNXRTMode();
+        SysClkProfile currentProfile = this->context->profile;
+        SysClkProfile expectedProfile = this->oc->syncReverseNXMode ?
+                                        ReverseNXProfileHandler() : this->oc->realProfile;
+        this->context->profile = expectedProfile;
+        if (currentProfile != expectedProfile)
+            hasChanged = true;
+    }
 
-    /* Check ReverseNX-RT and adjust nominal profile when context changes */
-    if (isReverseNXSyncEnabled) {
-        hasChanged |= CheckReverseNXRT();
-        if (hasChanged)
-            this->context->profile = ReverseNXProfileHandler();
+    // let ptm module handle boost clocks rather than resetting
+    if (hasChanged && !IsCpuBoostMode()) {
+        Clocks::ResetToStock();
     }
 
     std::uint32_t hz = 0;

@@ -45,7 +45,6 @@ typedef struct
     uint8_t  enabled;
     uint64_t applicationId;
     SysClkProfile profile;
-    SysClkProfile realProfile;
     uint32_t freqs[SysClkModule_EnumMax];
     uint32_t overrideFreqs[SysClkModule_EnumMax];
     uint32_t temps[SysClkThermalSensor_EnumMax];
@@ -54,21 +53,20 @@ typedef struct
 
 typedef enum
 {
-    ReverseNX_SystemDefault = 0,
     ReverseNX_NotFound = 0,
-    ReverseNX_NotValid = 0,
-    ReverseNX_GotValue = 0,
+    ReverseNX_SystemDefault = 0,
     ReverseNX_Handheld,
     ReverseNX_Docked,
-    ReverseNX_RTResetToDefault,
 } ReverseNXMode;
 
 typedef struct
 {
     bool systemCoreBoostCPU;
-    bool gotBoostCPUFreq;
     bool allowUnsafeFreq;
-    ReverseNXMode reverseNXMode;
+    bool syncReverseNXMode;
+    SysClkProfile realProfile;
+    ReverseNXMode reverseNXToolMode;
+    ReverseNXMode reverseNXRTMode;
     uint32_t maxMEMFreq;
     uint32_t boostCPUFreq;
 } SysClkOcExtra;
