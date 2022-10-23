@@ -63,10 +63,8 @@ typedef struct
 {
     bool systemCoreBoostCPU;
     bool allowUnsafeFreq;
-    bool syncReverseNXMode;
+    bool governor;
     SysClkProfile realProfile;
-    ReverseNXMode reverseNXToolMode;
-    ReverseNXMode reverseNXRTMode;
     uint32_t maxMEMFreq;
     uint32_t boostCPUFreq;
 } SysClkOcExtra;

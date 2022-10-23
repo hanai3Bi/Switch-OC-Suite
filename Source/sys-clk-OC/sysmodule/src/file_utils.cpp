@@ -18,7 +18,6 @@ static LockableMutex g_log_mutex;
 static LockableMutex g_csv_mutex;
 static std::atomic_bool g_has_initialized = false;
 static bool g_log_enabled = false;
-static bool g_reversenx_tool_exist = false;
 static std::uint64_t g_last_flag_check = 0;
 
 extern "C" void __libnx_init_time(void);
@@ -131,22 +130,6 @@ void FileUtils::RefreshFlags(bool force)
     g_last_flag_check = now;
 }
 
-void FileUtils::InitCheckFlags()
-{
-    FILE *file;
-    file = fopen(FILE_SALTYNX_PATH, "r");
-    if (file)
-    {
-        g_reversenx_tool_exist = true;
-        fclose(file);
-    }
-}
-
-bool FileUtils::ExistReverseNXTool()
-{
-    return g_reversenx_tool_exist;
-}
-
 void FileUtils::InitializeAsync()
 {
     Thread initThread = {0};
@@ -179,7 +162,6 @@ Result FileUtils::Initialize()
     if (R_SUCCEEDED(rc))
     {
         FileUtils::RefreshFlags(true);
-        FileUtils::InitCheckFlags();
         g_has_initialized = true;
         FileUtils::LogLine("=== " TARGET " " TARGET_VERSION " ===");
     }

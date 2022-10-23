@@ -158,29 +158,49 @@ PcvModuleId Clocks::GetPcvModuleId(SysClkModule sysclkModule)
     return pcvModuleId;
 }
 
+SysClkApmConfiguration* Clocks::GetEmbeddedApmConfig(uint32_t confId)
+{
+    SysClkApmConfiguration* apmConfiguration = NULL;
+    for(size_t i = 0; sysclk_g_apm_configurations[i].id; i++)
+    {
+        if(sysclk_g_apm_configurations[i].id == confId)
+        {
+            apmConfiguration = &sysclk_g_apm_configurations[i];
+            break;
+        }
+    }
+
+    if(!apmConfiguration)
+    {
+        ERROR_THROW("Unknown apm configuration: %x", confId);
+    }
+    return apmConfiguration;
+}
+
+uint32_t Clocks::GetStockClock(SysClkApmConfiguration* apm, SysClkModule module)
+{
+    switch (module) {
+        case SysClkModule_CPU:
+            return apm->cpu_hz;
+        case SysClkModule_GPU:
+            return apm->gpu_hz;
+        case SysClkModule_MEM:
+            return apm->mem_hz;
+        default:
+            ERROR_THROW("Unknown SysClkModule: %x", module);
+            return 0;
+    }
+}
+
 void Clocks::ResetToStock(unsigned int module)
 {
-    Result rc = 0;
     if(hosversionAtLeast(9,0,0))
     {
         std::uint32_t confId = 0;
-        rc = apmExtGetCurrentPerformanceConfiguration(&confId);
+        Result rc = apmExtGetCurrentPerformanceConfiguration(&confId);
         ASSERT_RESULT_OK(rc, "apmExtGetCurrentPerformanceConfiguration");
 
-        SysClkApmConfiguration* apmConfiguration = NULL;
-        for(size_t i = 0; sysclk_g_apm_configurations[i].id; i++)
-        {
-            if(sysclk_g_apm_configurations[i].id == confId)
-            {
-                apmConfiguration = &sysclk_g_apm_configurations[i];
-                break;
-            }
-        }
-
-        if(!apmConfiguration)
-        {
-            ERROR_THROW("Unknown apm configuration: %x", confId);
-        }
+        SysClkApmConfiguration* apmConfiguration = GetEmbeddedApmConfig(confId);
 
         if (module == SysClkModule_EnumMax || module == SysClkModule_CPU)
         {
@@ -197,6 +217,7 @@ void Clocks::ResetToStock(unsigned int module)
     }
     else
     {
+        Result rc = 0;
         std::uint32_t mode = 0;
         rc = apmExtGetPerformanceMode(&mode);
         ASSERT_RESULT_OK(rc, "apmExtGetPerformanceMode");

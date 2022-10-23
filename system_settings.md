@@ -107,11 +107,12 @@
     polling_interval_sec_min = u32!0x7FFFFFFF
     ```
 
-  - FPS and bitrate of game recording and streaming
+  - Parameters of game recording and streaming
     - ```ini
       [am.debug]
-      continuous_recording_fps = u32!60 ; 30 or 60 FPS
-      continuous_recording_video_bit_rate = u32!0x780000 ; ~7.5Mbps(0x780000 = 7,864,320), default is ~5Mbps, VBR(Variable Bitrate)
+      continuous_recording_fps = u32!60 ; 30 or 60 FPS, default: 30
+      continuous_recording_video_bit_rate = u32!0x780000 ; 7.5Mbps(0x780000 = 7,864,320), default: ~5Mbps(0x4C4B40), VBR(Variable Bitrate)
+      continuous_recording_key_frame_count = u32!15 ; One I-frame in 15 frames (with other 14 P-frames), default: 15
       ```
     - Recommended: [dvr-patches](https://github.com/exelix11/dvr-patches): Allow screenshot/recording in any games and remove overlay image (copyright notice or logo).
       - For optimal streaming experience, SysDVR via USB interface is recommended.

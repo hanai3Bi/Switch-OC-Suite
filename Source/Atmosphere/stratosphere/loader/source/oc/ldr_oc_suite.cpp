@@ -148,6 +148,7 @@ namespace ams::ldr::oc {
         #define COMPARE_HIGH(val1, val2, bit_div) (((val1 ^ val2) >> bit_div) == 0)
 
         /* EMC */
+        constexpr u32 MTC_TABLE_REV = 3;
         // DvbTable is all about frequency scaling along with CPU core voltage, no need to care about this for now.
 
         // constexpr emc_dvb_dvfs_table_t EmcDvbTable[6] =
@@ -771,9 +772,8 @@ namespace ams::ldr::oc {
         Result MtcTableHandler(u32* ptr) {
             MarikoMtcTable* const mtc_table_max = reinterpret_cast<MarikoMtcTable *>(ptr - offsetof(MarikoMtcTable, rate_khz) / sizeof(u32));
             MarikoMtcTable* const mtc_table_alt = mtc_table_max - 1;
-            constexpr u32 mtc_mariko_rev = 3;
-            R_UNLESS(mtc_table_max->rev == mtc_mariko_rev,      ldr::ResultInvalidMtcTable());
-            R_UNLESS(mtc_table_alt->rev == mtc_mariko_rev,      ldr::ResultInvalidMtcTable());
+            R_UNLESS(mtc_table_max->rev == MTC_TABLE_REV,       ldr::ResultInvalidMtcTable());
+            R_UNLESS(mtc_table_alt->rev == MTC_TABLE_REV,       ldr::ResultInvalidMtcTable());
             R_UNLESS(mtc_table_alt->rate_khz == MemClkOSAlt,    ldr::ResultInvalidMtcTable());
 
             MarikoMtcTable* const table = const_cast<MarikoMtcTable *>(C.marikoMtc);
@@ -964,6 +964,8 @@ namespace ams::ldr::oc {
             { 2091000, {}, {} },
         };
 
+        constexpr u32 MTC_TABLE_REV = 7;
+
         Result CpuDvfsHandler(u32* ptr, uintptr_t nso_end_offset) {
             cpu_freq_cvb_table_t* entry_1785 = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
             cpu_freq_cvb_table_t* entry_free = entry_1785 + 1;
@@ -998,6 +1000,21 @@ namespace ams::ldr::oc {
         }
 
         Result MtcTableHandler(u32* ptr) {
+            u32 khz_list[] = { 1600000, 1331200, 1065600, 800000, 665600, 408000, 204000, 102000, 68000, 40800 };
+            u32 khz_list_size = sizeof(khz_list) / sizeof(u32);
+            EristaMtcTable* table_list[khz_list_size];
+            table_list[0] = reinterpret_cast<EristaMtcTable *>(ptr - offsetof(EristaMtcTable, rate_khz) / sizeof(u32));
+
+            for (u32 i = 1; i < khz_list_size; i++ ) {
+                table_list[i] = table_list[i-1] - 1;
+                R_UNLESS(table_list[i]->rate_khz == khz_list[i],    ldr::ResultInvalidMtcTable());
+                R_UNLESS(table_list[i]->rev == MTC_TABLE_REV,       ldr::ResultInvalidMtcTable());
+            }
+
+            // Make room for new mtc table, discarding useless 40.8 MHz table
+            for (u32 i = khz_list_size - 1; i > 0; i--)
+                std::memcpy(static_cast<void *>(table_list[i]), static_cast<void *>(table_list[i - 1]), sizeof(EristaMtcTable));
+
             bool replace_entire_table = (C.mtcConf == ENTIRE_TABLE_ERISTA);
             if (replace_entire_table) {
                 EristaMtcTable* const mtc_table_max = reinterpret_cast<EristaMtcTable *>(ptr - offsetof(EristaMtcTable, rate_khz) / sizeof(u32));

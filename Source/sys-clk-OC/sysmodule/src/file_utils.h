@@ -22,7 +22,6 @@
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
 #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
-#define FILE_SALTYNX_PATH "/atmosphere/contents/0000000000534C56/flags/boot2.flag" // Just check for SaltyNX boot flag
 
 class FileUtils
 {
@@ -37,5 +36,4 @@ class FileUtils
     static void WriteContextToCsv(const SysClkContext* context);
   protected:
     static void RefreshFlags(bool force);
-    static void InitCheckFlags();
 };

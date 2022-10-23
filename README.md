@@ -72,7 +72,8 @@ This project will not be actively maintained or regularly updated along with Atm
 1. Download latest [release](https://github.com/KazushiMe/Switch-OC-Suite/releases/latest).
 
 2. Mariko Only: Copy all files in `SdOut` to the root of SD card.
-  - Erista: Use official sys-clk instead. Only `loader.kip` and some benchmark homebrew are available.
+
+   Erista user: Use other modified sys-clk instead. (Add your RAM OC frequency to sys-clk and recompiling). Only `loader.kip` and some benchmark homebrew are available in this repo for now.
 
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 

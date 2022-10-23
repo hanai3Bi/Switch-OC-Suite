@@ -183,12 +183,12 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
     uint8_t numProfiles = 0;
 
     // String pointer array passed to ini
-    char* iniKeys[SysClkProfile_EnumMax * SysClkModule_EnumMax + 1];
-    char* iniValues[SysClkProfile_EnumMax * SysClkModule_EnumMax + 1];
+    char* iniKeys[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1];
+    char* iniValues[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1];
 
     // Char arrays to build strings
-    char keysStr[SysClkProfile_EnumMax * SysClkModule_EnumMax * 0x40];
-    char valuesStr[SysClkProfile_EnumMax * SysClkModule_EnumMax * 0x10];
+    char keysStr[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) * 0x40];
+    char valuesStr[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) * 0x10];
     char section[17] = {0};
 
     // Iteration pointers

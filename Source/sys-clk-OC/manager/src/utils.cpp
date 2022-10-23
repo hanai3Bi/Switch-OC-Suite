@@ -111,7 +111,7 @@ brls::SelectListItem* createFreqListItem(SysClkModule module, uint32_t selectedF
 
         char clock[16];
         if (freq == 1862400000)
-            snprintf(clock, sizeof(clock), "Max MHz");
+            snprintf(clock, sizeof(clock), "Maximum");
         else
             snprintf(clock, sizeof(clock), "%d MHz", freq / 1000000);
 

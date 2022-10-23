@@ -23,6 +23,7 @@ void apmExtExit(void);
 Result apmExtGetPerformanceMode(u32 *out_mode);
 Result apmExtSysRequestPerformanceMode(u32 mode);
 Result apmExtGetCurrentPerformanceConfiguration(u32 *out_conf);
+bool apmExtIsBoostMode(u32 conf_id, bool allow_cpu_limited);
 
 #ifdef __cplusplus
 }

@@ -22,7 +22,7 @@ static inline std::string formatListFreqMhz(std::uint32_t mhz)
     }
     else if (mhz == 1862)
     {
-        return "Max MHz";
+        return "Maximum";
     }
 
     char buf[10];

@@ -20,6 +20,8 @@ class Clocks
   public:
     static void Exit();
     static void Initialize();
+    static SysClkApmConfiguration* GetEmbeddedApmConfig(uint32_t confId);
+    static uint32_t GetStockClock(SysClkApmConfiguration* apm, SysClkModule module);
     static void ResetToStock(unsigned int module = SysClkModule_EnumMax);
     static SysClkProfile GetCurrentProfile();
     static std::uint32_t GetCurrentHz(SysClkModule module);

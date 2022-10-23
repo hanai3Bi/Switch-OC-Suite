@@ -64,3 +64,9 @@ Result apmExtGetCurrentPerformanceConfiguration(u32 *out_conf)
 {
     return serviceDispatchOut(&g_apmSysSrv, 7, *out_conf);
 }
+
+bool apmExtIsBoostMode(u32 conf_id, bool allow_cpu_limited) {
+    if (allow_cpu_limited)
+        return (conf_id >= 0x92220009 && conf_id <= 0x922200C);
+    return (conf_id == 0x92220009 || conf_id == 0x922200A);
+}

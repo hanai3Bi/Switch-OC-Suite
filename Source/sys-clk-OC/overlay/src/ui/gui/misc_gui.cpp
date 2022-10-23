@@ -15,7 +15,7 @@
 MiscGui::MiscGui()
 {
     this->configList = new SysClkConfigValueList {};
-    this->chargeInfo = new ChargeInfo {};
+    this->chargeInfo = new PsmChargeInfo {};
     this->i2cInfo    = new I2cInfo {};
 }
 
@@ -48,6 +48,14 @@ void MiscGui::updateConfigToggle(tsl::elm::ToggleListItem *toggle, SysClkConfigV
 
 void MiscGui::listUI()
 {
+    this->listElement->addItem(new tsl::elm::CategoryHeader("Temporary toggles"));
+
+    this->backlightToggle = new tsl::elm::ToggleListItem("Screen Backlight", false);
+    backlightToggle->setStateChangedListener([this](bool state) {
+        LblUpdate(true);
+    });
+    this->listElement->addItem(this->backlightToggle);
+
     sysclkIpcGetConfigValues(this->configList);
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
@@ -55,6 +63,7 @@ void MiscGui::listUI()
     this->cpuBoostToggle = addConfigToggle(SysClkConfigValue_AutoCPUBoost, "Auto CPU Boost");
     this->syncModeToggle = addConfigToggle(SysClkConfigValue_SyncReverseNXMode, "Sync ReverseNX Mode");
     this->fastChargingToggle = addConfigToggle(SysClkConfigValue_DisableFastCharging, "Disable Fast Charging");
+    this->governorToggle = addConfigToggle(SysClkConfigValue_GovernorExperimental, "Governor (Experimental)");
 
     this->chargingLimitHeader = new tsl::elm::CategoryHeader("");
     this->listElement->addItem(this->chargingLimitHeader);
@@ -69,7 +78,7 @@ void MiscGui::listUI()
 
         snprintf(chargingLimitBarDesc, 30, "Battery Charging Limit: %lu%%", this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
         this->chargingLimitHeader->setText(chargingLimitBarDesc);
-        this->chargingLimitBar->setIcon(getBatteryStateIcon());
+        this->chargingLimitBar->setIcon(PsmGetBatteryStateIcon(this->chargeInfo));
 
         Result rc = sysclkIpcSetConfigValues(this->configList);
         if (R_FAILED(rc))
@@ -81,14 +90,6 @@ void MiscGui::listUI()
     this->listElement->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer* renderer, s32 x, s32 y, s32 w, s32 h) {
       renderer->drawString("\uE016 Long-term use may render the battery gauge \ninaccurate!", false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
     }), SMALL_TEXT_SIZE * 2 + 20);
-
-    this->listElement->addItem(new tsl::elm::CategoryHeader("Temporary toggles"));
-
-    this->backlightToggle = new tsl::elm::ToggleListItem("Screen Backlight", false);
-    backlightToggle->setStateChangedListener([this](bool state) {
-        LblUpdate(true);
-    });
-    this->listElement->addItem(this->backlightToggle);
 
     this->listElement->addItem(new tsl::elm::CategoryHeader("Info"));
     this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
@@ -114,7 +115,7 @@ void MiscGui::refresh() {
         this->chargingLimitHeader->setText(chargingLimitBarDesc);
 
         PsmUpdate();
-        this->chargingLimitBar->setIcon(getBatteryStateIcon());
+        this->chargingLimitBar->setIcon(PsmGetBatteryStateIcon(this->chargeInfo));
 
         LblUpdate();
         this->backlightToggle->setState(lblstatus);

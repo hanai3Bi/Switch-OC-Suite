@@ -26,7 +26,7 @@
 			"value": {
 				"highest_thread_priority": 63,
 				"lowest_thread_priority": 24,
-				"lowest_cpu_id": 3,
+				"lowest_cpu_id": 0,
 				"highest_cpu_id": 3
 			}
 		},
@@ -74,6 +74,7 @@
 				"svcOutputDebugString": "0x27",
 				"svcReturnFromException": "0x28",
 				"svcGetInfo": "0x29",
+				"svcSetThreadActivity": "0x32",
 				"svcWaitForAddress": "0x34",
 				"svcSignalToAddress": "0x35",
 				"svcCreateSession": "0x40",
