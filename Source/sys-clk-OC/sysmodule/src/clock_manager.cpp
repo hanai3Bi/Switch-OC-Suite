@@ -77,15 +77,15 @@ ClockManager::~ClockManager()
     delete this->config;
 }
 
-bool ClockManager::IsCpuBoostMode()
+bool ClockManager::IsBoostMode()
 {
     std::uint32_t confId = this->context->perfConfId;
-    bool isCpuBoostMode = apmExtIsBoostMode(confId, false);
-    if (isCpuBoostMode && !this->oc->boostCPUFreq) {
+    bool isBoostMode = apmExtIsBoostMode(confId);
+    if (apmExtIsCPUBoosted(confId) && !this->oc->boostCPUFreq) {
         this->oc->boostCPUFreq = std::max(this->context->freqs[SysClkModule_CPU], 1785'000'000U);
         this->governor->SetCPUBoostHz(this->oc->boostCPUFreq);
     }
-    return isCpuBoostMode;
+    return isBoostMode;
 }
 
 void ClockManager::SetRunning(bool running)
@@ -186,7 +186,7 @@ void ClockManager::Tick()
             if (hz && hz != this->context->freqs[module])
             {
                 // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
-                bool skipBoost = IsCpuBoostMode() && ((module == SysClkModule_CPU && hz <= this->oc->boostCPUFreq) || module == SysClkModule_GPU);
+                bool skipBoost = IsBoostMode() && ((module == SysClkModule_CPU && hz <= this->oc->boostCPUFreq) || module == SysClkModule_GPU);
                 if (!skipBoost) {
                     FileUtils::LogLine("[mgr] %s clock set : %u.%u MHz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                     Clocks::SetHz((SysClkModule)module, hz);
@@ -312,7 +312,7 @@ bool ClockManager::RefreshContext()
     }
 
     // let ptm module handle boost clocks rather than resetting
-    if (hasChanged && !IsCpuBoostMode()) {
+    if (hasChanged && !IsBoostMode()) {
         Clocks::ResetToStock();
     }
 

@@ -92,7 +92,7 @@ void PsmExt::ChargingHandler(bool fastChargingEnabled, uint32_t chargingLimit) {
 
 void Governor::Start() {
     m_stop_threads = false;
-    svcSleepThread(8 * TICK_TIME_MAIN_NS);
+    svcSleepThread(8 * TICK_TIME_NS);
     Result rc = 0;
 
     for (int core = 0; core < CORE_NUMS; core++) {
@@ -124,7 +124,7 @@ void Governor::Start() {
 
 void Governor::Stop() {
     m_stop_threads = true;
-    svcSleepThread(8 * TICK_TIME_MAIN_NS);
+    svcSleepThread(8 * TICK_TIME_NS);
 
     threadWaitForExit(&m_t_main);
     threadClose(&m_t_main);
@@ -144,7 +144,7 @@ void Governor::SetMaxHz(uint32_t max_hz, SysClkModule module) {
             m_cpu_freq.idx_max_hz = FindIndex(&m_cpu_freq, max_hz);
             break;
         case SysClkModule_GPU:
-            m_gpu_freq.idx_boost_hz = m_gpu_freq.idx_max_hz = FindIndex(&m_gpu_freq, max_hz);
+            m_gpu_freq.idx_max_hz = FindIndex(&m_gpu_freq, max_hz);
             break;
         case SysClkModule_MEM:
             m_mem_freq = max_hz;
@@ -237,19 +237,19 @@ void Governor::CheckCpuUtilWorker(void* args) {
 }
 
 void Governor::CheckCpuUtilWorkerAppCore(int64_t coreid) {
-    constexpr uint64_t STUCK_TICKS = 2;
+    constexpr uint64_t STUCK_TICKS = 5;
     s_Queue<uint64_t> q;
     while (!m_stop_threads) {
         bool isBusy = m_core3_stuck_cnt > STUCK_TICKS * (CORE_NUMS - 1);
         if (isBusy) {
             m_core3_stuck_cnt = 0;
             SetBoostHz(&m_cpu_freq);
-            svcSleepThread(STUCK_TICKS * TICK_TIME_CPU_NS);
+            svcSleepThread(STUCK_TICKS * TICK_TIME_NS);
         } else {
             m_core3_stuck_cnt++;
         }
 
-        uint64_t load = CpuCoreUtil(coreid, TICK_TIME_CPU_MS).Get();
+        uint64_t load = CpuCoreUtil(coreid, TICK_TIME_NS).Get();
         q.PopAndPush(load);
         m_cpu_core_ctx[coreid].util = q.GetAvg();
     }
@@ -259,7 +259,7 @@ void Governor::CheckCpuUtilWorkerSysCore() {
     s_Queue<uint64_t> q;
     int64_t coreid = CORE_NUMS - 1;
     while (!m_stop_threads) {
-        uint64_t load = CpuCoreUtil(coreid, TICK_TIME_CPU_MS).Get();
+        uint64_t load = CpuCoreUtil(coreid, TICK_TIME_NS).Get();
         q.PopAndPush(load);
         m_cpu_core_ctx[coreid].util = q.GetAvg() * 7 / 8; // Adjusted, Multipler: 0.875
     }
@@ -284,7 +284,7 @@ void Governor::Main(void* args) {
     } q;
 
     auto GetGpuUtil = [nvgpu_field, q]() mutable {
-        uint32_t load = GpuCoreUtil(nvgpu_field, TICK_TIME_GPU_MS).Get();
+        uint32_t load = GpuCoreUtil(nvgpu_field, TICK_TIME_NS).Get();
         if (load > 20) { // Ignore load <= 2.0%
             q.queue[q.pos % QUEUE_SIZE] = load;
             q.pos++;
@@ -301,29 +301,30 @@ void Governor::Main(void* args) {
         return load;
     };
 
-    uint64_t update_ticks = SAMPLE_RATE_MAIN;
+    constexpr uint64_t UPDATE_CONTEXT_RATE = SAMPLE_RATE / 2;
+    uint64_t update_ticks = UPDATE_CONTEXT_RATE;
     bool CPUBoosted = false;
-    bool GPUBoosted = false; // Limited to 76.8 MHz, literally
+    bool GPUThrottled = false;
 
     while (!self->m_stop_threads) {
         self->m_core3_stuck_cnt = 0;
 
-        bool shouldUpdateContext = update_ticks++ >= SAMPLE_RATE_MAIN;
+        bool shouldUpdateContext = update_ticks++ >= UPDATE_CONTEXT_RATE;
         if (shouldUpdateContext) {
             update_ticks = 0;
             uint32_t hz = Clocks::GetCurrentHz(SysClkModule_GPU);
             // Sleep mode detected, wait 1 tick
             while (!hz) {
                 self->m_core3_stuck_cnt = 0;
-                svcSleepThread(TICK_TIME_MAIN_NS);
+                svcSleepThread(TICK_TIME_NS);
                 hz = Clocks::GetCurrentHz(SysClkModule_GPU);
             }
 
-            GPUBoosted = apmExtIsBoostMode(self->m_perf_conf_id, true);
-            CPUBoosted = apmExtIsBoostMode(self->m_perf_conf_id, false);
+            GPUThrottled = apmExtIsBoostMode(self->m_perf_conf_id);
+            CPUBoosted = apmExtIsCPUBoosted(self->m_perf_conf_id);
 
             self->m_gpu_freq.idx_target_hz = FindIndex(&self->m_gpu_freq, hz);
-            if (GPUBoosted)
+            if (GPUThrottled)
                 SetBoostHz(&self->m_gpu_freq);
 
             hz = Clocks::GetCurrentHz(SysClkModule_CPU);
@@ -337,7 +338,7 @@ void Governor::Main(void* args) {
             if (hz != self->m_mem_freq)
                 Clocks::SetHz(SysClkModule_MEM, self->m_mem_freq);
         } else {
-            if (!GPUBoosted) {
+            if (!GPUThrottled) {
                 uint32_t gpu_util = GetGpuUtil();
                 if (gpu_util > GPU_THR_RAMP_MAX) {
                     if (TargetRamp(&self->m_gpu_freq, RAMP_MAX))
@@ -362,7 +363,7 @@ void Governor::Main(void* args) {
             }
         }
 
-        svcSleepThread(TICK_TIME_MAIN_NS);
+        svcSleepThread(TICK_TIME_NS);
     }
 }
 

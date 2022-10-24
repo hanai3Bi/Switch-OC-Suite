@@ -52,7 +52,7 @@ class ClockManager
     ReverseNXSync *rnxSync;
     Governor *governor;
 
-    bool IsCpuBoostMode();
+    bool IsBoostMode();
 
     uint32_t GetHz(SysClkModule);
 };
