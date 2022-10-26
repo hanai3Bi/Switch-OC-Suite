@@ -178,12 +178,9 @@ void ClockManager::Tick()
         {
             uint32_t hz = GetHz((SysClkModule)module);
 
-            if (this->oc->governor) {
-                this->governor->SetMaxHz(hz, (SysClkModule)module);
-                continue;
-            }
+            this->governor->SetMaxHz(hz, (SysClkModule)module);
 
-            if (hz && hz != this->context->freqs[module])
+            if (hz && hz != this->context->freqs[module] && !this->oc->governor)
             {
                 // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
                 bool skipBoost = IsBoostMode() && ((module == SysClkModule_CPU && hz <= this->oc->boostCPUFreq) || module == SysClkModule_GPU);
@@ -217,9 +214,9 @@ void ClockManager::WaitForNextTick()
         this->context->freqs[SysClkModule_CPU] <= this->oc->boostCPUFreq;
 
     if (boostOK) {
-        uint64_t core3Util = CpuCoreUtil(3, tickWaitTimeMs).Get();
+        uint32_t core3Util = CpuCoreUtil(3, tickWaitTimeMs * 1000'000ULL).Get();
         bool lastBoost = this->oc->systemCoreBoostCPU;
-        constexpr uint8_t BOOST_THRESHOLD = 95;
+        constexpr uint32_t BOOST_THRESHOLD = 95'0;
         this->oc->systemCoreBoostCPU = (core3Util >= BOOST_THRESHOLD);
 
         if (lastBoost && !this->oc->systemCoreBoostCPU)
@@ -244,9 +241,12 @@ bool ClockManager::RefreshContext()
     uint32_t chargingLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
     PsmExt::ChargingHandler(fastChargingEnabled, chargingLimit);
 
-    bool hasChanged = this->config->Refresh();
-    this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
-    this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+    bool configUpdated = this->config->Refresh();
+    bool hasChanged = false;
+    if (configUpdated) {
+        this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
+        this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+    }
 
     bool enabled = this->GetConfig()->Enabled();
     if(enabled != this->context->enabled)
@@ -261,12 +261,17 @@ bool ClockManager::RefreshContext()
     {
         this->oc->governor = governor;
         FileUtils::LogLine("[mgr] Governor status: %s", governor ? "enabled" : "disabled");
-        if (governor)
+        hasChanged = true;
+    }
+
+    if (hasChanged) {
+        if (enabled && governor)
             this->governor->Start();
         else
             this->governor->Stop();
-        hasChanged = true;
     }
+
+    hasChanged |= configUpdated;
 
     std::uint64_t applicationId = ProcessManagement::GetCurrentApplicationId();
     if (applicationId != this->context->applicationId)

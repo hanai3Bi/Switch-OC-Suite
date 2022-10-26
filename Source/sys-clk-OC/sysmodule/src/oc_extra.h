@@ -13,57 +13,31 @@
 
 class CpuCoreUtil {
 public:
-    CpuCoreUtil (int coreid = -2, uint64_t ns = 1000'000ULL):
-        m_core_id(coreid), m_wait_time_ns(ns) {};
-
-    inline uint64_t Get()      { Start(); WaitForStop(); Stop(); return Calculate(); };
-    inline void Start()        { m_idletick = GetIdleTickCount(); };
-    inline void WaitForStop()  { svcSleepThread(m_wait_time_ns); };
-    inline void Stop()         { m_idletick = GetIdleTickCount() - m_idletick; };
-
-    static constexpr uint64_t TICKS_PER_MS = 192;
-    inline uint64_t Calculate() { return 100'0 - m_idletick * 10 * 1000'000ULL / (TICKS_PER_MS * m_wait_time_ns); };
+    CpuCoreUtil (int coreid, uint64_t ns);
+    uint32_t Get();
 
 protected:
     const int m_core_id;
     const uint64_t m_wait_time_ns;
-    uint64_t m_idletick;
+    static constexpr uint64_t TICKS_PER_MS = 192;
+    static constexpr uint32_t UTIL_MAX = 100'0;
 
-    inline uint64_t GetIdleTickCount() {
-        uint64_t idletick = 0;
-        svcGetInfo(&idletick, InfoType_IdleTickCount, INVALID_HANDLE, m_core_id);
-        return idletick;
-    };
+    uint64_t GetIdleTickCount();
 };
 
 class GpuCoreUtil {
 public:
-    GpuCoreUtil (uint32_t nvgpu_field, uint64_t ns = 1000'000ULL):
-        m_nvgpu_field(nvgpu_field), m_wait_time_ns(ns) {};
-
-    inline uint64_t Get()      { Wait(); return GetLoad(); };
-    inline void Wait()         { svcSleepThread(m_wait_time_ns); };
-    inline uint32_t GetLoad()  {
-        uint32_t load;
-        nvIoctl(m_nvgpu_field, NVGPU_GPU_IOCTL_PMU_GET_GPU_LOAD, &load);
-        // if (R_FAILED(rc)) {
-        //     ERROR_THROW("[mgr] nvIoctl() failed: 0x%lX", rc);
-        // }
-        return load;
-    };
+    GpuCoreUtil (uint32_t nvgpu_field);
+    uint32_t Get();
 
 protected:
     uint32_t m_nvgpu_field;
-    const uint64_t m_wait_time_ns;
     static constexpr uint64_t NVGPU_GPU_IOCTL_PMU_GET_GPU_LOAD = 0x80044715;
 };
 
 class ReverseNXSync {
 public:
-    ReverseNXSync ()
-        : m_rt_mode(ReverseNX_NotFound), m_tool_mode(ReverseNX_NotFound) {
-        CheckToolEnabled();
-    };
+    ReverseNXSync ();
 
     void ToggleSync(bool enable)    { m_sync_enabled = enable; };
     void Reset(uint64_t app_id)     { m_app_id = app_id; SetRTMode(ReverseNX_NotFound); GetToolMode(); }
@@ -79,7 +53,6 @@ protected:
     bool m_tool_enabled;
     bool m_sync_enabled;
 
-    bool CheckToolEnabled();
     ReverseNXMode GetToolModeFromPatch(const char* patch_path);
     ReverseNXMode RecheckToolMode();
 };
@@ -90,57 +63,23 @@ namespace PsmExt {
 
 class Governor {
 public:
-    Governor()  {
-        memset(reinterpret_cast<void*>(&m_cpu_freq), 0, sizeof(m_cpu_freq));
-        memset(reinterpret_cast<void*>(&m_gpu_freq), 0, sizeof(m_gpu_freq));
-
-        m_cpu_freq.module = SysClkModule_CPU;
-        m_gpu_freq.module = SysClkModule_GPU;
-
-        m_cpu_freq.hz_list = &sysclk_g_freq_table_cpu_hz[0];
-        m_gpu_freq.hz_list = &sysclk_g_freq_table_gpu_hz[0];
-
-        m_cpu_freq.idx_boost_hz = FindIndex(&m_cpu_freq, 1785'000'000);
-
-        m_gpu_freq.idx_boost_hz = FindIndex(&m_gpu_freq, 76'800'000);
-        m_gpu_freq.idx_min_hz = FindIndex(&m_gpu_freq, 153'600'000);
-
-        nvInitialize();
-        Result rc = nvOpen(&m_nvgpu_field, "/dev/nvhost-ctrl-gpu");
-        if (R_FAILED(rc)) {
-            ERROR_THROW("[mgr] nvOpen() failed: 0x%lX", rc);
-            nvExit();
-        }
-    };
-
-    ~Governor() {
-        Stop();
-        nvClose(m_nvgpu_field);
-        nvExit();
-    };
+    Governor();
+    ~Governor();
 
     void Start();
     void Stop();
     void SetMaxHz(uint32_t max_hz, SysClkModule module);
-    void SetCPUBoostHz(uint32_t hz) { m_cpu_freq.idx_boost_hz = FindIndex(&m_cpu_freq, hz); };
+    void SetCPUBoostHz(uint32_t hz) { m_cpu_freq.boost_hz = hz; };
     void SetPerfConf(uint32_t id);
 
 protected:
     // Parameters for sampling
     static constexpr uint64_t SAMPLE_RATE = 200;
-    static constexpr uint64_t TICK_TIME_MS = 1000 / SAMPLE_RATE;
     static constexpr uint64_t TICK_TIME_NS = 1000'000'000 / SAMPLE_RATE;
-
-    // Parameters for frequency ramp threshold
-    static constexpr uint64_t CPU_THR_RAMP_DOWN = 70'0;
-    static constexpr uint64_t CPU_THR_RAMP_UP   = 90'0;
-    static constexpr uint64_t GPU_THR_RAMP_DOWN = 70'0;
-    static constexpr uint64_t GPU_THR_RAMP_UP   = 80'0;
-    static constexpr uint64_t GPU_THR_RAMP_MAX  = 90'0;
 
     static constexpr int CORE_NUMS = 4;
 
-    bool m_stop_threads = false;
+    bool m_running = false;
     Thread m_t_cpuworker[CORE_NUMS], m_t_main;
     std::atomic<uint64_t> m_core3_stuck_cnt = 0;
 
@@ -149,62 +88,52 @@ protected:
     uint32_t m_perf_conf_id;
     SysClkApmConfiguration *m_apm_conf;
 
-    typedef enum {
-        RAMP_UP,
-        RAMP_DOWN,
-        RAMP_MAX,
-        RAMP_MIN,
-        RAMP_BOOST,
-    } FREQ_RAMP_DIRECTION;
-
     typedef struct {
         SysClkModule module;
         uint32_t* hz_list;
-        uint8_t idx_target_hz;
-        uint8_t idx_min_hz;
-        uint8_t idx_max_hz;
-        uint8_t idx_boost_hz;
-    } s_Freq;
-    s_Freq m_cpu_freq, m_gpu_freq;
+        uint32_t  target_hz;
+        uint32_t  min_hz;
+        uint32_t  max_hz;
+        uint32_t  boost_hz;
+        uint32_t  utilref_hz;
 
-    static uint32_t FindIndex(s_Freq* f, uint32_t hz);
-    static bool TargetRamp(s_Freq* f, FREQ_RAMP_DIRECTION dir);
-    static void SetHz(s_Freq* f);
-    static void SetBoostHz(s_Freq* f);
+        uint32_t GetNormalizedUtil(uint32_t raw_util);
+        void SetNextFreq(uint32_t norm_util);
+        void SetHz();
+        void SetBoostHz();
+    } s_FreqContext;
+    s_FreqContext m_cpu_freq, m_gpu_freq;
 
     typedef struct {
         Governor*   self;
-        int64_t     id;
-        uint64_t    util;
+        int         id;
+        uint32_t    util;
     } s_CoreContext;
     s_CoreContext m_cpu_core_ctx[CORE_NUMS];
 
     s_CoreContext* InitCoreContext(s_CoreContext* context, Governor* self, int64_t id = 0);
 
-    static void CheckCpuUtilWorker(void* args);
-    static void Main(void* args);
+    // PELT: https://github.com/torvalds/linux/blob/master/kernel/sched/pelt.c
+    // Util_acc_n = Util_0 + Util_1 * D + Util_2 * D^2 + ... + Util_n * D^n
+    // To approximate D (decay multiplier):
+    //   After 100 ms (if SAMPLE_RATE == 200, 20 samples)
+    //   (UTIL_MAX * D)^20 ≈ 1 (UTIL_MAX decayed to 1)
+    // D = 0.7079457843841379... ≈ 725 / 1024
+    // Util_acc_20 ≈ 3421, Util_acc_40 ≈ 3424, Util_acc_inf ≈ 3424
+    static constexpr uint32_t UTIL_MAX = 100'0;
+    struct s_Util {
+        uint32_t util_acc = 0;
 
-private:
-    static constexpr size_t QUEUE_SIZE = 8;
-    template <typename T>
-    struct s_Queue {
-        // Much faster than <queue> from stl
-        T queue[QUEUE_SIZE] = { 0 };
-        T sum = 0;
-        size_t pos = 0;
+        static constexpr uint32_t DECAY_DIVIDENT = 725;
+        static constexpr uint32_t DECAY_DIVISOR  = 1024;
+        static constexpr uint32_t UTIL_ACC_MAX   = 3424;
 
-        T GetAvg()   { return sum / QUEUE_SIZE; };
-        T GetFirst() { return queue[pos % QUEUE_SIZE]; };
-        T GetLast()  { return queue[(pos - 1) % QUEUE_SIZE]; };
-        T PopAndPush(T val_to_push) {
-            T val_to_pop;
-            sum -= (val_to_pop = GetFirst()); // Pop and subtract from sum
-            sum += (queue[pos % QUEUE_SIZE] = val_to_push); // Push and add to sum
-            pos++;
-            return val_to_pop;
-        }
+        uint32_t Get()              { return (util_acc * UTIL_MAX / UTIL_ACC_MAX); };
+        void Update(uint32_t util)  { util_acc = util_acc * DECAY_DIVIDENT / DECAY_DIVISOR + util; };
     };
 
-    void CheckCpuUtilWorkerSysCore();
-    void CheckCpuUtilWorkerAppCore(int64_t coreid);
+    static void CheckCpuUtilWorker(void* args);
+           void CheckCpuUtilWorkerAppCore(int64_t coreid);
+           void CheckCpuUtilWorkerSysCore();
+    static void Main(void* args);
 };
