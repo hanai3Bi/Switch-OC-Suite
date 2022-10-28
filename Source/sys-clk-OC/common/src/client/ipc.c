@@ -146,3 +146,8 @@ Result sysclkIpcGetFrequencyTable(SysClkModule module, SysClkProfile profile, si
     free(table);
     return 0;
 }
+
+Result sysclkIpcGetIsMariko(bool* out_is_mariko)
+{
+    return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetIsMariko, *out_is_mariko);
+}

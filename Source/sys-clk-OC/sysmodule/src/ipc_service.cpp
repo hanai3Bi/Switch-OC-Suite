@@ -168,6 +168,9 @@ Result IpcService::ServiceHandlerFunc(void* arg, const IpcServerRequest* r, u8* 
                 return ipcSrv->GetFrequencyTable(in_args, (uint32_t*)out_data);
             }
             break;
+        case SysClkIpcCmd_GetIsMariko:
+            *out_dataSize = sizeof(bool);
+            return ipcSrv->GetIsMariko((bool*)out_data);
     }
 
     return SYSCLK_ERROR(Generic);
@@ -312,4 +315,9 @@ Result IpcService::SetReverseNXRTMode(ReverseNXMode mode) {
 
 Result IpcService::GetFrequencyTable(SysClkIpc_GetFrequencyTable_Args* args, uint32_t* out_table) {
     return Clocks::GetTable(args->module, args->profile, args->max_entry_num, out_table);
+}
+
+Result IpcService::GetIsMariko(bool* out_is_mariko) {
+    *out_is_mariko = Clocks::GetIsMariko();
+    return 0;
 }

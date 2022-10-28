@@ -80,8 +80,10 @@ void Clocks::Initialize()
 
     // Check if it's Mariko
     u64 hardware_type = 0;
-    splInitialize();
-    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
+    rc = splInitialize();
+    ASSERT_RESULT_OK(rc, "splInitialize");
+    rc = splGetConfig(SplConfigItem_HardwareType, &hardware_type);
+    ASSERT_RESULT_OK(rc, "splGetConfig");
     splExit();
 
     switch (hardware_type) {

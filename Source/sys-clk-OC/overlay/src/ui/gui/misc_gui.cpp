@@ -18,24 +18,7 @@ MiscGui::MiscGui()
     this->chargeInfo = new PsmChargeInfo {};
     this->i2cInfo    = new I2cInfo {};
 
-    u64 hardware_type = 0;
-    splInitialize();
-    splGetConfig(SplConfigItem_HardwareType, &hardware_type);
-    splExit();
-
-    switch (hardware_type) {
-        case 0: // Icosa
-        case 1: // Copper
-        case 4: // Calcio
-            isMariko = false;
-            break;
-        default:
-        // case 2: // Hoag
-        // case 3: // Iowa
-        // case 5: // Aula
-            isMariko = true;
-            break;
-    }
+    sysclkIpcGetIsMariko(&this->isMariko);
 }
 
 MiscGui::~MiscGui()

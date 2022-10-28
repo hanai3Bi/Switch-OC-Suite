@@ -31,6 +31,7 @@ enum SysClkIpcCmd
     SysClkIpcCmd_SetConfigValues = 10,
     SysClkIpcCmd_SetReverseNXRTMode = 11,
     SysClkIpcCmd_GetFrequencyTable = 12,
+    SysClkIpcCmd_GetIsMariko = 13,
 };
 
 typedef struct
