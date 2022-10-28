@@ -140,6 +140,7 @@ handheld_charging_official_mem=
 handheld_cpu=
 handheld_gpu=
 handheld_mem=
+governor_disabled=
 ```
 
 * Replace `Application Title ID` with the title id of the game/application you're interested in customizing.

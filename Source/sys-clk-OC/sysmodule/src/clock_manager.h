@@ -22,7 +22,6 @@
 class ClockManager
 {
   public:
-
     static ClockManager* GetInstance();
     static void Initialize();
     static void Exit();
@@ -31,6 +30,7 @@ class ClockManager
     bool Running();
     void Tick();
     void WaitForNextTick();
+    void SetRNXRTMode(ReverseNXMode mode);
     SysClkContext GetCurrentContext();
     Config* GetConfig();
 

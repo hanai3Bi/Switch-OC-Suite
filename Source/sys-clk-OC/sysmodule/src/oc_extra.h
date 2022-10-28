@@ -48,7 +48,8 @@ public:
     ReverseNXMode GetMode();
 
 protected:
-    ReverseNXMode m_rt_mode, m_tool_mode;
+    std::atomic<ReverseNXMode> m_rt_mode;
+    ReverseNXMode m_tool_mode;
     uint64_t m_app_id = 0;
     bool m_tool_enabled;
     bool m_sync_enabled;
@@ -81,7 +82,6 @@ protected:
 
     bool m_running = false;
     Thread m_t_cpuworker[CORE_NUMS], m_t_main;
-    std::atomic<uint64_t> m_core3_stuck_cnt = 0;
 
     uint32_t m_nvgpu_field;
     uint32_t m_mem_freq;
@@ -108,32 +108,29 @@ protected:
         Governor*   self;
         int         id;
         uint32_t    util;
+        uint64_t    timestamp;
     } s_CoreContext;
     s_CoreContext m_cpu_core_ctx[CORE_NUMS];
-
-    s_CoreContext* InitCoreContext(s_CoreContext* context, Governor* self, int64_t id = 0);
 
     // PELT: https://github.com/torvalds/linux/blob/master/kernel/sched/pelt.c
     // Util_acc_n = Util_0 + Util_1 * D + Util_2 * D^2 + ... + Util_n * D^n
     // To approximate D (decay multiplier):
     //   After 100 ms (if SAMPLE_RATE == 200, 20 samples)
     //   (UTIL_MAX * D)^20 ≈ 1 (UTIL_MAX decayed to 1)
-    // D = 0.7079457843841379... ≈ 725 / 1024
-    // Util_acc_20 ≈ 3421, Util_acc_40 ≈ 3424, Util_acc_inf ≈ 3424
+    // D = 0.707946... ≈ 5799 / 8192 (epsilon < 0.0001)
+    // Util_acc_20 ≈ 3419, Util_acc_40 ≈ 3420, Util_acc_inf ≈ 3420
     static constexpr uint32_t UTIL_MAX = 100'0;
     struct s_Util {
         uint32_t util_acc = 0;
 
-        static constexpr uint32_t DECAY_DIVIDENT = 725;
-        static constexpr uint32_t DECAY_DIVISOR  = 1024;
-        static constexpr uint32_t UTIL_ACC_MAX   = 3424;
+        static constexpr uint32_t DECAY_DIVIDENT = 5799;
+        static constexpr uint32_t DECAY_DIVISOR  = 8192;
+        static constexpr uint32_t UTIL_ACC_MAX   = 3420;
 
         uint32_t Get()              { return (util_acc * UTIL_MAX / UTIL_ACC_MAX); };
         void Update(uint32_t util)  { util_acc = util_acc * DECAY_DIVIDENT / DECAY_DIVISOR + util; };
     };
 
-    static void CheckCpuUtilWorker(void* args);
-           void CheckCpuUtilWorkerAppCore(int64_t coreid);
-           void CheckCpuUtilWorkerSysCore();
+    static void CpuUtilWorker(void* args);
     static void Main(void* args);
 };

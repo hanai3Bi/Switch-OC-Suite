@@ -38,6 +38,7 @@ uint32_t GpuCoreUtil::Get() {
     return load;
 }
 
+
 ReverseNXSync::ReverseNXSync()
     : m_rt_mode(ReverseNX_NotFound), m_tool_mode(ReverseNX_NotFound) {
     FILE *fp = fopen("/atmosphere/contents/0000000000534C56/flags/boot2.flag", "r");
@@ -103,6 +104,7 @@ ReverseNXMode ReverseNXSync::RecheckToolMode() {
     return mode;
 }
 
+
 void PsmExt::ChargingHandler(bool fastChargingEnabled, uint32_t chargingLimit) {
     PsmChargeInfo* info = new PsmChargeInfo;
     Service* session = psmGetServiceSession();
@@ -124,6 +126,7 @@ void PsmExt::ChargingHandler(bool fastChargingEnabled, uint32_t chargingLimit) {
 
     delete info;
 }
+
 
 Governor::Governor() {
     memset(reinterpret_cast<void*>(&m_cpu_freq), 0, sizeof(m_cpu_freq));
@@ -166,9 +169,11 @@ void Governor::Start() {
     m_running = true;
     Result rc = 0;
     for (int core = 0; core < CORE_NUMS; core++) {
-        s_CoreContext* s = InitCoreContext(&m_cpu_core_ctx[core], this, core);
+        s_CoreContext* s = &m_cpu_core_ctx[core];
+        s->self = this;
+        s->id = core;
         int prio = (core == CORE_NUMS - 1) ? 0x3F : 0x3B; // Pre-emptive MT
-        rc = threadCreate(&m_t_cpuworker[core], &CheckCpuUtilWorker, (void*)s, NULL, 0x1000, prio, core);
+        rc = threadCreate(&m_t_cpuworker[core], &CpuUtilWorker, (void*)s, NULL, 0x1000, prio, core);
         ASSERT_RESULT_OK(rc, "threadCreate");
         rc = threadStart(&m_t_cpuworker[core]);
         ASSERT_RESULT_OK(rc, "threadStart");
@@ -205,7 +210,7 @@ void Governor::SetMaxHz(uint32_t max_hz, SysClkModule module) {
             break;
         case SysClkModule_GPU:
             m_gpu_freq.max_hz = max_hz;
-            m_gpu_freq.min_hz = (m_gpu_freq.max_hz == 76'800'000) ? 76'800'000 : 153'600'000;
+            m_gpu_freq.min_hz = (m_gpu_freq.max_hz <= 153'600'000) ? max_hz : 153'600'000;
             break;
         case SysClkModule_MEM:
             m_mem_freq = max_hz;
@@ -234,19 +239,19 @@ void Governor::s_FreqContext::SetNextFreq(uint32_t norm_util) {
     uint32_t prev_hz = target_hz;
     uint32_t next_freq = (uint64_t)(norm_util + (norm_util >> 1)) * utilref_hz / UTIL_MAX;
 
-    uint32_t adj_next_freq;
+    uint32_t adj_next_freq = target_hz;
     if (next_freq > max_hz) {
         adj_next_freq = max_hz;
     } else if (next_freq < min_hz) {
         adj_next_freq = min_hz;
     } else {
         uint32_t* p = hz_list;
-        while (*p) {
-            if (*p > next_freq)
+        do {
+            if (*p > next_freq) {
+                adj_next_freq = *p;
                 break;
-            p++;
-        }
-        adj_next_freq = *p;
+            }
+        } while (*p++);
     }
 
     target_hz = adj_next_freq;
@@ -267,47 +272,35 @@ void Governor::s_FreqContext::SetBoostHz() {
     SetHz();
 }
 
-Governor::s_CoreContext* Governor::InitCoreContext(
-    s_CoreContext* context, Governor* self, int64_t id
-) {
-    memset(reinterpret_cast<void*>(context), 0, sizeof(s_CoreContext));
-    context->self = self;
-    context->id = id;
-    return context;
-}
-
-void Governor::CheckCpuUtilWorker(void* args) {
+void Governor::CpuUtilWorker(void* args) {
     s_CoreContext* s = static_cast<s_CoreContext*>(args);
-    int64_t coreid = s->id;
+    int coreid = s->id;
+    constexpr int SYS_CORE_ID = (CORE_NUMS - 1);
     Governor* self = s->self;
 
-    bool isSystemCore = (coreid == CORE_NUMS - 1);
-    if (isSystemCore)
-        self->CheckCpuUtilWorkerSysCore();
-    else
-        self->CheckCpuUtilWorkerAppCore(coreid);
-}
-
-void Governor::CheckCpuUtilWorkerAppCore(int64_t coreid) {
-    constexpr uint64_t STUCK_TICKS = SAMPLE_RATE / 10;
-    while (m_running) {
-        bool isBusy = m_core3_stuck_cnt > STUCK_TICKS * (CORE_NUMS - 1);
-        if (isBusy) {
-            m_core3_stuck_cnt = 0;
-            m_cpu_freq.SetBoostHz();
-            svcSleepThread(STUCK_TICKS * TICK_TIME_NS);
-        } else {
-            m_core3_stuck_cnt++;
+    while (self->m_running) {
+        bool CPUBoosted = apmExtIsCPUBoosted(self->m_perf_conf_id);
+        if (CPUBoosted) {
+            svcSleepThread(TICK_TIME_NS);
+            continue;
         }
 
-        m_cpu_core_ctx[coreid].util = m_cpu_freq.GetNormalizedUtil(CpuCoreUtil(coreid, TICK_TIME_NS).Get());
-    }
-}
+        uint64_t timestamp = armTicksToNs(armGetSystemTick());
+        s->timestamp = timestamp;
+        for (int id = 0; id < CORE_NUMS; id++) {
+            if (abs(self->m_cpu_core_ctx[id].timestamp - timestamp) < TICK_TIME_NS * 10)
+                continue;
 
-void Governor::CheckCpuUtilWorkerSysCore() {
-    int64_t coreid = CORE_NUMS - 1;
-    while (m_running) {
-        m_cpu_core_ctx[coreid].util = m_cpu_freq.GetNormalizedUtil(CpuCoreUtil(coreid, TICK_TIME_NS).Get());
+            if (id == SYS_CORE_ID) {
+                self->m_cpu_freq.SetBoostHz();
+            } else {
+                self->m_cpu_freq.target_hz = self->m_cpu_freq.max_hz;
+                self->m_cpu_freq.SetHz();
+            }
+            break;
+        }
+
+        s->util = self->m_cpu_freq.GetNormalizedUtil(CpuCoreUtil(coreid, TICK_TIME_NS).Get());
     }
 }
 
@@ -340,16 +333,13 @@ void Governor::Main(void* args) {
     bool GPUThrottled = false;
 
     while (self->m_running) {
-        self->m_core3_stuck_cnt = 0;
-
         bool shouldUpdateContext = update_ticks++ >= UPDATE_CONTEXT_RATE;
         if (shouldUpdateContext) {
             update_ticks = 0;
             uint32_t hz = Clocks::GetCurrentHz(SysClkModule_GPU);
-            // Sleep mode detected, wait 1 tick
+            // Sleep mode detected, wait 10 ticks
             while (!hz) {
-                self->m_core3_stuck_cnt = 0;
-                svcSleepThread(TICK_TIME_NS);
+                svcSleepThread(10 * TICK_TIME_NS);
                 hz = Clocks::GetCurrentHz(SysClkModule_GPU);
             }
 
@@ -370,12 +360,12 @@ void Governor::Main(void* args) {
                 self->m_mem_freq = hz;
             if (hz != self->m_mem_freq)
                 Clocks::SetHz(SysClkModule_MEM, self->m_mem_freq);
-        } else {
-            if (!GPUThrottled)
-                gpu_ctx->SetNextFreq(GetAdjGpuUtil());
-            if (!CPUBoosted)
-                cpu_ctx->SetNextFreq(GetAdjCpuUtil());
         }
+
+        if (!GPUThrottled)
+            gpu_ctx->SetNextFreq(GetAdjGpuUtil());
+        if (!CPUBoosted)
+            cpu_ctx->SetNextFreq(GetAdjCpuUtil());
 
         svcSleepThread(TICK_TIME_NS);
     }

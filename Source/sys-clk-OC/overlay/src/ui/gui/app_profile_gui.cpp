@@ -67,6 +67,25 @@ void AppProfileGui::addProfileUI(SysClkProfile profile)
 
 void AppProfileGui::listUI()
 {
+    if (this->applicationId != SYSCLK_GLOBAL_PROFILE_TID) {
+        SysClkConfigValueList* configList = new SysClkConfigValueList;
+        sysclkIpcGetConfigValues(configList);
+        bool globalGovernorEnabled = configList->values[SysClkConfigValue_GovernorExperimental];
+
+        if (globalGovernorEnabled) {
+            tsl::elm::ToggleListItem* governorToggle = new tsl::elm::ToggleListItem("Disable governor", this->profileList->governorDisabled);
+            governorToggle->setStateChangedListener([this](bool state) {
+                this->profileList->governorDisabled = state;
+                Result rc = sysclkIpcSetProfiles(this->applicationId, this->profileList);
+                if (R_FAILED(rc))
+                    FatalGui::openWithResultCode("sysclkIpcSetProfiles", rc);
+            });
+            this->listElement->addItem(governorToggle);
+        }
+
+        delete configList;
+    }
+
     this->addProfileUI(SysClkProfile_Docked);
     this->addProfileUI(SysClkProfile_Handheld);
     this->addProfileUI(SysClkProfile_HandheldCharging);

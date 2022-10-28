@@ -21,6 +21,8 @@
 
 #define CONFIG_VAL_SECTION "values"
 
+#define CONFIG_KEY_TITLE_GOVERNOR_DISABLED "governor_disabled"
+
 class Config
 {
   public:
@@ -37,6 +39,7 @@ class Config
     void GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles);
     bool SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bool immediate);
     std::uint32_t GetAutoClockHz(std::uint64_t tid, SysClkModule module, SysClkProfile profile);
+    bool GetTitleGovernorDisabled(std::uint64_t tid);
 
     void SetEnabled(bool enabled);
     bool Enabled();
@@ -47,8 +50,6 @@ class Config
     const char* GetConfigValueName(SysClkConfigValue val, bool pretty);
     void GetConfigValues(SysClkConfigValueList* out_configValues);
     bool SetConfigValues(SysClkConfigValueList* configValues, bool immediate);
-    ReverseNXMode GetReverseNXRTMode();
-    void SetReverseNXRTMode(ReverseNXMode);
   protected:
     void Load();
     void Close();
@@ -60,14 +61,13 @@ class Config
 
     std::map<std::tuple<std::uint64_t, SysClkProfile, SysClkModule>, std::uint32_t> profileMhzMap;
     std::map<std::uint64_t, std::uint8_t> profileCountMap;
+    std::map<std::uint64_t, bool> profileGovernorDisabled;
     bool loaded;
     std::string path;
     time_t mtime;
     LockableMutex configMutex;
     LockableMutex overrideMutex;
-    LockableMutex reverseNXRTMutex;
     std::atomic_bool enabled;
     std::uint32_t overrideFreqs[SysClkModule_EnumMax];
     std::uint64_t configValues[SysClkConfigValue_EnumMax];
-    ReverseNXMode reverseNXRTMode;
 };

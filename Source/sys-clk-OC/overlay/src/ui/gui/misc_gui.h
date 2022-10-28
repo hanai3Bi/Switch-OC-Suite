@@ -236,7 +236,7 @@ class MiscGui : public BaseMenuGui
             smExit();
         }
 
-        tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue, std::string);
+        tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue);
         void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
 
         tsl::elm::ToggleListItem *backlightToggle, *unsafeFreqToggle, *cpuBoostToggle, *syncModeToggle, *fastChargingToggle, *governorToggle;

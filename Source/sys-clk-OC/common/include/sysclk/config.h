@@ -41,9 +41,9 @@ static inline const char* sysclkFormatConfigValue(SysClkConfigValue val, bool pr
         case SysClkConfigValue_CsvWriteIntervalMs:
             return pretty ? "CSV write interval (ms)" : "csv_write_interval_ms";
         case SysClkConfigValue_AutoCPUBoost:
-            return pretty ? "Enable Auto CPU Boost" : "auto_cpu_boost";
+            return pretty ? "Auto CPU Boost" : "auto_cpu_boost";
         case SysClkConfigValue_SyncReverseNXMode:
-            return pretty ? "Enable ReverseNX Mode Sync" : "sync_reversenx_mode";
+            return pretty ? "Sync ReverseNX Mode Sync" : "sync_reversenx_mode";
         case SysClkConfigValue_AllowUnsafeFrequencies:
             return pretty ? "Allow Unsafe Frequencies" : "allow_unsafe_freq";
         case SysClkConfigValue_DisableFastCharging:
@@ -51,7 +51,7 @@ static inline const char* sysclkFormatConfigValue(SysClkConfigValue val, bool pr
         case SysClkConfigValue_ChargingLimitPercentage:
             return pretty ? "Charging Limit (%%)" : "charging_limit_perc";
         case SysClkConfigValue_GovernorExperimental:
-            return pretty ? "Governor (Experimental)" : "governor_experimental";
+            return pretty ? "Frequency Governor (Experimental)" : "governor_experimental";
         default:
             return NULL;
     }

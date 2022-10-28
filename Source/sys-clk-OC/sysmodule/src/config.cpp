@@ -24,6 +24,7 @@ Config::Config(std::string path)
     this->loaded = false;
     this->profileMhzMap = std::map<std::tuple<std::uint64_t, SysClkProfile, SysClkModule>, std::uint32_t>();
     this->profileCountMap = std::map<std::uint64_t, std::uint8_t>();
+    this->profileGovernorDisabled = std::map<std::uint64_t, bool>();
     this->mtime = 0;
     this->enabled = false;
     for(unsigned int i = 0; i < SysClkModule_EnumMax; i++)
@@ -35,8 +36,6 @@ Config::Config(std::string path)
     {
         this->configValues[i] = sysclkDefaultConfigValue((SysClkConfigValue)i);
     }
-
-    this->reverseNXRTMode = ReverseNX_NotFound;
 }
 
 Config::~Config()
@@ -73,6 +72,7 @@ void Config::Close()
     this->loaded = false;
     this->profileMhzMap.clear();
     this->profileCountMap.clear();
+    this->profileGovernorDisabled.clear();
 
     for(unsigned int i = 0; i < SysClkConfigValue_EnumMax; i++)
     {
@@ -164,6 +164,20 @@ std::uint32_t Config::GetAutoClockHz(std::uint64_t tid, SysClkModule module, Sys
     return 0;
 }
 
+bool Config::GetTitleGovernorDisabled(std::uint64_t tid)
+{
+    if (this->loaded)
+    {
+        std::map<uint64_t, bool>::const_iterator it = this->profileGovernorDisabled.find(tid);
+        if (it != this->profileGovernorDisabled.end())
+        {
+            return it->second;
+        }
+    }
+
+    return false;
+}
+
 void Config::GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles)
 {
     std::scoped_lock lock{this->configMutex};
@@ -175,6 +189,12 @@ void Config::GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles
             out_profiles->mhzMap[profile][module] = FindClockMhz(tid, (SysClkModule)module, (SysClkProfile)profile);
         }
     }
+
+    std::map<uint64_t, bool>::const_iterator it = this->profileGovernorDisabled.find(tid);
+    bool governorDisabled = false;
+    if (it != this->profileGovernorDisabled.end() && it->second)
+        governorDisabled = true;
+    out_profiles->governorDisabled = governorDisabled;
 }
 
 bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bool immediate)
@@ -183,8 +203,8 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
     uint8_t numProfiles = 0;
 
     // String pointer array passed to ini
-    char* iniKeys[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1];
-    char* iniValues[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1];
+    char* iniKeys[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1 + 1];
+    char* iniValues[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) + 1 + 1];
 
     // Char arrays to build strings
     char keysStr[static_cast<int>(SysClkProfile_EnumMax) * static_cast<int>(SysClkModule_EnumMax) * 0x40];
@@ -227,6 +247,13 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
         }
     }
 
+    if (profiles->governorDisabled) {
+        snprintf(sk, 0x40, "%s", CONFIG_KEY_TITLE_GOVERNOR_DISABLED);
+        snprintf(sv, 0x10, "%d", profiles->governorDisabled);
+        *ik++ = sk;
+        *iv++ = sv;
+    }
+
     *ik = NULL;
     *iv = NULL;
 
@@ -255,6 +282,11 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
                 mhz++;
             }
         }
+
+        if (profiles->governorDisabled)
+            this->profileGovernorDisabled[tid] = profiles->governorDisabled;
+        else
+            this->profileGovernorDisabled.erase(tid);
     }
 
     return true;
@@ -301,6 +333,16 @@ int Config::BrowseIniFunc(const char* section, const char* key, const char* valu
     if(!tid || strlen(section) != 16)
     {
         FileUtils::LogLine("[cfg] Skipping key '%s' in section '%s': Invalid TitleID", key, section);
+        return 1;
+    }
+
+    if (!strcmp(key, CONFIG_KEY_TITLE_GOVERNOR_DISABLED)) {
+        input = strtoul(value, NULL, 0);
+        if ((input & 0x1) != input) {
+            input = 0;
+            FileUtils::LogLine("[cfg] Invalid value for key '%s' in section '%s': using default %d", key, section, input);
+        }
+        config->profileGovernorDisabled[tid] = (bool)input;
         return 1;
     }
 
@@ -480,15 +522,4 @@ bool Config::SetConfigValues(SysClkConfigValueList* configValues, bool immediate
     }
 
     return true;
-}
-
-ReverseNXMode Config::GetReverseNXRTMode() {
-    std::scoped_lock lock{this->reverseNXRTMutex};
-    ReverseNXMode mode = this->reverseNXRTMode;
-    return mode;
-}
-
-void Config::SetReverseNXRTMode(ReverseNXMode mode) {
-    std::scoped_lock lock{this->reverseNXRTMutex};
-    this->reverseNXRTMode = mode;
 }

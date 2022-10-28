@@ -26,8 +26,9 @@ MiscGui::~MiscGui()
     delete this->i2cInfo;
 }
 
-tsl::elm::ToggleListItem* MiscGui::addConfigToggle(SysClkConfigValue configVal, std::string labelName) {
-    tsl::elm::ToggleListItem* toggle = new tsl::elm::ToggleListItem(labelName, this->configList->values[configVal]);
+tsl::elm::ToggleListItem* MiscGui::addConfigToggle(SysClkConfigValue configVal) {
+    const char* configName = sysclkFormatConfigValue(configVal, true);
+    tsl::elm::ToggleListItem* toggle = new tsl::elm::ToggleListItem(configName, this->configList->values[configVal]);
     toggle->setStateChangedListener([this, configVal](bool state) {
         this->configList->values[configVal] = uint64_t(state);
         Result rc = sysclkIpcSetConfigValues(this->configList);
@@ -59,11 +60,11 @@ void MiscGui::listUI()
     sysclkIpcGetConfigValues(this->configList);
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
-    this->unsafeFreqToggle = addConfigToggle(SysClkConfigValue_AllowUnsafeFrequencies, "Allow Unsafe Frequencies");
-    this->cpuBoostToggle = addConfigToggle(SysClkConfigValue_AutoCPUBoost, "Auto CPU Boost");
-    this->syncModeToggle = addConfigToggle(SysClkConfigValue_SyncReverseNXMode, "Sync ReverseNX Mode");
-    this->fastChargingToggle = addConfigToggle(SysClkConfigValue_DisableFastCharging, "Disable Fast Charging");
-    this->governorToggle = addConfigToggle(SysClkConfigValue_GovernorExperimental, "Governor (Experimental)");
+    this->unsafeFreqToggle = addConfigToggle(SysClkConfigValue_AllowUnsafeFrequencies);
+    this->cpuBoostToggle = addConfigToggle(SysClkConfigValue_AutoCPUBoost);
+    this->syncModeToggle = addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
+    this->fastChargingToggle = addConfigToggle(SysClkConfigValue_DisableFastCharging);
+    this->governorToggle = addConfigToggle(SysClkConfigValue_GovernorExperimental);
 
     this->chargingLimitHeader = new tsl::elm::CategoryHeader("");
     this->listElement->addItem(this->chargingLimitHeader);

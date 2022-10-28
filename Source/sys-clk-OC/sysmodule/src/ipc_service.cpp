@@ -298,7 +298,6 @@ Result IpcService::SetConfigValues(SysClkConfigValueList* configValues)
 }
 
 Result IpcService::SetReverseNXRTMode(ReverseNXMode mode) {
-    Config* config = ClockManager::GetInstance()->GetConfig();
-    config->SetReverseNXRTMode(mode);
+    ClockManager::GetInstance()->SetRNXRTMode(mode);
     return 0;
 }

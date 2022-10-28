@@ -75,6 +75,7 @@ typedef struct
         uint32_t mhz[(size_t)SysClkProfile_EnumMax * (size_t)SysClkModule_EnumMax];
         uint32_t mhzMap[SysClkProfile_EnumMax][SysClkModule_EnumMax];
     };
+    bool governorDisabled;
 } SysClkTitleProfileList;
 
 #define SYSCLK_GLOBAL_PROFILE_TID       0xA111111111111111

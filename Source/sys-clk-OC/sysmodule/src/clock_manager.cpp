@@ -241,9 +241,8 @@ bool ClockManager::RefreshContext()
     uint32_t chargingLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
     PsmExt::ChargingHandler(fastChargingEnabled, chargingLimit);
 
-    bool configUpdated = this->config->Refresh();
-    bool hasChanged = false;
-    if (configUpdated) {
+    bool hasChanged = this->config->Refresh();
+    if (hasChanged) {
         this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
         this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
     }
@@ -264,15 +263,6 @@ bool ClockManager::RefreshContext()
         hasChanged = true;
     }
 
-    if (hasChanged) {
-        if (enabled && governor)
-            this->governor->Start();
-        else
-            this->governor->Stop();
-    }
-
-    hasChanged |= configUpdated;
-
     std::uint64_t applicationId = ProcessManagement::GetCurrentApplicationId();
     if (applicationId != this->context->applicationId)
     {
@@ -281,8 +271,14 @@ bool ClockManager::RefreshContext()
         hasChanged = true;
 
         /* Clear ReverseNX state */
-        this->GetConfig()->SetReverseNXRTMode(ReverseNX_NotFound);
         this->rnxSync->Reset(applicationId);
+    }
+
+    if (hasChanged) {
+        if (enabled && governor && !this->GetConfig()->GetTitleGovernorDisabled(applicationId))
+            this->governor->Start();
+        else
+            this->governor->Stop();
     }
 
     SysClkProfile profile = Clocks::GetCurrentProfile();
@@ -308,7 +304,6 @@ bool ClockManager::RefreshContext()
     }
 
     {
-        this->rnxSync->SetRTMode(this->GetConfig()->GetReverseNXRTMode());
         SysClkProfile current  = this->context->profile;
         SysClkProfile expected = this->rnxSync->GetProfile(this->oc->realProfile);
         this->context->profile = expected;
@@ -381,6 +376,10 @@ bool ClockManager::RefreshContext()
     }
 
     return hasChanged;
+}
+
+void ClockManager::SetRNXRTMode(ReverseNXMode mode) {
+    this->rnxSync->SetRTMode(mode);
 }
 
 SysClkContext ClockManager::GetCurrentContext()
