@@ -85,12 +85,13 @@ void Clocks::Initialize()
     splExit();
 
     switch (hardware_type) {
-        case 1: //Icosa
-        case 2: //Copper
+        case 0: // Icosa
+        case 1: // Copper
+        case 4: // Calcio
             isMariko = false;
             break;
+        case 2: // Hoag
         case 3: // Iowa
-        case 4: // Hoag
         case 5: // Aula
             isMariko = true;
             break;

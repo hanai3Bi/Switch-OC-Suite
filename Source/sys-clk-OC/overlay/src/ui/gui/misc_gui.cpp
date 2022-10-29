@@ -24,15 +24,16 @@ MiscGui::MiscGui()
     splExit();
 
     switch (hardware_type) {
-        case 1: //Icosa
-        case 2: //Copper
-            this->isMariko = false;
+        case 0: // Icosa
+        case 1: // Copper
+        case 4: // Calcio
+            isMariko = false;
             break;
-        // case 3: // Iowa
-        // case 4: // Hoag
-        // case 5: // Aula
         default:
-            this->isMariko = true;
+        // case 2: // Hoag
+        // case 3: // Iowa
+        // case 5: // Aula
+            isMariko = true;
             break;
     }
 }
