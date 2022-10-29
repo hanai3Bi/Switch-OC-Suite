@@ -13,7 +13,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 * 2091 → max for Mariko (without overvolting – capped at 1120 mV)
 * 1963 → official max for Mariko
 * 1887
-* 1785 → official boost mode
+* 1785 → official boost mode, OC max for Erista
 * 1683
 * 1581
 * 1428
@@ -35,7 +35,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 * 1152
 * 1075
 * 998
-* 921 → official max for Erista
+* 921 → OC max for Erista
 * 844
 * 768 → official docked
 * 691
@@ -50,15 +50,13 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### MEM clocks
 
-**Only 1600 and Max could be set in sys-clk-OC.**
-
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 
 - ????
-- 2131 → NOT stable: max for Erista and official max for Mariko
+- 2131 → max for Erista and official max for Mariko
 - 2099
 - 2064
-- 1996 → stable for all
+- 1996 → stable for Mariko
 - 1932
 - 1894
 - 1862 → official max for Erista; Mariko without timing adjustment
@@ -74,6 +72,23 @@ From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blo
 
 To protect the battery from excessive strain, clocks requested from config may be capped before applying, depending on your current profile:
 
+### Erista
+|         | Handheld | Charging (USB) | Charging (Official) | Docked |
+|:-------:|:--------:|:--------------:|:-------------------:|:------:|
+| **MEM** | -        | -              | -                   | -      |
+| **CPU** | -        | -              | -                   | -      |
+| **GPU** | 460      | 768            | -                   | -      |
+
+
+### Mariko (Safe)
+|         | Handheld | Charging (USB) | Charging (Official) | Docked |
+|:-------:|:--------:|:--------------:|:-------------------:|:------:|
+| **MEM** | -        | -              | -                   | -      |
+| **CPU** | 1963     | 1963           | 1963                | 1963   |
+| **GPU** | 921      | 921            | 921                 | 921    |
+
+
+### Mariko (Unsafe allowed)
 |         | Handheld | Charging (USB) | Charging (Official) | Docked |
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
@@ -181,8 +196,8 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 
 | Key                      | Desc                                                                          | Default   |
 |:------------------------:|-------------------------------------------------------------------------------|:---------:|
-|**allow_unsafe_freq**     | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF       |
-|**auto_cpu_boost**        | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | ON        |
+|**allow_unsafe_freq**     | (Mariko Only) Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)    | OFF       |
+|**auto_cpu_boost**        | (Mariko Only) Auto-boost CPU when system Core #3 utilization ≥ 95%            | ON        |
 |**sync_reversenx_mode**   | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON        |
 |**disable_fast_charging** | Disable fast charging (2000mA -> 500 mA)                                      | OFF       |
 |**charging_limit_perc**   | Charging limit (20% - 100%)                                                   | 100%(OFF) |

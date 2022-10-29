@@ -9,13 +9,14 @@
  */
 
 #include <stdint.h>
+#include <sysclk/clocks.h>
 
-uint32_t sysclk_g_freq_table_mem_hz[] = {
+uint32_t g_freq_table_mem_hz[] = {
     // From Hekate Minerva module
-    // 665600000,
-    // 800000000,
-    // 1065600000,
-    // 1331200000,
+    665600000,
+    800000000,
+    1065600000,
+    1331200000,
     1600000000,
     // 1728000000,
     // 1795200000,
@@ -29,7 +30,7 @@ uint32_t sysclk_g_freq_table_mem_hz[] = {
     0,
 };
 
-uint32_t sysclk_g_freq_table_cpu_hz[] = {
+uint32_t g_freq_table_cpu_hz[] = {
     612000000,
     714000000,
     816000000,
@@ -51,7 +52,7 @@ uint32_t sysclk_g_freq_table_cpu_hz[] = {
     0,
 };
 
-uint32_t sysclk_g_freq_table_gpu_hz[] = {
+uint32_t g_freq_table_gpu_hz[] = {
     76800000,
     153600000,
     230400000,
@@ -72,3 +73,16 @@ uint32_t sysclk_g_freq_table_gpu_hz[] = {
     1305600000,
     0,
 };
+
+uint32_t* GetTable(SysClkModule module) {
+    switch (module) {
+        case SysClkModule_CPU:
+            return &g_freq_table_cpu_hz[0];
+        case SysClkModule_GPU:
+            return &g_freq_table_gpu_hz[0];
+        case SysClkModule_MEM:
+            return &g_freq_table_mem_hz[0];
+        default:
+            return NULL;
+    }
+}

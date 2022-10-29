@@ -135,11 +135,8 @@ Governor::Governor() {
     m_cpu_freq.module = SysClkModule_CPU;
     m_gpu_freq.module = SysClkModule_GPU;
 
-    uint32_t* list = NULL;
-    Clocks::GetList(SysClkModule_CPU, &list);
-    m_cpu_freq.hz_list = list;
-    Clocks::GetList(SysClkModule_GPU, &list);
-    m_gpu_freq.hz_list = list;
+    m_cpu_freq.hz_list = &g_freq_table_cpu_hz[0];
+    m_gpu_freq.hz_list = &g_freq_table_cpu_hz[0];
 
     m_cpu_freq.boost_hz = 1785'000'000;
     m_cpu_freq.utilref_hz = 2397'000'000;

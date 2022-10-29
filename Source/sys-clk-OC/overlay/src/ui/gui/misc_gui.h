@@ -69,15 +69,13 @@ class MiscGui : public BaseMenuGui
 
             cmd.reg = reg;
             res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-            if (res)
-            {
+            if (res) {
                 i2csessionClose(&_session);
                 return res;
             }
 
             res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-            if (res)
-            {
+            if (res) {
                 i2csessionClose(&_session);
                 return res;
             }
@@ -100,15 +98,13 @@ class MiscGui : public BaseMenuGui
 
             cmd.reg = reg;
             res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-            if (res)
-            {
+            if (res) {
                 i2csessionClose(&_session);
                 return res;
             }
 
             res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-            if (res)
-            {
+            if (res) {
                 i2csessionClose(&_session);
                 return res;
             }
@@ -133,8 +129,7 @@ class MiscGui : public BaseMenuGui
             if (R_SUCCEEDED(I2cRead_OutU16(Max17050Reg_Current, I2cDevice_Max17050, &tmp)))
                 i2cInfo->batCurrent = (s16)tmp * (1.5625 / (SenseResistor * CGain));
 
-            auto I2cRead_Max77812_M_VOUT = [this](u8 reg)
-            {
+            auto I2cRead_Max77812_M_VOUT = [this](u8 reg) {
                 constexpr u32 MIN_MV    = 250;
                 constexpr u32 MV_STEP   = 5;
                 constexpr u8  RESET_VAL = 0x78;
@@ -229,19 +224,24 @@ class MiscGui : public BaseMenuGui
         {
             smInitialize();
             lblInitialize();
+
             lblGetBacklightSwitchStatus(&lblstatus);
             if (shouldSwitch)
                 lblstatus ? lblSwitchBacklightOff(0) : lblSwitchBacklightOn(0);
+
             lblExit();
             smExit();
         }
 
-        tsl::elm::ToggleListItem* addConfigToggle(SysClkConfigValue);
-        void updateConfigToggle(tsl::elm::ToggleListItem*, SysClkConfigValue);
+        bool isMariko = false;
 
-        tsl::elm::ToggleListItem *backlightToggle, *unsafeFreqToggle, *cpuBoostToggle, *syncModeToggle, *fastChargingToggle, *governorToggle;
-        tsl::elm::CategoryHeader *chargingLimitHeader;
-        StepTrackBarIcon *chargingLimitBar;
+        std::map<SysClkConfigValue, tsl::elm::ToggleListItem*> configToggles;
+        void addConfigToggle(SysClkConfigValue);
+        void updateConfigToggles();
+
+        tsl::elm::ToggleListItem* backlightToggle;
+        tsl::elm::CategoryHeader* chargingLimitHeader;
+        StepTrackBarIcon* chargingLimitBar;
 
         SysClkConfigValueList* configList;
         PsmChargeInfo*  chargeInfo;

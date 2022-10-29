@@ -30,8 +30,8 @@ enum SysClkIpcCmd
     SysClkIpcCmd_GetConfigValues = 9,
     SysClkIpcCmd_SetConfigValues = 10,
     SysClkIpcCmd_SetReverseNXRTMode = 11,
+    SysClkIpcCmd_GetFrequencyTable = 12,
 };
-
 
 typedef struct
 {
@@ -44,3 +44,10 @@ typedef struct
     SysClkModule module;
     uint32_t hz;
 } SysClkIpc_SetOverride_Args;
+
+typedef struct
+{
+    SysClkModule module;
+    SysClkProfile profile;
+    size_t max_entry_num;
+} SysClkIpc_GetFrequencyTable_Args;

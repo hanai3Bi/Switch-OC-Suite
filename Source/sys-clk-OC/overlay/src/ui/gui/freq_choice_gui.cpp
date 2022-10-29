@@ -11,23 +11,33 @@
 #include "freq_choice_gui.h"
 
 #include "../format.h"
+#include "fatal_gui.h"
 
-FreqChoiceGui::FreqChoiceGui(std::uint32_t selectedHz, std::uint32_t* hzList, FreqChoiceListener listener)
+FreqChoiceGui::FreqChoiceGui(std::uint32_t selectedMHz, SysClkModule module, SysClkProfile profile, FreqChoiceListener listener)
 {
-    this->selectedHz = selectedHz;
-    this->hzList = hzList;
+    this->hzTable = new uint32_t[MAX_ENTRIES];
+    Result rc = sysclkIpcGetFrequencyTable(module, profile, MAX_ENTRIES, hzTable);
+    if (R_FAILED(rc)) {
+        FatalGui::openWithResultCode("sysclkIpcGetFrequencyTable", rc);
+    }
+
+    this->selectedMHz = selectedMHz;
     this->listener = listener;
 }
 
-tsl::elm::ListItem* FreqChoiceGui::createFreqListItem(std::uint32_t hz, bool selected)
+FreqChoiceGui::~FreqChoiceGui() {
+    delete[] this->hzTable;
+}
+
+tsl::elm::ListItem* FreqChoiceGui::createFreqListItem(std::uint32_t mhz, bool selected)
 {
-    tsl::elm::ListItem* listItem = new tsl::elm::ListItem(formatListFreqHz(hz));
+    tsl::elm::ListItem* listItem = new tsl::elm::ListItem(formatListFreqMhz(mhz));
     listItem->setValue(selected ? "\uE14B" : "");
 
-    listItem->setClickListener([this, hz](u64 keys) {
+    listItem->setClickListener([this, mhz](u64 keys) {
         if((keys & HidNpadButton_A) == HidNpadButton_A && this->listener)
         {
-            if(this->listener(hz))
+            if(this->listener(mhz))
             {
                 tsl::goBack();
             }
@@ -42,11 +52,13 @@ tsl::elm::ListItem* FreqChoiceGui::createFreqListItem(std::uint32_t hz, bool sel
 
 void FreqChoiceGui::listUI()
 {
-    std::uint32_t* hzPtr = this->hzList;
-    this->listElement->addItem(this->createFreqListItem(0, this->selectedHz == 0));
-    while(*hzPtr)
+    this->listElement->addItem(this->createFreqListItem(0, this->selectedMHz == 0));
+
+    uint32_t* p = this->hzTable;
+    while(*p)
     {
-        this->listElement->addItem(this->createFreqListItem(*hzPtr, (*hzPtr / 1000000) == (this->selectedHz / 1000000)));
-        hzPtr++;
+        uint32_t mhz = *p / 1000'000;
+        this->listElement->addItem(this->createFreqListItem(mhz, mhz == this->selectedMHz));
+        p++;
     }
 }

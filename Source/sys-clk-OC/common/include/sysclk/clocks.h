@@ -69,6 +69,8 @@ typedef struct
     uint32_t boostCPUFreq;
 } SysClkOcExtra;
 
+uint32_t* GetTable(SysClkModule module);
+
 typedef struct
 {
     union {
@@ -79,13 +81,10 @@ typedef struct
 } SysClkTitleProfileList;
 
 #define SYSCLK_GLOBAL_PROFILE_TID       0xA111111111111111
-#define SYSCLK_CPU_SAFE_MAX_HZ          1963500000U
-#define SYSCLK_GPU_HANDHELD_MAX_HZ      921600000U
-#define SYSCLK_GPU_CHARGING_USB_MAX_HZ  1267200000U
 
-extern uint32_t sysclk_g_freq_table_mem_hz[];
-extern uint32_t sysclk_g_freq_table_cpu_hz[];
-extern uint32_t sysclk_g_freq_table_gpu_hz[];
+extern uint32_t g_freq_table_mem_hz[];
+extern uint32_t g_freq_table_cpu_hz[];
+extern uint32_t g_freq_table_gpu_hz[];
 
 #define SYSCLK_ENUM_VALID(n, v) ((v) < n##_EnumMax)
 

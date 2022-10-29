@@ -22,10 +22,10 @@ GlobalOverrideGui::GlobalOverrideGui()
     }
 }
 
-void GlobalOverrideGui::openFreqChoiceGui(SysClkModule module, std::uint32_t* hzList)
+void GlobalOverrideGui::openFreqChoiceGui(SysClkModule module)
 {
-    tsl::changeTo<FreqChoiceGui>(this->context->overrideFreqs[module], hzList, [this, module](std::uint32_t hz) {
-        Result rc = sysclkIpcSetOverride(module, hz);
+    tsl::changeTo<FreqChoiceGui>(this->context->overrideFreqs[module] / 1000'000, module, SysClkProfile_EnumMax, [this, module](std::uint32_t mhz) {
+        Result rc = sysclkIpcSetOverride(module, mhz * 1000'000);
         if(R_FAILED(rc))
         {
             FatalGui::openWithResultCode("sysclkIpcSetOverride", rc);
@@ -33,21 +33,21 @@ void GlobalOverrideGui::openFreqChoiceGui(SysClkModule module, std::uint32_t* hz
         }
 
         this->lastContextUpdate = armGetSystemTick();
-        this->context->overrideFreqs[module] = hz;
+        this->context->overrideFreqs[module] = mhz * 1000'000;
 
         return true;
     });
 }
 
-void GlobalOverrideGui::addModuleListItem(SysClkModule module, std::uint32_t* hzList)
+void GlobalOverrideGui::addModuleListItem(SysClkModule module)
 {
     tsl::elm::ListItem* listItem = new tsl::elm::ListItem(sysclkFormatModule(module, true));
     listItem->setValue(formatListFreqMhz(0));
 
-    listItem->setClickListener([this, module, hzList](u64 keys) {
+    listItem->setClickListener([this, module](u64 keys) {
         if((keys & HidNpadButton_A) == HidNpadButton_A)
         {
-            this->openFreqChoiceGui(module, hzList);
+            this->openFreqChoiceGui(module);
             return true;
         }
 
@@ -60,9 +60,9 @@ void GlobalOverrideGui::addModuleListItem(SysClkModule module, std::uint32_t* hz
 
 void GlobalOverrideGui::listUI()
 {
-    this->addModuleListItem(SysClkModule_CPU, &sysclk_g_freq_table_cpu_hz[0]);
-    this->addModuleListItem(SysClkModule_GPU, &sysclk_g_freq_table_gpu_hz[0]);
-    this->addModuleListItem(SysClkModule_MEM, &sysclk_g_freq_table_mem_hz[0]);
+    this->addModuleListItem(SysClkModule_CPU);
+    this->addModuleListItem(SysClkModule_GPU);
+    this->addModuleListItem(SysClkModule_MEM);
 }
 
 void GlobalOverrideGui::refresh()

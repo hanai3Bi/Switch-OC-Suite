@@ -17,7 +17,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # INCLUDES is a list of directories containing header files
 # EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
 #---------------------------------------------------------------------------------
-TARGET		:=	sys-clk
+TARGET		:=	sys-clk-OC
 BUILD		:=	build
 OUTDIR		:=	out
 RESOURCES	:=	res
@@ -30,7 +30,7 @@ LIBNAMES	:=	minIni nxExt
 #---------------------------------------------------------------------------------
 # version control constants
 #---------------------------------------------------------------------------------
-TARGET_VERSION	:= OC-$$(date +%Y/%m/%d)
+TARGET_VERSION	:= $$(date +%Y/%m/%d)
 
 #---------------------------------------------------------------------------------
 # options for code generation

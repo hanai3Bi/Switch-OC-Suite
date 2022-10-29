@@ -160,6 +160,14 @@ Result IpcService::ServiceHandlerFunc(void* arg, const IpcServerRequest* r, u8* 
                 return ipcSrv->SetReverseNXRTMode(mode);
             }
             break;
+        case SysClkIpcCmd_GetFrequencyTable:
+            if(r->data.size >= sizeof(SysClkIpc_GetFrequencyTable_Args))
+            {
+                SysClkIpc_GetFrequencyTable_Args* in_args = (SysClkIpc_GetFrequencyTable_Args*)r->data.ptr;
+                *out_dataSize = sizeof(uint32_t) * in_args->max_entry_num;
+                return ipcSrv->GetFrequencyTable(in_args, (uint32_t*)out_data);
+            }
+            break;
     }
 
     return SYSCLK_ERROR(Generic);
@@ -300,4 +308,8 @@ Result IpcService::SetConfigValues(SysClkConfigValueList* configValues)
 Result IpcService::SetReverseNXRTMode(ReverseNXMode mode) {
     ClockManager::GetInstance()->SetRNXRTMode(mode);
     return 0;
+}
+
+Result IpcService::GetFrequencyTable(SysClkIpc_GetFrequencyTable_Args* args, uint32_t* out_table) {
+    return Clocks::GetTable(args->module, args->profile, args->max_entry_num, out_table);
 }

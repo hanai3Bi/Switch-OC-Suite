@@ -18,6 +18,10 @@
 class Clocks
 {
   public:
+    static void GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max);
+    static Result GetTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table);
+    static void SetAllowUnsafe(bool allow) { allowUnsafe = allow; };
+    static bool GetIsMariko() { return isMariko; };
     static void Exit();
     static void Initialize();
     static SysClkApmConfiguration* GetEmbeddedApmConfig(uint32_t confId);
@@ -29,14 +33,14 @@ class Clocks
     static const char* GetProfileName(SysClkProfile profile, bool pretty);
     static const char* GetModuleName(SysClkModule module, bool pretty);
     static const char* GetThermalSensorName(SysClkThermalSensor sensor, bool pretty);
-    static std::uint32_t GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz, bool allowUnsafe);
+    static std::uint32_t GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz);
     static std::uint32_t GetTemperatureMilli(SysClkThermalSensor sensor);
-    static void GetList(SysClkModule module, std::uint32_t **outClocks);
 
   protected:
+    static inline bool allowUnsafe;
+    static inline bool isMariko;
     static std::int32_t GetTsTemperatureMilli(TsLocation location);
     static PcvModule GetPcvModule(SysClkModule sysclkModule);
     static PcvModuleId GetPcvModuleId(SysClkModule sysclkModule);
-    static std::uint32_t GetNearestHz(SysClkModule module, std::uint32_t inHz);
-    static std::uint32_t GetMaxAllowedHz(SysClkModule module, SysClkProfile profile, bool allowUnsafe);
+    static std::uint32_t GetMaxAllowedHz(SysClkModule module, SysClkProfile profile);
 };

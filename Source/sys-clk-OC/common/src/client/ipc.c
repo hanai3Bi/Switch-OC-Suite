@@ -13,6 +13,7 @@
 #include <switch.h>
 #include <string.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 
 static Service g_sysclkSrv;
 static atomic_size_t g_refCnt;
@@ -118,4 +119,30 @@ Result sysclkIpcSetConfigValues(SysClkConfigValueList* configValues)
 Result sysclkIpcSetReverseNXRTMode(ReverseNXMode mode)
 {
     return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetReverseNXRTMode, mode);
+}
+
+Result sysclkIpcGetFrequencyTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table)
+{
+    SysClkIpc_GetFrequencyTable_Args args = {
+        .module = module,
+        .profile = profile,
+        .max_entry_num = max_entry_num
+    };
+    size_t table_size = sizeof(uint32_t) * max_entry_num;
+    uint32_t* table = malloc(table_size);
+    memset(table, 0, table_size);
+
+    SfDispatchParams disp;
+
+    Result rc = serviceDispatchImpl(
+        &g_sysclkSrv, SysClkIpcCmd_GetFrequencyTable,
+        &args, sizeof(args),
+        table, table_size, disp);
+
+    if (R_FAILED(rc))
+        return rc;
+
+    memcpy(out_table, table, table_size);
+    free(table);
+    return 0;
 }

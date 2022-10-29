@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstring>
 #include "errors.h"
+#include "clocks.h"
 #include "file_utils.h"
 
 Config::Config(std::string path)
@@ -62,6 +63,12 @@ void Config::Load()
     else if (!ini_browse(&BrowseIniFunc, this, this->path.c_str()))
     {
         FileUtils::LogLine("[cfg] Error loading file");
+    }
+
+    // Erista: Disable Mariko only features
+    if (!Clocks::GetIsMariko()) {
+        this->configValues[SysClkConfigValue_AllowUnsafeFrequencies] = 0;
+        this->configValues[SysClkConfigValue_AutoCPUBoost] = 0;
     }
 
     this->loaded = true;

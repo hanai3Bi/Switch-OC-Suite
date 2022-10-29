@@ -8,27 +8,70 @@
  * --------------------------------------------------------------------------
  */
 
+#include <cstring>
 #include <nxExt.h>
 #include "clocks.h"
 #include "errors.h"
 
-void Clocks::GetList(SysClkModule module, std::uint32_t **outClocks)
+void Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max)
 {
-    switch(module)
-    {
-        case SysClkModule_CPU:
-            *outClocks = sysclk_g_freq_table_cpu_hz;
-            break;
-        case SysClkModule_GPU:
-            *outClocks = sysclk_g_freq_table_gpu_hz;
-            break;
-        case SysClkModule_MEM:
-            *outClocks = sysclk_g_freq_table_mem_hz;
-            break;
-        default:
-            *outClocks = NULL;
-            ERROR_THROW("No such PcvModule: %u", module);
+    if (module == SysClkModule_MEM) {
+        *min = isMariko ? &g_freq_table_mem_hz[4] : &g_freq_table_mem_hz[0]; // 1600 / 665
+        *max = &g_freq_table_mem_hz[5]; // 1862 - Max
+        return;
     }
+
+    if (module == SysClkModule_CPU) {
+        *min = &g_freq_table_cpu_hz[0];
+        if (!isMariko)
+            *max = &g_freq_table_cpu_hz[11]; // 1785
+        else {
+            if (allowUnsafe)
+                *max = &g_freq_table_cpu_hz[17]; // 2397
+            else
+                *max = &g_freq_table_cpu_hz[13]; // 1963
+        }
+        return;
+    }
+
+    if (module == SysClkModule_GPU) {
+        *min = &g_freq_table_gpu_hz[0];
+        if (isMariko && !allowUnsafe) {
+            *max = &g_freq_table_gpu_hz[11]; // 921
+            return;
+        }
+
+        switch (profile) {
+            case SysClkProfile_Handheld:
+                *max = isMariko ? &g_freq_table_gpu_hz[11] : &g_freq_table_gpu_hz[5]; // 921 / 460
+                break;
+            case SysClkProfile_HandheldChargingUSB:
+                *max = isMariko ? &g_freq_table_gpu_hz[16] : &g_freq_table_gpu_hz[9]; // 1267 / 768
+                break;
+            default:
+                *max = isMariko ? &g_freq_table_gpu_hz[17] : &g_freq_table_gpu_hz[11]; // 1305 / 921
+                break;
+        }
+        return;
+    }
+
+    ERROR_THROW("No such PcvModule: %u", module);
+}
+
+Result Clocks::GetTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table) {
+    uint32_t* min = NULL;
+    uint32_t* max = NULL;
+    memset(out_table, 0, max_entry_num * sizeof(uint32_t));
+    GetRange(module, profile, &min, &max);
+    if (!min || !max || (max - min) / sizeof(uint32_t) >= max_entry_num)
+        return 1;
+
+    uint32_t* p = min;
+    size_t idx = 0;
+    while(p <= max)
+        out_table[idx++] = *p++;
+
+    return 0;
 }
 
 void Clocks::Initialize()
@@ -42,9 +85,17 @@ void Clocks::Initialize()
     splExit();
 
     switch (hardware_type) {
-        case 0: //Icosa
-        case 1: //Copper
-            ERROR_THROW("[!] Erista is not supported!");
+        case 1: //Icosa
+        case 2: //Copper
+            isMariko = false;
+            break;
+        case 3: // Iowa
+        case 4: // Hoag
+        case 5: // Aula
+            isMariko = true;
+            break;
+        default:
+            ERROR_THROW("Unknown hardware type: 0x%X!", hardware_type);
             return;
     }
 
@@ -303,63 +354,25 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
     return hz;
 }
 
-std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz, bool allowUnsafe)
+std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz)
 {
-    std::uint32_t hz = GetNearestHz(module, inHz);
-    std::uint32_t maxHz = GetMaxAllowedHz(module, profile, allowUnsafe);
+    uint32_t* min = NULL;
+    uint32_t* max = NULL;
+    GetRange(module, profile, &min, &max);
 
-    if(maxHz != 0)
-    {
-        hz = std::min(hz, maxHz);
-    }
-
-    return hz;
-}
-
-std::uint32_t Clocks::GetMaxAllowedHz(SysClkModule module, SysClkProfile profile, bool allowUnsafe)
-{
-    switch (module) {
-        case SysClkModule_CPU:
-            if (!allowUnsafe)
-                return SYSCLK_CPU_SAFE_MAX_HZ;
-            break;
-        case SysClkModule_GPU:
-            if (profile == SysClkProfile_Handheld || !allowUnsafe)
-                return SYSCLK_GPU_HANDHELD_MAX_HZ;
-            if (profile == SysClkProfile_HandheldChargingUSB)
-                return SYSCLK_GPU_CHARGING_USB_MAX_HZ;
-            break;
-        default:
-            break;
-    }
-
-    return 0;
-}
-
-std::uint32_t Clocks::GetNearestHz(SysClkModule module, std::uint32_t inHz)
-{
-    std::uint32_t *clockTable = NULL;
-    GetList(module, &clockTable);
-
-    if (!clockTable || !clockTable[0])
-    {
+    if (!min || !max)
         ERROR_THROW("table lookup failed for SysClkModule: %u", module);
+
+    uint32_t inMHz = inHz / 1000000U;
+    uint32_t* p = min;
+
+    while(p <= max) {
+        if (inMHz == *p / 1000000U)
+            return *p;
+        p++;
     }
 
-    int i = 0;
-    while(clockTable[i])
-    {
-        // if (inHz <= (clockTable[i] + clockTable[i + 1]) / 2)
-        if ((inHz / 1000'000) == (clockTable[i] / 1000'000))
-        {
-            return clockTable[i];
-        }
-
-        i++;
-    }
-
-    /* Freq not found in the table, return inHz regardlessly */
-    return inHz;
+    return *max;
 }
 
 std::int32_t Clocks::GetTsTemperatureMilli(TsLocation location)

@@ -58,7 +58,6 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
-    this->oc->allowUnsafeFreq = false;
     this->oc->governor = false;
     this->oc->realProfile = SysClkProfile_Handheld;
     this->oc->maxMEMFreq = 0;
@@ -138,7 +137,7 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     if (hz)
     {
         /* Considering realProfile frequency limit */
-        hz = Clocks::GetNearestHz(module, this->oc->realProfile, hz, this->oc->allowUnsafeFreq);
+        hz = Clocks::GetNearestHz(module, this->oc->realProfile, hz);
 
         if (module == SysClkModule_MEM && hz == MAX_MEM_CLOCK)
         {
@@ -244,7 +243,8 @@ bool ClockManager::RefreshContext()
     bool hasChanged = this->config->Refresh();
     if (hasChanged) {
         this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
-        this->oc->allowUnsafeFreq = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+        bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+        Clocks::SetAllowUnsafe(allowUnsafe);
     }
 
     bool enabled = this->GetConfig()->Enabled();
@@ -252,14 +252,6 @@ bool ClockManager::RefreshContext()
     {
         this->context->enabled = enabled;
         FileUtils::LogLine("[mgr] " TARGET " status: %s", enabled ? "enabled" : "disabled");
-        hasChanged = true;
-    }
-
-    bool governor = this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorExperimental);
-    if (governor != this->oc->governor)
-    {
-        this->oc->governor = governor;
-        FileUtils::LogLine("[mgr] Governor status: %s", governor ? "enabled" : "disabled");
         hasChanged = true;
     }
 
@@ -274,8 +266,17 @@ bool ClockManager::RefreshContext()
         this->rnxSync->Reset(applicationId);
     }
 
+    bool governor = this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorExperimental);
+    governor &= !this->GetConfig()->GetTitleGovernorDisabled(applicationId);
+    if (governor != this->oc->governor)
+    {
+        this->oc->governor = governor;
+        FileUtils::LogLine("[mgr] Governor status: %s", governor ? "enabled" : "disabled");
+        hasChanged = true;
+    }
+
     if (hasChanged) {
-        if (enabled && governor && !this->GetConfig()->GetTitleGovernorDisabled(applicationId))
+        if (enabled && governor)
             this->governor->Start();
         else
             this->governor->Stop();
