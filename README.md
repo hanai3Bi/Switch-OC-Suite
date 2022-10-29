@@ -37,6 +37,9 @@ This project will not be actively maintained or regularly updated along with Atm
 
 - **Modded sys-clk and ReverseNX**(-RT)
 
+  - CPU & GPU frequency governor (Experimental)
+    - Adjust frequency based on load. Might decrease power draw but can introduce stutters.
+
   - Global profile
     - Designated a dummy title id `0xA111111111111111`.
     - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
