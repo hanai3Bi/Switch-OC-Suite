@@ -200,23 +200,23 @@ StatusTab::StatusTab(RefreshTask *refreshTask) :
 
 void StatusTab::updateWarningForProfile(SysClkProfile profile, bool animated)
 {
-    switch (profile)
-    {
-        case SysClkProfile_Handheld:
-            if (this->warningLabel->isHidden())
-                this->warningLabel->show([](){});
-            this->warningLabel->setText("\uE140  Handheld Mode: Max GPU freq: " + formatFreq(SYSCLK_GPU_HANDHELD_MAX_HZ));
-            break;
-        case SysClkProfile_HandheldChargingUSB:
-            if (this->warningLabel->isHidden())
-                this->warningLabel->show([](){});
-            this->warningLabel->setText("\uE140  USB Charging Mode: Max GPU freq: " + formatFreq(SYSCLK_GPU_CHARGING_USB_MAX_HZ));
-            break;
-        default:
-            if (!this->warningLabel->isHidden())
-                this->warningLabel->hide([](){}, animated);
-            break;
-    }
+    // switch (profile)
+    // {
+    //     case SysClkProfile_Handheld:
+    //         if (this->warningLabel->isHidden())
+    //             this->warningLabel->show([](){});
+    //         this->warningLabel->setText("\uE140  Handheld Mode: Max GPU freq: " + formatFreq(SYSCLK_GPU_HANDHELD_MAX_HZ));
+    //         break;
+    //     case SysClkProfile_HandheldChargingUSB:
+    //         if (this->warningLabel->isHidden())
+    //             this->warningLabel->show([](){});
+    //         this->warningLabel->setText("\uE140  USB Charging Mode: Max GPU freq: " + formatFreq(SYSCLK_GPU_CHARGING_USB_MAX_HZ));
+    //         break;
+    //     default:
+    //         if (!this->warningLabel->isHidden())
+    //             this->warningLabel->hide([](){}, animated);
+    //         break;
+    // }
 }
 
 StatusTab::~StatusTab()

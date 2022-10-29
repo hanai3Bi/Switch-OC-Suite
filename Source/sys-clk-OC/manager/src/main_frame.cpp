@@ -23,7 +23,7 @@
 #include "status_tab.h"
 #include "advanced_settings_tab.h"
 #include "app_profiles_tab.h"
-#include "cheat_sheet_tab.h"
+// #include "cheat_sheet_tab.h"
 #include "about_tab.h"
 #include "logo.h"
 
@@ -46,7 +46,7 @@ MainFrame::MainFrame() : TabFrame()
 
     this->addSeparator();
 
-    this->addTab("Cheat Sheet", new CheatSheetTab());
+    // this->addTab("Cheat Sheet", new CheatSheetTab());
     this->addTab("About", new AboutTab());
 }
 

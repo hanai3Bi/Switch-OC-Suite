@@ -35,6 +35,15 @@ This project will not be actively maintained or regularly updated along with Atm
 
     </details>
 
+- **Modded sys-clk and ReverseNX**(-RT)
+
+  - Global profile
+    - Designated a dummy title id `0xA111111111111111`.
+    - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
+
+  - Miscellaneous
+    - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
+
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
 
 
@@ -48,22 +57,13 @@ This project will not be actively maintained or regularly updated along with Atm
     - **Disabled by default**, toggle "Allow Unsafe Frequencies" on in overlay or add `allow_unsafe_freq=1` to `config.ini`
     - Power draw will be significant higher than what the mainboard was designed to tolerate at anything higher than 1963/921 MHz.
     - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
-
-- **Modded sys-clk and ReverseNX**(-RT)
-
-  - Global profile
-    - Designated a dummy title id `0xA111111111111111`.
-    - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
-
-  - Miscellaneous
-    - Auto CPU Boost: For faster game loading
-      - Enable CPU Boost (1785 MHz, could be configured higher) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
-      - Auto-Boost will be enabled only when charger is connected.
-
-    - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
-
-    - View charger & battery info, toggle fast-charging(2A) or set charge limit (20% - 100%) in overlay
-      - Note: Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
+    
+  - Auto CPU Boost: For faster game loading
+    - Enable CPU Boost (1785 MHz, could be configured higher) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
+    - Auto-Boost will be enabled only when charger is connected.
+  
+  - View charger & battery info, toggle fast-charging(2A) or set charge limit (20% - 100%) in overlay
+    - Note: Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
 
 
@@ -71,9 +71,7 @@ This project will not be actively maintained or regularly updated along with Atm
 
 1. Download latest [release](https://github.com/KazushiMe/Switch-OC-Suite/releases/latest).
 
-2. Mariko Only: Copy all files in `SdOut` to the root of SD card.
-
-   Erista user: Use other modified sys-clk instead. (Add your RAM OC frequency to sys-clk and recompiling). Only `loader.kip` and some benchmark homebrew are available in this repo for now.
+2. Copy all files in `SdOut` to the root of SD card.
 
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 

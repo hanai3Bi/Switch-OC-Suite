@@ -53,7 +53,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     cpuFreqListItem->getValueSelectedEvent()->subscribe([](int result){
         Result rc = result == 0 ?
             sysclkIpcRemoveOverride(SysClkModule_CPU) :
-            sysclkIpcSetOverride(SysClkModule_CPU, sysclk_g_freq_table_cpu_hz[result - 1]);
+            sysclkIpcSetOverride(SysClkModule_CPU, g_freq_table_cpu_hz[result - 1]);
 
         if (R_FAILED(rc))
         {
@@ -68,7 +68,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     gpuFreqListItem->getValueSelectedEvent()->subscribe([](int result){
         Result rc = result == 0 ?
             sysclkIpcRemoveOverride(SysClkModule_GPU) :
-            sysclkIpcSetOverride(SysClkModule_GPU, sysclk_g_freq_table_gpu_hz[result - 1]);
+            sysclkIpcSetOverride(SysClkModule_GPU, g_freq_table_gpu_hz[result - 1]);
 
         if (R_FAILED(rc))
         {
@@ -84,7 +84,7 @@ AdvancedSettingsTab::AdvancedSettingsTab()
     {
         Result rc = result == 0 ?
             sysclkIpcRemoveOverride(SysClkModule_MEM) :
-            sysclkIpcSetOverride(SysClkModule_MEM, sysclk_g_freq_table_mem_hz[result - 1]);
+            sysclkIpcSetOverride(SysClkModule_MEM, g_freq_table_mem_hz[result - 1]);
 
         if (R_FAILED(rc))
         {

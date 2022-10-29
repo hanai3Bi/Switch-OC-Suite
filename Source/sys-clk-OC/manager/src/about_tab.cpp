@@ -33,7 +33,8 @@ AboutTab::AboutTab()
     // Subtitle
     brls::Label *subTitle = new brls::Label(
         brls::LabelStyle::REGULAR,
-        "Nintendo Switch overclocking / underclocking system module and frontend app by the RetroNX Team", 
+        "This is a modified version of official sys-clk, which is not associated with any author below.\n" \
+        "Nintendo Switch overclocking / underclocking system module and frontend app by the RetroNX Team.\n",
         true
     );
     subTitle->setHorizontalAlign(NVG_ALIGN_CENTER);

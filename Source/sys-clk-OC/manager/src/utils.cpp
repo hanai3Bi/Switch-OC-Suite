@@ -81,15 +81,15 @@ brls::SelectListItem* createFreqListItem(SysClkModule module, uint32_t selectedF
     {
         case SysClkModule_CPU:
             name = "CPU Frequency";
-            table = sysclk_g_freq_table_cpu_hz;
+            table = g_freq_table_cpu_hz;
             break;
         case SysClkModule_GPU:
             name = "GPU Frequency";
-            table = sysclk_g_freq_table_gpu_hz;
+            table = g_freq_table_gpu_hz;
             break;
         case SysClkModule_MEM:
             name = "MEM Frequency";
-            table = sysclk_g_freq_table_mem_hz;
+            table = g_freq_table_mem_hz;
             break;
         default:
             return nullptr;
