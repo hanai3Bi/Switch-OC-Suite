@@ -50,5 +50,4 @@ typedef struct
 {
     SysClkModule module;
     SysClkProfile profile;
-    size_t max_entry_num;
 } SysClkIpc_GetFrequencyTable_Args;

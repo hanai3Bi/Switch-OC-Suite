@@ -37,7 +37,7 @@ class IpcService
     Result GetConfigValues(SysClkConfigValueList* out_configValues);
     Result SetConfigValues(SysClkConfigValueList* configValues);
     Result SetReverseNXRTMode(ReverseNXMode mode);
-    Result GetFrequencyTable(SysClkIpc_GetFrequencyTable_Args* args, uint32_t* out_table);
+    Result GetFrequencyTable(SysClkIpc_GetFrequencyTable_Args* args, SysClkFrequencyTable* out_table);
     Result GetIsMariko(bool* out_is_mariko);
 
     bool running;

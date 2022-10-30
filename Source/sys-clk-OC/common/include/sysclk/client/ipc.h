@@ -31,7 +31,7 @@ Result sysclkIpcSetProfiles(u64 tid, SysClkTitleProfileList* profiles);
 Result sysclkIpcGetConfigValues(SysClkConfigValueList* out_configValues);
 Result sysclkIpcSetConfigValues(SysClkConfigValueList* configValues);
 Result sysclkIpcSetReverseNXRTMode(ReverseNXMode mode);
-Result sysclkIpcGetFrequencyTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table);
+Result sysclkIpcGetFrequencyTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table);
 Result sysclkIpcGetIsMariko(bool* out_is_mariko);
 
 static inline Result sysclkIpcRemoveOverride(SysClkModule module)

@@ -12,6 +12,7 @@
 #include <nxExt.h>
 #include "clocks.h"
 #include "errors.h"
+#include "file_utils.h"
 
 void Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max)
 {
@@ -58,18 +59,18 @@ void Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min
     ERROR_THROW("No such PcvModule: %u", module);
 }
 
-Result Clocks::GetTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table) {
+Result Clocks::GetTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table) {
     uint32_t* min = NULL;
     uint32_t* max = NULL;
-    memset(out_table, 0, max_entry_num * sizeof(uint32_t));
     GetRange(module, profile, &min, &max);
-    if (!min || !max || (max - min) / sizeof(uint32_t) >= max_entry_num)
+    if (!min || !max || (max - min) / sizeof(uint32_t) >= sizeof(SysClkFrequencyTable) / sizeof(uint32_t))
         return 1;
 
+    memset(out_table, 0, sizeof(SysClkFrequencyTable));
     uint32_t* p = min;
     size_t idx = 0;
     while(p <= max)
-        out_table[idx++] = *p++;
+        out_table->values[idx++] = *p++;
 
     return 0;
 }
@@ -78,7 +79,6 @@ void Clocks::Initialize()
 {
     Result rc = 0;
 
-    // Check if it's Mariko
     u64 hardware_type = 0;
     rc = splInitialize();
     ASSERT_RESULT_OK(rc, "splInitialize");
@@ -89,11 +89,11 @@ void Clocks::Initialize()
     switch (hardware_type) {
         case 0: // Icosa
         case 1: // Copper
-        case 4: // Calcio
             isMariko = false;
             break;
         case 2: // Hoag
         case 3: // Iowa
+        case 4: // Calcio
         case 5: // Aula
             isMariko = true;
             break;
@@ -126,6 +126,19 @@ void Clocks::Initialize()
     {
         rc = tcInitialize();
         ASSERT_RESULT_OK(rc, "tcInitialize");
+    }
+
+    FileUtils::ParseLoaderKip();
+
+    if (!maxMemFreq) {
+        uint32_t curr_mem_hz = GetCurrentHz(SysClkModule_MEM);
+        SetHz(SysClkModule_MEM, MAX_MEM_CLOCK);
+        svcSleepThread(1'000'000);
+        if (uint32_t hz = GetCurrentHz(SysClkModule_MEM))
+            maxMemFreq = hz;
+        else
+            maxMemFreq = MAX_MEM_CLOCK;
+        SetHz(SysClkModule_MEM, curr_mem_hz);
     }
 }
 
@@ -359,6 +372,9 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
 
 std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz)
 {
+    if (module == SysClkModule_MEM && inHz == MAX_MEM_CLOCK)
+        return Clocks::maxMemFreq;
+
     uint32_t* min = NULL;
     uint32_t* max = NULL;
     GetRange(module, profile, &min, &max);

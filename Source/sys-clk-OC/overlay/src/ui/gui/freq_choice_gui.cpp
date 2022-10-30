@@ -15,8 +15,8 @@
 
 FreqChoiceGui::FreqChoiceGui(std::uint32_t selectedMHz, SysClkModule module, SysClkProfile profile, FreqChoiceListener listener)
 {
-    this->hzTable = new uint32_t[MAX_ENTRIES];
-    Result rc = sysclkIpcGetFrequencyTable(module, profile, MAX_ENTRIES, hzTable);
+    this->hzTable = new SysClkFrequencyTable;
+    Result rc = sysclkIpcGetFrequencyTable(module, profile, hzTable);
     if (R_FAILED(rc)) {
         FatalGui::openWithResultCode("sysclkIpcGetFrequencyTable", rc);
     }
@@ -26,7 +26,7 @@ FreqChoiceGui::FreqChoiceGui(std::uint32_t selectedMHz, SysClkModule module, Sys
 }
 
 FreqChoiceGui::~FreqChoiceGui() {
-    delete[] this->hzTable;
+    delete this->hzTable;
 }
 
 tsl::elm::ListItem* FreqChoiceGui::createFreqListItem(std::uint32_t mhz, bool selected)
@@ -54,11 +54,12 @@ void FreqChoiceGui::listUI()
 {
     this->listElement->addItem(this->createFreqListItem(0, this->selectedMHz == 0));
 
-    uint32_t* p = this->hzTable;
-    while(*p)
+    size_t idx = 0;
+    uint32_t freq;
+    while(idx < 20 && (freq = this->hzTable->values[idx]))
     {
-        uint32_t mhz = *p / 1000'000;
+        uint32_t mhz = freq / 1000'000;
         this->listElement->addItem(this->createFreqListItem(mhz, mhz == this->selectedMHz));
-        p++;
+        idx++;
     }
 }

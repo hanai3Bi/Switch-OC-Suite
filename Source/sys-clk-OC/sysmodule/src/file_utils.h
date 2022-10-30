@@ -13,6 +13,7 @@
 #include <time.h>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <atomic>
 #include <cstdarg>
 #include <sysclk.h>
@@ -34,6 +35,23 @@ class FileUtils
     static void InitializeAsync();
     static void LogLine(const char *format, ...);
     static void WriteContextToCsv(const SysClkContext* context);
+    static void ParseLoaderKip();
   protected:
+    typedef struct CustTable {
+        uint8_t  cust[4] = {'C', 'U', 'S', 'T'};
+        uint16_t custRev;
+        uint16_t mtcConf;
+        uint32_t marikoCpuMaxClock;
+        uint32_t marikoCpuBoostClock;
+        uint32_t marikoCpuMaxVolt;
+        uint32_t marikoGpuMaxClock;
+        uint32_t marikoEmcMaxClock;
+        uint32_t eristaCpuOCEnable;
+        uint32_t eristaCpuMaxVolt;
+        uint32_t eristaEmcMaxClock;
+        uint32_t eristaEmcVolt;
+    } CustTable;
+
     static void RefreshFlags(bool force);
+    static Result CustParser(const char* path, size_t filesize);
 };

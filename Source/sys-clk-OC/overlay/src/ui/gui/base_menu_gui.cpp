@@ -34,46 +34,46 @@ void BaseMenuGui::preDraw(tsl::gfx::Renderer* renderer)
     {
         char buf[32];
 
-        renderer->drawString("App ID: ", false, 20, 60, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("App ID: ", false, 40, 60, SMALL_TEXT_SIZE, DESC_COLOR);
         snprintf(buf, sizeof(buf), "%016lX", context->applicationId);
-        renderer->drawString(buf, false, 81, 60, SMALL_TEXT_SIZE, VALUE_COLOR);
+        renderer->drawString(buf, false, 100, 60, SMALL_TEXT_SIZE, VALUE_COLOR);
 
-        renderer->drawString("Profile: ", false, 246, 60, SMALL_TEXT_SIZE, DESC_COLOR);
-        renderer->drawString(sysclkFormatProfile(context->profile, true), false, 302, 60, SMALL_TEXT_SIZE, VALUE_COLOR);
+        renderer->drawString("Profile: ", false, 266, 60, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString(sysclkFormatProfile(context->profile, true), false, 322, 60, SMALL_TEXT_SIZE, VALUE_COLOR);
 
         static struct
         {
             SysClkModule m;
             std::uint32_t x;
         } freqOffsets[SysClkModule_EnumMax] = {
-            { SysClkModule_CPU, 61 },
-            { SysClkModule_GPU, 204 },
-            { SysClkModule_MEM, 342 },
+            { SysClkModule_CPU, 80 },
+            { SysClkModule_GPU, 200 },
+            { SysClkModule_MEM, 320 },
         };
 
         for(unsigned int i = 0; i < SysClkModule_EnumMax; i++)
         {
             std::uint32_t hz = this->context->freqs[freqOffsets[i].m];
-            snprintf(buf, sizeof(buf), "%u.%u MHz", hz / 1000000, hz / 100000 - hz / 1000000 * 10);
+            snprintf(buf, sizeof(buf), "%u MHz", hz / 1000000);
             renderer->drawString(buf, false, freqOffsets[i].x, 85, SMALL_TEXT_SIZE, VALUE_COLOR);
         }
-        renderer->drawString("CPU:", false, 20, 85, SMALL_TEXT_SIZE, DESC_COLOR);
-        renderer->drawString("GPU:", false, 162, 85, SMALL_TEXT_SIZE, DESC_COLOR);
-        renderer->drawString("MEM:", false, 295, 85, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("CPU:", false, 40, 85, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("GPU:", false, 160, 85, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("MEM:", false, 270, 85, SMALL_TEXT_SIZE, DESC_COLOR);
 
         static struct
         {
             SysClkThermalSensor s;
             std::uint32_t x;
         } tempOffsets[SysClkModule_EnumMax] = {
-            { SysClkThermalSensor_SOC, 60 },
-            { SysClkThermalSensor_PCB, 165 },
-            { SysClkThermalSensor_Skin, 268 },
+            { SysClkThermalSensor_SOC, 80 },
+            { SysClkThermalSensor_PCB, 200 },
+            { SysClkThermalSensor_Skin, 320 },
         };
 
-        renderer->drawString("SOC:", false, 20, 110, SMALL_TEXT_SIZE, DESC_COLOR);
-        renderer->drawString("PCB:", false, 125, 110, SMALL_TEXT_SIZE, DESC_COLOR);
-        renderer->drawString("Skin:", false, 230, 110, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("SOC:", false, 40, 110, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("PCB:", false, 160, 110, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString("Skin:", false, 270, 110, SMALL_TEXT_SIZE, DESC_COLOR);
         for(unsigned int i = 0; i < SysClkModule_EnumMax; i++)
         {
             std::uint32_t millis = this->context->temps[tempOffsets[i].s];

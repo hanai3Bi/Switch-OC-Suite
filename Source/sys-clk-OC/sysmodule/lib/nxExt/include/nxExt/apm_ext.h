@@ -20,8 +20,11 @@ extern "C"
 Result apmExtInitialize(void);
 void apmExtExit(void);
 
-Result apmExtGetPerformanceMode(u32 *out_mode);
+// Silently fail
 Result apmExtSysRequestPerformanceMode(u32 mode);
+Result apmExtSysSetCpuBoostMode(u32 mode);
+
+Result apmExtGetPerformanceMode(u32 *out_mode);
 Result apmExtGetCurrentPerformanceConfiguration(u32 *out_conf);
 
 inline bool apmExtIsCPUBoosted(u32 conf_id) { // CPU boosted to 1785 MHz

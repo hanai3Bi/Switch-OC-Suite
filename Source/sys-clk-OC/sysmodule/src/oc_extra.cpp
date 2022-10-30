@@ -135,10 +135,10 @@ Governor::Governor() {
     m_cpu_freq.module = SysClkModule_CPU;
     m_gpu_freq.module = SysClkModule_GPU;
 
-    m_cpu_freq.hz_list = &g_freq_table_cpu_hz[0];
-    m_gpu_freq.hz_list = &g_freq_table_cpu_hz[0];
+    m_cpu_freq.hz_list = GetTable(SysClkModule_CPU);
+    m_gpu_freq.hz_list = GetTable(SysClkModule_GPU);
 
-    m_cpu_freq.boost_hz = 1785'000'000;
+    m_cpu_freq.boost_hz = Clocks::boostCpuFreq;
     m_cpu_freq.utilref_hz = 2397'000'000;
 
     m_gpu_freq.boost_hz = 76'800'000;
@@ -244,7 +244,7 @@ void Governor::s_FreqContext::SetNextFreq(uint32_t norm_util) {
     } else {
         uint32_t* p = hz_list;
         do {
-            if (*p > next_freq) {
+            if (*p >= next_freq) {
                 adj_next_freq = *p;
                 break;
             }

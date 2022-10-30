@@ -65,9 +65,12 @@ typedef struct
     bool allowUnsafeFreq;
     bool governor;
     SysClkProfile realProfile;
-    uint32_t maxMEMFreq;
-    uint32_t boostCPUFreq;
 } SysClkOcExtra;
+
+typedef struct
+{
+    uint32_t values[20];
+} SysClkFrequencyTable;
 
 uint32_t* GetTable(SysClkModule module);
 

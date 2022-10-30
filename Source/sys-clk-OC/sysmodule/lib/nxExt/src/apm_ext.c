@@ -21,22 +21,15 @@ Result apmExtInitialize(void)
     g_refCnt++;
 
     if (serviceIsActive(&g_apmSrv))
-    {
         return 0;
-    }
 
-    Result rc = 0;
+    Result rc = smGetService(&g_apmSrv, "apm");
 
-    rc = smGetService(&g_apmSrv, "apm");
     if(R_SUCCEEDED(rc))
-    {
         rc = smGetService(&g_apmSysSrv, "apm:sys");
-    }
 
     if (R_FAILED(rc))
-    {
         apmExtExit();
-    }
 
     return rc;
 }
@@ -48,6 +41,11 @@ void apmExtExit(void)
         serviceClose(&g_apmSrv);
         serviceClose(&g_apmSysSrv);
     }
+}
+
+Result apmExtSysSetCpuBoostMode(u32 mode)
+{
+    return serviceDispatchIn(&g_apmSysSrv, 6, mode);
 }
 
 Result apmExtGetPerformanceMode(u32 *out_mode)

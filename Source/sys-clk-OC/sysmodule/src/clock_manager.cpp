@@ -60,8 +60,6 @@ ClockManager::ClockManager()
     this->oc->systemCoreBoostCPU = false;
     this->oc->governor = false;
     this->oc->realProfile = SysClkProfile_Handheld;
-    this->oc->maxMEMFreq = 0;
-    this->oc->boostCPUFreq = 0;
 
     this->rnxSync = new ReverseNXSync;
     this->governor = new Governor;
@@ -74,17 +72,6 @@ ClockManager::~ClockManager()
     delete this->oc;
     delete this->context;
     delete this->config;
-}
-
-bool ClockManager::IsBoostMode()
-{
-    std::uint32_t confId = this->context->perfConfId;
-    bool isBoostMode = apmExtIsBoostMode(confId);
-    if (apmExtIsCPUBoosted(confId) && !this->oc->boostCPUFreq) {
-        this->oc->boostCPUFreq = std::max(this->context->freqs[SysClkModule_CPU], 1785'000'000U);
-        this->governor->SetCPUBoostHz(this->oc->boostCPUFreq);
-    }
-    return isBoostMode;
 }
 
 void ClockManager::SetRunning(bool running)
@@ -127,7 +114,7 @@ uint32_t ClockManager::GetHz(SysClkModule module)
             case SysClkModule_MEM:
                 hz = (mode == ReverseNX_Docked ||
                       this->oc->realProfile == SysClkProfile_Docked) ?
-                        MAX_MEM_CLOCK : 1600'000'000;
+                        Clocks::maxMemFreq : 1600'000'000;
                 break;
             default:
                 break;
@@ -138,27 +125,13 @@ uint32_t ClockManager::GetHz(SysClkModule module)
     {
         /* Considering realProfile frequency limit */
         hz = Clocks::GetNearestHz(module, this->oc->realProfile, hz);
-
-        if (module == SysClkModule_MEM && hz == MAX_MEM_CLOCK)
-        {
-            /* Trigger Max Mem Clock and record it */
-            if (!this->oc->maxMEMFreq)
-            {
-                uint32_t currentHz = Clocks::GetCurrentHz(SysClkModule_MEM);
-                Clocks::SetHz(SysClkModule_MEM, MAX_MEM_CLOCK);
-                this->oc->maxMEMFreq = Clocks::GetCurrentHz(SysClkModule_MEM);
-                Clocks::SetHz(SysClkModule_MEM, currentHz);
-            }
-
-            return this->oc->maxMEMFreq;
-        }
     }
 
     /* Handle CPU Auto Boost, no user-defined hz required */
     if (module == SysClkModule_CPU)
     {
-        if (this->oc->systemCoreBoostCPU && hz < this->oc->boostCPUFreq)
-            return this->oc->boostCPUFreq;
+        if (this->oc->systemCoreBoostCPU && hz < Clocks::boostCpuFreq)
+            return Clocks::boostCpuFreq;
         if (!hz)
             /* Trigger RefreshContext() and Tick(), resetting default CPU frequency */
             return 1020'000'000;
@@ -182,7 +155,8 @@ void ClockManager::Tick()
             if (hz && hz != this->context->freqs[module] && !this->oc->governor)
             {
                 // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
-                bool skipBoost = IsBoostMode() && ((module == SysClkModule_CPU && hz <= this->oc->boostCPUFreq) || module == SysClkModule_GPU);
+                bool skipBoost = apmExtIsBoostMode(this->context->perfConfId);
+                skipBoost &= (module == SysClkModule_CPU && hz <= Clocks::boostCpuFreq) || module == SysClkModule_GPU;
                 if (!skipBoost) {
                     FileUtils::LogLine("[mgr] %s clock set : %u.%u MHz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                     Clocks::SetHz((SysClkModule)module, hz);
@@ -210,7 +184,7 @@ void ClockManager::WaitForNextTick()
         this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost) &&
         this->context->enabled &&
         this->oc->realProfile != SysClkProfile_Handheld &&
-        this->context->freqs[SysClkModule_CPU] <= this->oc->boostCPUFreq;
+        this->context->freqs[SysClkModule_CPU] <= Clocks::boostCpuFreq;
 
     if (boostOK) {
         uint32_t core3Util = CpuCoreUtil(3, tickWaitTimeMs * 1000'000ULL).Get();
@@ -222,7 +196,7 @@ void ClockManager::WaitForNextTick()
             Clocks::SetHz(SysClkModule_CPU, GetHz(SysClkModule_CPU));
 
         if (!lastBoost && this->oc->systemCoreBoostCPU)
-            Clocks::SetHz(SysClkModule_CPU, this->oc->boostCPUFreq);
+            Clocks::SetHz(SysClkModule_CPU, Clocks::boostCpuFreq);
 
         return;
     }
@@ -313,7 +287,7 @@ bool ClockManager::RefreshContext()
     }
 
     // let ptm module handle boost clocks rather than resetting
-    if (hasChanged && !IsBoostMode()) {
+    if (hasChanged && !apmExtIsBoostMode(this->context->perfConfId)) {
         Clocks::ResetToStock();
     }
 

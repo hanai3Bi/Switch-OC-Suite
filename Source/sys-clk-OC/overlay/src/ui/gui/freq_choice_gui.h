@@ -23,7 +23,7 @@ class FreqChoiceGui : public BaseMenuGui
     protected:
         std::uint32_t selectedMHz;
         static constexpr size_t MAX_ENTRIES = 20;
-        std::uint32_t* hzTable;
+        SysClkFrequencyTable* hzTable;
         FreqChoiceListener listener;
         tsl::elm::ListItem* createFreqListItem(std::uint32_t mhz, bool selected);
 

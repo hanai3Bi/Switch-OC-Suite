@@ -18,8 +18,11 @@
 class Clocks
 {
   public:
+    static inline uint32_t boostCpuFreq = 1785000000;
+    static inline uint32_t maxMemFreq = MAX_MEM_CLOCK;
+
     static void GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max);
-    static Result GetTable(SysClkModule module, SysClkProfile profile, size_t max_entry_num, uint32_t* out_table);
+    static Result GetTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table);
     static void SetAllowUnsafe(bool allow) { allowUnsafe = allow; };
     static bool GetIsMariko() { return isMariko; };
     static void Exit();
