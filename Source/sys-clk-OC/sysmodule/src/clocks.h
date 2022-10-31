@@ -20,7 +20,7 @@ class Clocks
 {
   public:
     static inline uint32_t boostCpuFreq = 1785000000;
-    static inline uint32_t maxMemFreq = MAX_MEM_CLOCK;
+    static inline uint32_t maxMemFreq = 0;
 
     static void GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max);
     static Result GetTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table);

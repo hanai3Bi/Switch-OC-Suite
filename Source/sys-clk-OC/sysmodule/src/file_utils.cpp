@@ -305,3 +305,57 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
 
     return ParseError_Success;
 }
+
+Result FileUtils::mkdir_p(const char* dirpath) {
+    // https://gist.github.com/JonathonReinhart/8c0d90191c38af2dcadb102c4e202950
+    auto mkdir_wrapper = [](char* path) {
+        errno = 0;
+        size_t len = strnlen(path, 0x1000);
+        bool isCWDir = (len == 0) || (len == 1 && (path[0] == '.' || path[0] == '/'));
+        if (isCWDir)
+            return 0;
+
+        if (R_SUCCEEDED(mkdir(path, S_IRWXU)))
+            return 0;
+
+        struct stat st;
+        if (errno == EEXIST &&
+            R_SUCCEEDED(stat(path, &st)) &&
+            S_ISDIR(st.st_mode)) {
+            errno = 0;
+            return 0;
+        }
+
+        errno = ENOTDIR;
+        return -1;
+    };
+
+    errno = 0;
+    Result res = 0;
+
+    size_t path_len = strnlen(dirpath, 0x1000);
+    char* path_copy = new char[path_len];
+    memcpy(path_copy, dirpath, path_len);
+    char* p = path_copy;
+    while (*p) {
+        if (*p == '/') {
+            // Temporarily truncate
+            *p = '\0';
+
+            if (R_FAILED(mkdir_wrapper(path_copy))) {
+                res = -1;
+                goto end;
+            }
+
+            *p = '/';
+        }
+        p++;
+    }
+
+    if (R_FAILED(mkdir_wrapper(path_copy)))
+        res = -1;
+
+  end:
+    delete[] path_copy;
+    return res;
+}

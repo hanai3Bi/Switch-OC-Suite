@@ -36,6 +36,7 @@ class FileUtils
     static void LogLine(const char *format, ...);
     static void WriteContextToCsv(const SysClkContext* context);
     static void ParseLoaderKip();
+    static Result mkdir_p(const char* dirpath);
   protected:
     typedef struct CustTable {
         uint8_t  cust[4] = {'C', 'U', 'S', 'T'};

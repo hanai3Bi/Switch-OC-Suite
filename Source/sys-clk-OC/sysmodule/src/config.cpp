@@ -47,6 +47,9 @@ Config::~Config()
 
 Config *Config::CreateDefault()
 {
+    if (R_FAILED(FileUtils::mkdir_p(FILE_CONFIG_DIR)))
+        ERROR_THROW("Cannot create " FILE_CONFIG_DIR);
+
     return new Config(FILE_CONFIG_DIR "/config.ini");
 }
 
