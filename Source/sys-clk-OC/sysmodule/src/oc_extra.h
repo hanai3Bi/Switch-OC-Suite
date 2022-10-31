@@ -70,7 +70,7 @@ public:
     void Start();
     void Stop();
     void SetMaxHz(uint32_t max_hz, SysClkModule module);
-    void SetCPUBoostHz(uint32_t hz) { m_cpu_freq.boost_hz = hz; };
+    void SetAutoCPUBoost(bool enabled) { m_syscore_autoboost = enabled; };
     void SetPerfConf(uint32_t id);
 
 protected:
@@ -79,8 +79,10 @@ protected:
     static constexpr uint64_t TICK_TIME_NS = 1000'000'000 / SAMPLE_RATE;
 
     static constexpr int CORE_NUMS = 4;
+    static constexpr int SYS_CORE_ID = (CORE_NUMS - 1);
 
     bool m_running = false;
+    bool m_syscore_autoboost = false;
     Thread m_t_cpuworker[CORE_NUMS], m_t_main;
 
     uint32_t m_nvgpu_field;

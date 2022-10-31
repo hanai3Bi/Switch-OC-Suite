@@ -272,32 +272,33 @@ void Governor::s_FreqContext::SetBoostHz() {
 void Governor::CpuUtilWorker(void* args) {
     s_CoreContext* s = static_cast<s_CoreContext*>(args);
     int coreid = s->id;
-    constexpr int SYS_CORE_ID = (CORE_NUMS - 1);
     Governor* self = s->self;
 
     while (self->m_running) {
+        uint64_t timestamp = armTicksToNs(armGetSystemTick());
+        s->timestamp = timestamp;
+
+        s->util = self->m_cpu_freq.GetNormalizedUtil(CpuCoreUtil(coreid, TICK_TIME_NS).Get());
+
         bool CPUBoosted = apmExtIsCPUBoosted(self->m_perf_conf_id);
         if (CPUBoosted) {
             svcSleepThread(TICK_TIME_NS);
             continue;
         }
 
-        uint64_t timestamp = armTicksToNs(armGetSystemTick());
-        s->timestamp = timestamp;
         for (int id = 0; id < CORE_NUMS; id++) {
             if (abs(self->m_cpu_core_ctx[id].timestamp - timestamp) < TICK_TIME_NS * 10)
                 continue;
 
-            if (id == SYS_CORE_ID) {
+            if (id == SYS_CORE_ID && self->m_syscore_autoboost) {
                 self->m_cpu_freq.SetBoostHz();
-            } else {
-                self->m_cpu_freq.target_hz = self->m_cpu_freq.max_hz;
-                self->m_cpu_freq.SetHz();
+                break;
             }
+
+            self->m_cpu_freq.target_hz = self->m_cpu_freq.max_hz;
+            self->m_cpu_freq.SetHz();
             break;
         }
-
-        s->util = self->m_cpu_freq.GetNormalizedUtil(CpuCoreUtil(coreid, TICK_TIME_NS).Get());
     }
 }
 
@@ -308,20 +309,24 @@ void Governor::Main(void* args) {
     uint32_t nvgpu_field = self->m_nvgpu_field;
 
     s_Util cpu_util, gpu_util;
-    auto GetAdjCpuUtil = [self, cpu_util]() mutable {
-        uint64_t util = self->m_cpu_core_ctx[0].util;
+    auto SetCpuFreq = [self, cpu_ctx, cpu_util]() mutable {
+        uint32_t util = self->m_cpu_core_ctx[0].util;
         for (size_t i = 1; i < CORE_NUMS; i++) {
             if (util < self->m_cpu_core_ctx[i].util)
                 util = self->m_cpu_core_ctx[i].util;
         }
         cpu_util.Update(util);
-        return cpu_util.Get();
+        if (self->m_cpu_core_ctx[SYS_CORE_ID].util > 95'0 && self->m_syscore_autoboost)
+            cpu_ctx->SetBoostHz();
+        else
+            cpu_ctx->SetNextFreq(cpu_util.Get());
     };
 
-    auto GetAdjGpuUtil = [gpu_ctx, nvgpu_field, gpu_util]() mutable {
+    auto SetGpuFreq = [gpu_ctx, nvgpu_field, gpu_util]() mutable {
         uint32_t util = gpu_ctx->GetNormalizedUtil(GpuCoreUtil(nvgpu_field).Get());
         gpu_util.Update(util);
-        return gpu_util.Get();
+        util = gpu_util.Get();
+        gpu_ctx->SetNextFreq(util);
     };
 
     constexpr uint64_t UPDATE_CONTEXT_RATE = SAMPLE_RATE / 2;
@@ -360,9 +365,9 @@ void Governor::Main(void* args) {
         }
 
         if (!GPUThrottled)
-            gpu_ctx->SetNextFreq(GetAdjGpuUtil());
+            SetGpuFreq();
         if (!CPUBoosted)
-            cpu_ctx->SetNextFreq(GetAdjCpuUtil());
+            SetCpuFreq();
 
         svcSleepThread(TICK_TIME_NS);
     }

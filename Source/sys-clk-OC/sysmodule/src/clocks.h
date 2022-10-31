@@ -14,6 +14,7 @@
 #include <sysclk.h>
 
 #define MAX_MEM_CLOCK 1862'400'000
+#define BOOST_THRESHOLD 95'0
 
 class Clocks
 {

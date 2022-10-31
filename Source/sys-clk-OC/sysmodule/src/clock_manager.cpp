@@ -189,7 +189,6 @@ void ClockManager::WaitForNextTick()
     if (boostOK) {
         uint32_t core3Util = CpuCoreUtil(3, tickWaitTimeMs * 1000'000ULL).Get();
         bool lastBoost = this->oc->systemCoreBoostCPU;
-        constexpr uint32_t BOOST_THRESHOLD = 95'0;
         this->oc->systemCoreBoostCPU = (core3Util >= BOOST_THRESHOLD);
 
         if (lastBoost && !this->oc->systemCoreBoostCPU)
@@ -217,8 +216,11 @@ bool ClockManager::RefreshContext()
     bool hasChanged = this->config->Refresh();
     if (hasChanged) {
         this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
-        bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
-        Clocks::SetAllowUnsafe(allowUnsafe);
+        if (Clocks::GetIsMariko()) {
+            bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
+            Clocks::SetAllowUnsafe(allowUnsafe);
+            this->governor->SetAutoCPUBoost(this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost));
+        }
     }
 
     bool enabled = this->GetConfig()->Enabled();
