@@ -132,7 +132,7 @@ void FileUtils::RefreshFlags(bool force)
 void FileUtils::InitializeAsync()
 {
     Thread initThread = {0};
-    threadCreate(&initThread, _FileUtils_InitializeThreadFunc, NULL, NULL, 0x4000, 0x15, 0);
+    threadCreate(&initThread, _FileUtils_InitializeThreadFunc, NULL, NULL, 0x2000, 0x15, 0);
     threadStart(&initThread);
 }
 
@@ -228,6 +228,7 @@ void FileUtils::ParseLoaderKip() {
                 return;
             }
         }
+        closedir(dp);
     }
     delete[] full_path;
 }

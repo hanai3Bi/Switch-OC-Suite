@@ -170,12 +170,12 @@ void Governor::Start() {
         s->self = this;
         s->id = core;
         int prio = (core == CORE_NUMS - 1) ? 0x3F : 0x3B; // Pre-emptive MT
-        rc = threadCreate(&m_t_cpuworker[core], &CpuUtilWorker, (void*)s, NULL, 0x1000, prio, core);
+        rc = threadCreate(&m_t_cpuworker[core], &CpuUtilWorker, (void*)s, NULL, 0x400, prio, core);
         ASSERT_RESULT_OK(rc, "threadCreate");
         rc = threadStart(&m_t_cpuworker[core]);
         ASSERT_RESULT_OK(rc, "threadStart");
     }
-    rc = threadCreate(&m_t_main, &Main, (void*)this, NULL, 0x1000, 0x3F, 3);
+    rc = threadCreate(&m_t_main, &Main, (void*)this, NULL, 0x400, 0x3F, 3);
     ASSERT_RESULT_OK(rc, "threadCreate");
     rc = threadStart(&m_t_main);
     ASSERT_RESULT_OK(rc, "threadStart");

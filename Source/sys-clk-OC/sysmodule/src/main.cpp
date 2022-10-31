@@ -22,7 +22,7 @@
 #include "ipc_service.h"
 #include "oc_extra.h"
 
-#define INNER_HEAP_SIZE 0x40000
+#define INNER_HEAP_SIZE 0x50000
 
 extern "C"
 {
