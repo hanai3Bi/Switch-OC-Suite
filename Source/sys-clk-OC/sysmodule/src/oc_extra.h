@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <stack>
 #include <nxExt.h>
 #include <sysclk.h>
 #include <switch.h>
@@ -19,7 +18,7 @@ public:
 protected:
     const int m_core_id;
     const uint64_t m_wait_time_ns;
-    static constexpr uint64_t TICKS_PER_MS = 192;
+    static constexpr uint64_t IDLETICKS_PER_MS = 192;
     static constexpr uint32_t UTIL_MAX = 100'0;
 
     uint64_t GetIdleTickCount();
@@ -71,12 +70,14 @@ public:
     void Stop();
     void SetMaxHz(uint32_t max_hz, SysClkModule module);
     void SetAutoCPUBoost(bool enabled) { m_syscore_autoboost = enabled; };
+    void SetCPUBoostHz(uint32_t boost_hz) { m_cpu_freq.boost_hz = boost_hz; };
     void SetPerfConf(uint32_t id);
 
 protected:
     // Parameters for sampling
     static constexpr uint64_t SAMPLE_RATE = 200;
     static constexpr uint64_t TICK_TIME_NS = 1000'000'000 / SAMPLE_RATE;
+    static constexpr uint64_t SYSTICK_HZ = 19200000;
 
     static constexpr int CORE_NUMS = 4;
     static constexpr int SYS_CORE_ID = (CORE_NUMS - 1);
@@ -86,7 +87,6 @@ protected:
     Thread m_t_cpuworker[CORE_NUMS], m_t_main;
 
     uint32_t m_nvgpu_field;
-    uint32_t m_mem_freq;
     uint32_t m_perf_conf_id;
     SysClkApmConfiguration *m_apm_conf;
 
@@ -102,7 +102,7 @@ protected:
         uint32_t GetNormalizedUtil(uint32_t raw_util);
         void SetNextFreq(uint32_t norm_util);
         void SetHz();
-        void SetBoostHz();
+        void Boost();
     } s_FreqContext;
     s_FreqContext m_cpu_freq, m_gpu_freq;
 
@@ -110,7 +110,7 @@ protected:
         Governor*   self;
         int         id;
         uint32_t    util;
-        uint64_t    timestamp;
+        uint64_t    tick;
     } s_CoreContext;
     s_CoreContext m_cpu_core_ctx[CORE_NUMS];
 
@@ -135,4 +135,66 @@ protected:
 
     static void CpuUtilWorker(void* args);
     static void Main(void* args);
+
+    // Get max from a sliding window in O(1)
+    static constexpr size_t WINDOW_SIZE = SAMPLE_RATE / 10;
+    template <typename T>
+    class SWindowMax {
+    protected:
+        typedef struct {
+            T item;
+            T max;
+        } s_Entry;
+
+        struct s_Stack {
+            s_Entry m_stack[WINDOW_SIZE] = {};
+            size_t m_next = 0;
+
+            bool  empty() { return m_next == 0; };
+            s_Entry top() { return m_stack[m_next-1]; };
+            s_Entry pop() { return m_stack[--m_next]; };
+            void   push(s_Entry item) {
+                if (m_next == WINDOW_SIZE)
+                    return;
+                m_stack[m_next++] = item;
+            };
+        };
+
+        s_Stack enqStack;
+        s_Stack deqStack;
+
+        void Push(s_Stack& stack, T item) {
+            s_Entry n;
+            n.item = item;
+            n.max = enqStack.empty() ? item : std::max(item, enqStack.top().max);
+            stack.push(n);
+        }
+
+        void Pop() {
+            if (deqStack.empty()) {
+                while (!enqStack.empty())
+                    Push(deqStack, enqStack.pop().max);
+            }
+            deqStack.pop();
+        }
+
+    public:
+        SWindowMax() { deqStack.m_next = WINDOW_SIZE; }
+
+        void Add(T item) { Pop(); Push(enqStack, item); }
+
+        T Max() {
+            if (!enqStack.empty()) {
+                T enqMax = enqStack.top().max;
+                if (!deqStack.empty()) {
+                    T deqMax = deqStack.top().max;
+                    return std::max(deqMax, enqMax);
+                }
+                return enqMax;
+            }
+            if (!deqStack.empty())
+                return deqStack.top().max;
+            return 0;
+        }
+    };
 };

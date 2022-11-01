@@ -149,10 +149,10 @@ void ClockManager::Tick()
         for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
         {
             uint32_t hz = GetHz((SysClkModule)module);
-
             this->governor->SetMaxHz(hz, (SysClkModule)module);
 
-            if (hz && hz != this->context->freqs[module] && !this->oc->governor)
+            bool handledByGovernor = this->oc->governor && (module != SysClkModule_MEM);
+            if (hz && hz != this->context->freqs[module] && !handledByGovernor)
             {
                 // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
                 bool skipBoost = apmExtIsBoostMode(this->context->perfConfId);
@@ -219,6 +219,7 @@ bool ClockManager::RefreshContext()
         if (Clocks::GetIsMariko()) {
             bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
             Clocks::SetAllowUnsafe(allowUnsafe);
+            this->governor->SetCPUBoostHz(Clocks::GetNearestHz(SysClkModule_CPU, SysClkProfile_EnumMax, Clocks::boostCpuFreq));
             this->governor->SetAutoCPUBoost(this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost));
         }
     }
@@ -301,7 +302,8 @@ bool ClockManager::RefreshContext()
         if (hz != 0 && hz != this->context->freqs[module])
         {
             this->context->freqs[module] = hz;
-            if (!this->oc->governor) {
+            bool handledByGovernor = this->oc->governor && (module != SysClkModule_MEM);
+            if (!handledByGovernor) {
                 FileUtils::LogLine("[mgr] %s clock change: %u.%u MHz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                 hasChanged = true;
             }

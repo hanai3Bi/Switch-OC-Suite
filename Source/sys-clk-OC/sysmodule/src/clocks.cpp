@@ -372,7 +372,8 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
 
 std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz)
 {
-    if (module == SysClkModule_MEM && inHz == MAX_MEM_CLOCK)
+    uint32_t inMHz = inHz / 1000000U;
+    if (module == SysClkModule_MEM && inMHz == MAX_MEM_CLOCK / 1000'000)
         return Clocks::maxMemFreq;
 
     uint32_t* min = NULL;
@@ -382,9 +383,7 @@ std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, s
     if (!min || !max)
         ERROR_THROW("table lookup failed for SysClkModule: %u", module);
 
-    uint32_t inMHz = inHz / 1000000U;
     uint32_t* p = min;
-
     while(p <= max) {
         if (inMHz == *p / 1000000U)
             return *p;
