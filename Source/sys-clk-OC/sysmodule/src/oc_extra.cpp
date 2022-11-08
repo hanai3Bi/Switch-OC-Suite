@@ -412,7 +412,7 @@ void Governor::Main(void* args) {
     bool GPUThrottled = false;
 
     while (self->m_running) {
-        bool shouldUpdateContext = update_ticks++ >= UPDATE_CONTEXT_RATE;
+        bool shouldUpdateContext = ++update_ticks >= UPDATE_CONTEXT_RATE;
         if (shouldUpdateContext) {
             update_ticks = 0;
             uint32_t hz = Clocks::GetCurrentHz(SysClkModule_GPU);

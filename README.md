@@ -93,9 +93,8 @@ This project will not be actively maintained or regularly updated along with Atm
 
     </details>
 
-  - Loader configurator
-    - Grab [ldr_config.py](https://github.com/KazushiMe/Switch-OC-Suite/raw/master/ldr_config.py) and modify values in `cust_conf` dict.
-    - `python ldr_config.py loader.kip -s` will save your configuration in-place.
+  - [Online loader configurator](https://kazushime.github.io/Switch-OC-Suite/)
+    - Tested with latest Chrome(107) and Safari (16) (as of November 2022), older browsers may not work properly.
 
 5. **Hekate-ipl bootloader**
    - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
