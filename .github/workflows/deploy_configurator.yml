@@ -38,16 +38,16 @@ jobs:
         uses: devatherock/minify-js@v1.0.3
         with:
           # File to minify or a folder containing files to minify. By default, all files in current folder and its subfolders will be minified
-          directory: './Source/loaderConfigurator/src' # optional
+          directory: './Source/loaderConfigurator/dist' # optional
           # Path where the minified files will be saved. By default, the minified files will be saved in the original file path
-          output: './Source/loaderConfigurator/dist' # optional
+          output: './Source/loaderConfigurator/dist_min' # optional
           # Indicates if the output files should have the suffix '.min' added after the name. Default is true
           add_suffix: false # optional
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: './Source/loaderConfigurator/dist'
+          path: './Source/loaderConfigurator/dist_min'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
