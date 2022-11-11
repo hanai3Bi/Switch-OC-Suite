@@ -4,70 +4,66 @@
 
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
-This project will not be actively maintained or regularly updated along with Atmosphere CFW.
-
 
 ## DISCLAIMER: USE AT YOUR OWN RISK!
 
-- Overclocking in general (often combined with overvolting and overheating) will _degrade internal components_ - SoC, VRM(Voltage Regulator Module), Battery, etc. - _faster_ than you and the manufacturer have expected.
+- Overclocking in general will shorten the lifespan of some hardware components.
 
-- Higher RAM clocks without proper timings could be UNSTABLE and cause graphical glitches / instabilities / filesystem corruption. **Always make backup before usage.**
+- Due to HorizonOS design, instabilities from unsafe RAM clocks may cause filesystem corruption. **Always make backup before usage.**
+
 
 ## Features
 
-- **DRAM Overclock**
+- Erista variant (HAC-001)
+  - DRAM Overclock
+    - Safe: 1862.4 MHz
+    - Unsafe:
+      - DRAM bus overvolting
 
-  - Most games are **bottlenecked by RAM bandwidth**
+  - Modded sys-clk and ReverseNX-RT
+    - CPU & GPU frequency governor (Experimental)
+    - Fast-charging (2A) toggle, set charge limit (20% - 100%)
+    - Global Profile
+    - Sync ReverseNX Mode
+    
+- Mariko variant (HAC-001-01, HDH-001, HEG-001)
+  - CPU / GPU Overclock
+    - Safe: 1963 / 921 MHz
+    - Unsafe:
+      - Enable "Allow Unsafe Frequencies" in overlay to unlock frequencies up to 2397 / 1305 MHz
+      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
-  - Safe:
-    - Mariko: 1996.8 MHz has been tested stable for all (Samsung / Micron / Hynix), with built-in timing auto-adjustment.
-    - Erista: 1862.4 MHz.
+  - DRAM Overclock
+    - Safe: 1996.8 MHz with built-in timing adjustment
+    - Unsafe:
+      - [DRAM bus overvolting](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
 
-  - Unsafe: higher than 1996.8 MHz or overvolting
-    <details>
+  - Modded sys-clk and ReverseNX-RT
+    - Auto CPU Boost
+    - CPU & GPU frequency governor (Experimental)
+    - Fast-charging (2A) toggle, set charge limit (20% - 100%)
+    - Global Profile
+    - Sync ReverseNX Mode
 
-    - Timing:
-      - Timing parameters could be auto-adjusted (default) or overwritten with user-provided mtc table.
-      - Customization: No GUI tool, requires [rebuilding](#Build).
+- Auto CPU Boost
+  - For faster game loading
+  - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
+  - Effective only when charger is connected.
 
-    - DRAM bus overvolting (Erista Only).
-      - Mariko: [use this to set DRAM bus voltage](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+- CPU & GPU frequency governor (Experimental)
+  - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-    </details>
+- Fast-charging (2A) toggle, set charge limit (20% - 100%)
+  - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
-- **Modded sys-clk and ReverseNX**(-RT)
+- Global profile
+  - Designated a dummy title id `0xA111111111111111`.
+  - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
 
-  - CPU & GPU frequency governor (Experimental)
-    - Adjust frequency based on load. Might decrease power draw but can introduce stutters.
-
-  - Global profile
-    - Designated a dummy title id `0xA111111111111111`.
-    - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
-
-  - Miscellaneous
-    - Sync ReverseNX Mode: No need to change clocks manually after toggling modes in ReverseNX
+- Sync ReverseNX Mode
+  - No need to change clocks manually after toggling modes in ReverseNX (-RT and -Tool)
 
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
-
-
-### Mariko Only
-
-- **CPU/GPU Overclock**
-
-  - Safe: CPU/GPU @ 1963/921 MHz
-
-  - Unsafe: **NOT RECOMMENDED**
-    - **Disabled by default**, toggle "Allow Unsafe Frequencies" on in overlay or add `allow_unsafe_freq=1` to `config.ini`
-    - Power draw will be significant higher than what the mainboard was designed to tolerate at anything higher than 1963/921 MHz.
-    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
-    
-  - Auto CPU Boost: For faster game loading
-    - Enable CPU Boost (1785 MHz, could be configured higher) when CPU Core#3 (System Core) is stressed, especially when the game is loading assets from eMMC/SD card (I/O ops).
-    - Auto-Boost will be enabled only when charger is connected.
-  
-  - View charger & battery info, toggle fast-charging(2A) or set charge limit (20% - 100%) in overlay
-    - Note: Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
-
 
 
 ## Installation
@@ -78,7 +74,7 @@ This project will not be actively maintained or regularly updated along with Atm
 
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-4. Customization
+4. Customization via [online loader configurator](https://kazushime.github.io/Switch-OC-Suite/):
     <details>
 
     | Defaults   | Mariko        | Erista       |
@@ -93,24 +89,14 @@ This project will not be actively maintained or regularly updated along with Atm
 
     </details>
 
-  - [Online loader configurator](https://kazushime.github.io/Switch-OC-Suite/)
-    - Tested with latest Chrome(107) and Safari (16) (as of November 2022), older browsers may not work properly.
-
-5. **Hekate-ipl bootloader**
-   - Rename the kip to `loader.kip` and add `kip1=atmosphere/kips/loader.kip` in `bootloader/hekate_ipl.ini`
-   - Erista: Minerva module conflicts with HOS DRAM training. Recompile with frequency changed is recommeded, although you could simply remove `bootloader/sys/libsys_minerva.bso`.
-
-   **Atmosphere Fusee bootloader:**
-   - Fusee will load any kips in `/atmosphere/kips/` automatically.
-
-
-### Patching sysmodules manually
-
-This method is only served as reference as it could damage your MMC file system if not handled properly.
-
-Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (normally in `x.0.0`).
+5. Hekate-ipl bootloader Only
+   - Add `kip1=atmosphere/kips/loader.kip` to boot entry section in `bootloader/hekate_ipl.ini`.
 
 <details>
+  <summary>Deprecated: patching sysmodules manually</summary>
+  This method is only served as reference as it could damage your MMC file system if not handled properly.
+
+  Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (normally in `x.0.0`).
 
   Tools:
   - Lockpick_RCM
@@ -125,21 +111,18 @@ Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (
   3. Configure and run `test_patch.sh` to generate patched pcv & ptm sysmodules in nca
   4. Replace nca in `SYSTEM:/Contents/registered/` with TegraExplorer
   5. `ValidateAcidSignature()` should be stubbed to allow unsigned sysmodules to load (a.k.a. `loader_patch`)
-
 </details>
-
 
 
 ## Build
 
-### Loader KIP
-
+<details>
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
 
 If you are to install nro forwarders, stub `ValidateAcidSignature()` with `R_SUCCEED();` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
 
-Uncompress the kip to make it work with config editor: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
-
+Uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
+</details>
 
 
 ## Acknowledgement
