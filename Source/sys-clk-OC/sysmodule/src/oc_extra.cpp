@@ -231,88 +231,11 @@ uint32_t Governor::s_FreqContext::GetNormalizedUtil(uint32_t raw_util) {
 void Governor::s_FreqContext::SetNextFreq(uint32_t norm_util) {
     uint32_t prev_hz = target_hz;
 
-    // === Add a non-linear coefficient to tipping-point ===
-    // float nonlinear_coeff = (float)max_hz / target_hz; // Always non-negative
-    // #ifdef __aarch64__
-    // asm ("FSQRT %s0, %s0"
-    //     : "=w" (nonlinear_coeff)
-    //     : "w" (nonlinear_coeff));
-    // asm ("FSQRT %s0, %s0"
-    //     : "=w" (nonlinear_coeff)
-    //     : "w" (nonlinear_coeff));
-    // #else
-    // nonlinear_coeff = sqrt(sqrt(nonlinear_coeff));
-    // #endif
-
-    // === Tipping-point look-up table for all frequencies ===
-    // typedef struct {
-    //     uint16_t numerator;
-    //     uint16_t denom_shift;
-    // } lut_entry;
-
-    // static constexpr auto apply_cpu_nonlinear_coeff = [](uint32_t input) {
-    //     lut_entry lut[] = {
-    //         {  4645, 12 }, // 1963500000
-    //         {},
-    //         {  4505, 12 }, // 2091000000
-    //         {  8971, 13 }, // 2193000000
-    //         {  1117, 10 }, // 2295000000
-    //         {  1117, 10 }, // 2397000000
-    //         {},
-    //         {  5575, 12 }, // 612000000
-    //         { 10699, 13 }, // 714000000
-    //         {},
-    //         {    81,  6 }, // 816000000
-    //         { 10113, 13 }, // 918000000
-    //         {  1239, 10 }, // 1020000000
-    //         {},
-    //         {  9749, 13 }, // 1122000000
-    //         {  4807, 12 }, // 1224000000
-    //         {  2375, 11 }, // 1326000000
-    //         { 10041, 13 }, // 1428000000
-    //         {},
-    //         {  9283, 13 }, // 1581000000
-    //         {},
-    //         {  9215, 13 }, // 1683000000
-    //         { 18309, 14 }, // 1785000000
-    //     };
-    //     size_t idx = (input >> 20) % 24;
-    //     lut_entry entry = lut[idx];
-    //     return (input >> entry.denom_shift) * entry.numerator;
-    // };
-
-    // static constexpr auto apply_gpu_nonlinear_coeff = [](uint32_t input) {
-    //     lut_entry lut[] = {
-    //         {  1087, 10 }, // 1305600000
-    //         {  2351, 11 }, // 1075200000
-    //         {  9749, 13 }, // 844800000
-    //         {    81,  6 }, // 614400000
-    //         {  2949, 11 }, // 384000000
-    //         {     9,  2 }, // 153600000
-    //         {},
-    //         {  1089, 10 }, // 1228800000
-    //         {  2375, 11 }, // 998400000
-    //         {  1239, 10 }, // 768000000
-    //         { 10699, 13 }, // 537600000
-    //         {    25,  4 }, // 307200000
-    //         {     4,  0 }, // 76800000
-    //         {  1087, 10 }, // 1267200000
-    //         {  1165, 10 }, // 1152000000
-    //         {  4807, 12 }, // 921600000
-    //         { 10113, 13 }, // 691200000
-    //         {  5575, 12 }, // 460800000
-    //     };
-    //     size_t idx = (input >> 18) % 20;
-    //     lut_entry entry = lut[idx];
-    //     return (input >> entry.denom_shift) * entry.numerator;
-    // };
-
     auto FindHzInTable = [](uint32_t* hz_list, uint32_t in_hz) {
         uint32_t* p = hz_list;
-        while (*p) {
+        for (; *p != 0; p++) {
             if (in_hz <= *p)
                 return p;
-            p++;
         }
         return (--p);
     };
@@ -359,6 +282,7 @@ void Governor::CpuUtilWorker(void* args) {
             continue;
         }
 
+        // Check if other cores are stuck
         for (int id = 0; id < CORE_NUMS; id++) {
             if (id == coreid)
                 continue;
@@ -385,24 +309,25 @@ void Governor::Main(void* args) {
     s_FreqContext* gpu_ctx = &self->m_gpu_freq;
     uint32_t nvgpu_field = self->m_nvgpu_field;
 
-    s_Util cpu_util, gpu_util;
+    s_CpuUtil *cpu_util = new s_CpuUtil;
+    s_GpuUtil *gpu_util = new s_GpuUtil;
     auto SetCpuFreq = [self, cpu_ctx, cpu_util]() mutable {
         uint32_t util = self->m_cpu_core_ctx[0].util;
         for (size_t i = 1; i < CORE_NUMS; i++) {
             if (util < self->m_cpu_core_ctx[i].util)
                 util = self->m_cpu_core_ctx[i].util;
         }
-        cpu_util.Update(util);
+        cpu_util->Update(util);
         if (self->m_cpu_core_ctx[SYS_CORE_ID].util > BOOST_THRESHOLD && self->m_syscore_autoboost)
             cpu_ctx->Boost();
         else
-            cpu_ctx->SetNextFreq(cpu_util.Get());
+            cpu_ctx->SetNextFreq(cpu_util->Get());
     };
 
     auto SetGpuFreq = [gpu_ctx, nvgpu_field, gpu_util]() mutable {
         uint32_t util = gpu_ctx->GetNormalizedUtil(GpuCoreUtil(nvgpu_field).Get());
-        gpu_util.Update(util);
-        util = gpu_util.Get();
+        gpu_util->Update(util);
+        util = gpu_util->Get();
         gpu_ctx->SetNextFreq(util);
     };
 
@@ -442,5 +367,8 @@ void Governor::Main(void* args) {
 
         svcSleepThread(TICK_TIME_NS);
     }
+
+    delete cpu_util;
+    delete gpu_util;
 }
 

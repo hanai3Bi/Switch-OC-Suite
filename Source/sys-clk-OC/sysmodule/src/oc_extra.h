@@ -117,17 +117,17 @@ protected:
     // PELT: https://github.com/torvalds/linux/blob/master/kernel/sched/pelt.c
     // Util_acc_n = Util_0 + Util_1 * D + Util_2 * D^2 + ... + Util_n * D^n
     // To approximate D (decay multiplier):
-    //   After 100 ms (if SAMPLE_RATE == 200, 20 samples)
-    //   (UTIL_MAX * D)^20 ≈ 1 (UTIL_MAX decayed to 1)
-    // D = 0.707946... ≈ 5799 / 8192 (epsilon < 0.0001)
-    // Util_acc_20 ≈ 3419, Util_acc_40 ≈ 3420, Util_acc_inf ≈ 3420
+    //   After 50 ms (if SAMPLE_RATE == 200, 10 samples)
+    //   UTIL_MAX * D^10 ≈ 1 (UTIL_MAX decayed to 1)
+    // D = 4129 / 8192
+    // Util_acc_max = Util_acc_inf = 2012
     static constexpr uint32_t UTIL_MAX = 100'0;
-    struct s_Util {
+    struct s_CpuUtil {
         uint32_t util_acc = 0;
 
-        static constexpr uint32_t DECAY_DIVIDENT = 5799;
+        static constexpr uint32_t DECAY_DIVIDENT = 4129;
         static constexpr uint32_t DECAY_DIVISOR  = 8192;
-        static constexpr uint32_t UTIL_ACC_MAX   = 3420;
+        static constexpr uint32_t UTIL_ACC_MAX   = 2012;
 
         uint32_t Get()              { return (util_acc * UTIL_MAX / UTIL_ACC_MAX); };
         void Update(uint32_t util)  { util_acc = util_acc * DECAY_DIVIDENT / DECAY_DIVISOR + util; };
@@ -136,9 +136,8 @@ protected:
     static void CpuUtilWorker(void* args);
     static void Main(void* args);
 
-    // Get max from a sliding window in O(1)
-    static constexpr size_t WINDOW_SIZE = SAMPLE_RATE / 10;
-    template <typename T>
+    // Get max value from a sliding window in O(1)
+    template <typename T, size_t WINDOW_SIZE>
     class SWindowMax {
     protected:
         typedef struct {
@@ -148,7 +147,7 @@ protected:
 
         struct s_Stack {
             s_Entry m_stack[WINDOW_SIZE] = {};
-            size_t m_next = 0;
+            size_t m_next = WINDOW_SIZE;
 
             bool  empty() { return m_next == 0; };
             s_Entry top() { return m_stack[m_next-1]; };
@@ -164,26 +163,27 @@ protected:
         s_Stack deqStack;
 
         void Push(s_Stack& stack, T item) {
-            s_Entry n;
-            n.item = item;
-            n.max = enqStack.empty() ? item : std::max(item, enqStack.top().max);
+            s_Entry n = {
+                .item = item,
+                .max  = enqStack.empty() ? item : std::max(item, enqStack.top().max)
+            };
             stack.push(n);
         }
 
-        void Pop() {
+        T Pop() {
             if (deqStack.empty()) {
                 while (!enqStack.empty())
                     Push(deqStack, enqStack.pop().max);
             }
-            deqStack.pop();
+            return deqStack.pop().item;
         }
 
     public:
-        SWindowMax() { deqStack.m_next = WINDOW_SIZE; }
+        SWindowMax() {}
 
         void Add(T item) { Pop(); Push(enqStack, item); }
 
-        T Max() {
+        T Get() {
             if (!enqStack.empty()) {
                 T enqMax = enqStack.top().max;
                 if (!deqStack.empty()) {
@@ -196,5 +196,43 @@ protected:
                 return deqStack.top().max;
             return 0;
         }
+    };
+
+    // Get average value from a sliding window in O(1)
+    template <typename T, size_t WINDOW_SIZE>
+    class SWindowAvg {
+    public:
+        SWindowAvg() {}
+
+        void Add(T item) {
+            T pop = m_queue[m_next];
+            m_queue[m_next] = item;
+            m_next = (m_next + 1) % WINDOW_SIZE;
+            m_sum -= pop;
+            m_sum += item;
+        }
+
+        T Get() { return m_sum / WINDOW_SIZE; }
+
+    protected:
+        size_t m_next = 0;
+        T m_sum = 0;
+        T m_queue[WINDOW_SIZE] = {};
+    };
+
+    struct s_GpuUtil {
+        SWindowMax<uint32_t, 32> window {};
+
+        uint32_t util_acc = 0;
+        //   After 160 ms (if SAMPLE_RATE == 200, 32 samples)
+        //   UTIL_MAX * D^32 ≈ 1 (UTIL_MAX decayed to 1)
+        // D = 6880 / 8192
+        // Util_acc_max = Util_acc_inf = 6145
+        static constexpr uint32_t DECAY_DIVIDENT = 6880;
+        static constexpr uint32_t DECAY_DIVISOR  = 8192;
+        static constexpr uint32_t UTIL_ACC_MAX   = 6145;
+
+        uint32_t Get()              { return ((util_acc * UTIL_MAX / UTIL_ACC_MAX) + window.Get()) / 2; };
+        void Update(uint32_t util)  { window.Add(util); util_acc = util_acc * DECAY_DIVIDENT / DECAY_DIVISOR + util; };
     };
 };
