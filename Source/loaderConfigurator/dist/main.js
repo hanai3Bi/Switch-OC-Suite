@@ -9,7 +9,7 @@ function FindMagicOffset(buffer) {
     }
     throw new Error("Invalid loader.kip file");
 }
-function CustEntry(name, size, desc, defval, minmax = [0, 1000000], step = 1, extra_validator = null) {
+function CustEntry(name, size, desc, defval, minmax = [0, 1000000], step = 1, extra_validator) {
     this.name = name;
     this.size = size;
     this.desc = desc;
@@ -25,35 +25,32 @@ function InitCustTable() {
     let cust = [
         new CustEntry("mtcConf", 2, "<b>DRAM Timing</b>\
        <li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density.</li>\
-       <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>\
-       <li><b>2</b>: ENTIRE_TABLE_ERISTA: Not implemented.</li>\
-       <li><b>3</b>: ENTIRE_TABLE_MARIKO: Not implemented.</li>", 0, [0, 3]),
+       <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>", 0, [0, 3]),
         new CustEntry("marikoCpuMaxClock", 4, "<b>Mariko CPU Max Clock in kHz</b>\
        <li>System default: 1785000</li>\
-       <li>≥ 2193000 will enable overvolting (> 1120 mV)</li>", 2397000, [1785000, 3000000], 100, (x) => { return (x % 100) == 0; }),
+       <li>≥ 2397000 will enable overvolting (> 1120 mV)</li>", 2397000, [1785000, 3000000], 100, (x) => (x % 100) == 0),
         new CustEntry("marikoCpuBoostClock", 4, "<b>Mariko CPU Boost Clock in kHz</b>\
        <li>System default: 1785000</li>\
-       <li>Must not be higher than marikoCpuMaxClock</li>", 1785000, [1785000, 3000000], 100, (x) => { return (x % 100) == 0; }),
+       <li>Must not be higher than marikoCpuMaxClock</li>", 1785000, [1785000, 3000000], 100, (x) => (x % 100) == 0),
         new CustEntry("marikoCpuMaxVolt", 4, "<b>Mariko CPU Max Voltage in mV</b>\
        <li>System default: 1120</li>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>", 1220, [1100, 1300]),
+       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>", 1235, [1100, 1300]),
         new CustEntry("marikoGpuMaxClock", 4, "<b>Mariko GPU Max Clock in kHz</b>\
        <li>System default: 921600</li>\
-       <li>Tegra X1+ official maximum: 1267200</li>", 1305600, [768000, 1536000], 100, (x) => { return (x % 100) == 0; }),
+       <li>Tegra X1+ official maximum: 1267200</li>", 1305600, [768000, 1536000], 100, (x) => (x % 100) == 0),
         new CustEntry("marikoEmcMaxClock", 4, "<b>Mariko RAM Max Clock in kHz</b>\
        <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1996800, [1612800, 2400000], 3200, (x) => { return (x % 3200) == 0; }),
+       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1996800, [1612800, 2400000], 3200, (x) => (x % 3200) == 0),
         new CustEntry("eristaCpuOCEnable", 4, "<b>Erista CPU Enable Overclock</b>\
-       <li>Not usable unless CPU cvb table is filled in</li>", 0, [0, 1]),
+       <li>Not tested</li>", 1, [0, 1]),
         new CustEntry("eristaCpuMaxVolt", 4, "<b>Erista CPU Max Voltage in mV</b>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1400</li>\
-       <li>Not enabled by default</li>", 0, [0, 1400], 100, (x) => { return x >= 1100; }),
+       <li>Acceptable range: 1100 ≤ x ≤ 1400</li>", 1257, [0, 1400], 100, (x) => x >= 1100),
         new CustEntry("eristaEmcMaxClock", 4, "<b>Erista RAM Max Clock in kHz</b>\
        <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1862400, [1600000, 2400000], 3200, (x) => { return (x % 3200) == 0; }),
+       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1862400, [1600000, 2400000], 3200, (x) => (x % 3200) == 0),
         new CustEntry("eristaEmcVolt", 4, "<b>Erista RAM Voltage in uV</b>\
        <li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
-       <li>Not enabled by default</li>", 0, [0, 1250000], 12500, (x) => { return (x % 12500) == 0 && x >= 1100000; }),
+       <li>Not enabled by default</li>", 0, [0, 1250000], 12500, (x) => (x % 12500) == 0 && x >= 1100000),
     ];
     return cust;
 }
@@ -160,7 +157,7 @@ function UpdateHTMLForm(cust) {
                 tip.setAttribute("for", id);
                 div.appendChild(tip);
             }
-            form.appendChild(div);
+            form === null || form === void 0 ? void 0 : form.appendChild(div);
         }
         input.value = dict[i.name].value;
     }
@@ -222,8 +219,8 @@ fileInput.addEventListener('change', (event) => {
     reader.readAsArrayBuffer(event.target.files[0]);
     reader.onloadend = (progEvent) => {
         if (progEvent.target.readyState === FileReader.DONE) {
-            buffer = progEvent.target.result;
             try {
+                buffer = progEvent.target.result;
                 let offset = FindMagicOffset(buffer);
                 ParseCust(offset, buffer);
             }

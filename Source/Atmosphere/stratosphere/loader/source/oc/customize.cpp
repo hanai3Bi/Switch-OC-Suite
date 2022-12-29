@@ -1,28 +1,43 @@
+/*
+ * Copyright (C) Switch-OC-Suite
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "customize.hpp"
+
 namespace ams::ldr::oc {
-#include "mtc_empty_table.inl"
-static const volatile CustomizeTable C = {
+
+volatile CustomizeTable C = {
 /* DRAM Timing:
  * AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density (Default).
  * AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.
- * ENTIRE_TABLE_ERISTA/ENTIRE_TABLE_MARIKO:
- *                       Replace the entire max mtc table with customized one (provided by user).
  */
 .mtcConf = AUTO_ADJ_MARIKO_SAFE,
 
 /* Mariko CPU:
  * - Max Clock in kHz:
  *   Default: 1785000
- *   >= 2193000 will enable overvolting (> 1120 mV)
+ *   >= 2397000 will enable overvolting (> 1120 mV)
  * - Boost Clock in kHz:
  *   Default: 1785000
  *   Boost clock will be applied when applications request higher CPU frequency for quicker loading.
  * - Max Voltage in mV:
  *   Default voltage: 1120
- *   Haven't tested anything higher than 1220.
  */
 .marikoCpuMaxClock   = 2397000,
 .marikoCpuBoostClock = 1785000,
-.marikoCpuMaxVolt    = 1220,
+.marikoCpuMaxVolt    = 1235,
 
 /* Mariko GPU:
  * - Max Clock in kHz:
@@ -44,13 +59,12 @@ static const volatile CustomizeTable C = {
 .marikoEmcMaxClock = 1996800,
 
 /* Erista CPU:
- * Untested and not enabled by default.
+ * Not tested but enabled by default.
  * - Enable Overclock
- *   Require modificaitions towards NewCpuTables!
  * - Max Voltage in mV
  */
-.eristaCpuOCEnable = 0,
-.eristaCpuMaxVolt  = 0,
+.eristaCpuOCEnabled= 1,
+.eristaCpuMaxVolt  = 1257,
 
 /* Erista EMC:
  * - RAM Clock in kHz
@@ -67,7 +81,6 @@ static const volatile CustomizeTable C = {
  */
 .eristaEmcMaxClock = 1862400,
 .eristaEmcVolt     = 0,
-
-.eristaMtc = reinterpret_cast<EristaMtcTable *>(const_cast<u8 *>(EmptyMtcTable)),
 };
+
 }

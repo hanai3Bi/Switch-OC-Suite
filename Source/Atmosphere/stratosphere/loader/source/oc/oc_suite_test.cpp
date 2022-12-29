@@ -13,30 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #ifndef ATMOSPHERE_IS_STRATOSPHERE
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-#include <cmath>
-#include <algorithm>
-
-namespace ams::ldr::oc {
-    namespace pcv {
-        namespace Erista {
-            void Patch(uintptr_t mapped_exe, size_t nso_size);
-        }
-
-        namespace Mariko {
-            void Patch(uintptr_t mapped_exe, size_t nso_size);
-        }
-
-        void SafetyCheck();
-    }
-
-    namespace ptm {
-        void Patch(uintptr_t mapped_nso, size_t nso_size);
-    }
-}
+#include "oc_suite_test.hpp"
+#include "oc_suite.hpp"
 
 void* loadExec(const char* file_loc, size_t* out_size) {
     FILE* fp = fopen(file_loc, "rb");
@@ -131,7 +111,7 @@ int main(int argc, char** argv) {
             std::memcpy(erista_buf, file_buffer, file_size);
 
             printf("Patching %s for Erista...\n", pcv_opt);
-            ams::ldr::oc::pcv::Erista::Patch(reinterpret_cast<uintptr_t>(erista_buf), file_size);
+            ams::ldr::oc::pcv::erista::Patch(reinterpret_cast<uintptr_t>(erista_buf), file_size);
             if (save_patched) {
                 char* exec_path_erista = reinterpret_cast<char *>(malloc(exec_path_patched_len));
                 strlcpy(exec_path_erista, exec_path, exec_path_patched_len);
@@ -147,7 +127,7 @@ int main(int argc, char** argv) {
             std::memcpy(mariko_buf, file_buffer, file_size);
 
             printf("Patching %s for Mariko...\n", pcv_opt);
-            ams::ldr::oc::pcv::Mariko::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
+            ams::ldr::oc::pcv::mariko::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
             if (save_patched) {
                 char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));
                 strlcpy(exec_path_mariko, exec_path, exec_path_patched_len);

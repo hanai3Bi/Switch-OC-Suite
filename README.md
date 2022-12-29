@@ -5,7 +5,7 @@
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
 
-## DISCLAIMER: USE AT YOUR OWN RISK!
+**DISCLAIMER: USE AT YOUR OWN RISK!**
 
 - Overclocking in general will shorten the lifespan of some hardware components.
 
@@ -119,9 +119,9 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 <details>
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
 
-If you are to install nro forwarders, stub `ValidateAcidSignature()` with `R_SUCCEED();` in `Atmosphere/stratosphere/loader/source/ldr_meta.cpp` to make them work again.
+Before compiling Atmosphere loader, run `patch.py` in `Atmosphere/stratosphere/loader/source/` to insert oc module into loader sysmodule.
 
-Uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
+When compilation is done, uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
 </details>
 
 
@@ -134,4 +134,5 @@ Uncompress the kip to make it work with configurator: `hactool -t kip1 Atmospher
 - RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
+- Switchroot for their [modified L4T kernel and device tree]((https://gitlab.com/switchroot/kernel))
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere
