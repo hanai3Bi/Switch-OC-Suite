@@ -57,9 +57,10 @@ void MiscGui::listUI()
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
     if (this->isMariko) {
-        addConfigToggle(SysClkConfigValue_AllowUnsafeFrequencies);
         addConfigToggle(SysClkConfigValue_AutoCPUBoost);
     }
+
+    addConfigToggle(SysClkConfigValue_AllowUnsafeFrequencies);
     addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
     addConfigToggle(SysClkConfigValue_DisableFastCharging);
     addConfigToggle(SysClkConfigValue_GovernorExperimental);

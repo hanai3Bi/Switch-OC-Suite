@@ -15,6 +15,12 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 ## Features
 
 - Erista variant (HAC-001)
+  - CPU Overclock
+    - Safe: 1785 MHz
+    - Unsafe (due to the limit of board power draw or power IC):
+      - Enable "Allow Unsafe Frequencies" in overlay to unlock frequencies up to 2091 MHz
+      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+
   - DRAM Overclock
     - Safe: 1862.4 MHz
     - Unsafe:
@@ -28,8 +34,8 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     
 - Mariko variant (HAC-001-01, HDH-001, HEG-001)
   - CPU / GPU Overclock
-    - Safe: 1963 / 921 MHz
-    - Unsafe:
+    - Safe: 1963 / 998 MHz
+    - Unsafe (due to the limit of board power draw or power IC):
       - Enable "Allow Unsafe Frequencies" in overlay to unlock frequencies up to 2397 / 1305 MHz
       - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
@@ -53,7 +59,8 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 - CPU & GPU frequency governor (Experimental)
   - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-- Fast-charging (2A) toggle, set charge limit (20% - 100%)
+- Fast-charging (0.5A/2A) toggle, set charge limit (20% - 100%)
+  - Hoag (Switch Lite) cannot use the fast-charging toggle feature for now [#56](https://github.com/KazushiMe/Switch-OC-Suite/issues/56).
   - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
 - Global profile

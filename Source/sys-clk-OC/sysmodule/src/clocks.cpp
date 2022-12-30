@@ -24,33 +24,32 @@ void Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min
 
     if (module == SysClkModule_CPU) {
         *min = &g_freq_table_cpu_hz[0];
-        if (!isMariko)
-            *max = &g_freq_table_cpu_hz[11]; // 1785
-        else {
-            if (allowUnsafe)
-                *max = &g_freq_table_cpu_hz[17]; // 2397
-            else
-                *max = &g_freq_table_cpu_hz[13]; // 1963
-        }
+        if (isMariko)
+            *max = !allowUnsafe ? &g_freq_table_cpu_hz[15] : &g_freq_table_cpu_hz[19]; // 1963 / 2397
+        else
+            *max = (!allowUnsafe || profile == SysClkProfile_Handheld) ?
+                    &g_freq_table_cpu_hz[13] : &g_freq_table_cpu_hz[16]; // 1785 / 2091
+
         return;
     }
 
     if (module == SysClkModule_GPU) {
         *min = &g_freq_table_gpu_hz[0];
-        if (isMariko && !allowUnsafe) {
-            *max = &g_freq_table_gpu_hz[11]; // 921
+        if (isMariko) {
+            *max = (!allowUnsafe || profile == SysClkProfile_Handheld) ?
+                    &g_freq_table_gpu_hz[12] : &g_freq_table_gpu_hz[17]; // 998 / 1305
             return;
         }
 
         switch (profile) {
             case SysClkProfile_Handheld:
-                *max = isMariko ? &g_freq_table_gpu_hz[11] : &g_freq_table_gpu_hz[5]; // 921 / 460
+                *max = &g_freq_table_gpu_hz[5]; // 460
                 break;
             case SysClkProfile_HandheldChargingUSB:
-                *max = isMariko ? &g_freq_table_gpu_hz[16] : &g_freq_table_gpu_hz[9]; // 1267 / 768
+                *max = &g_freq_table_gpu_hz[9]; // 768
                 break;
             default:
-                *max = isMariko ? &g_freq_table_gpu_hz[17] : &g_freq_table_gpu_hz[11]; // 1305 / 921
+                *max = &g_freq_table_gpu_hz[11]; // 921
                 break;
         }
         return;

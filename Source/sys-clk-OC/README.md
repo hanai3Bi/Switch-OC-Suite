@@ -7,11 +7,11 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### CPU clocks
 
-* 2397 → approx. max for Mariko
+* 2397 → approx. OC max for Mariko
 * 2295
 * 2193
-* 2091 → max for Mariko (without overvolting – capped at 1120 mV)
-* 1963 → official max for Mariko
+* 2091 → OC max for Erista
+* 1963 → official and safe max for Mariko
 * 1887
 * 1785 → official boost mode, OC max for Erista
 * 1683
@@ -28,13 +28,12 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### GPU clocks
 
-* ????
 * 1305 → OC max for Mariko
 * 1267 → official max for Mariko
 * 1228
 * 1152
 * 1075
-* 998
+* 998 → safe max for Mariko due to power draw
 * 921 → OC max for Erista
 * 844
 * 768 → official docked
@@ -72,11 +71,19 @@ From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blo
 
 To protect the battery from excessive strain, clocks requested from config may be capped before applying, depending on your current profile:
 
-### Erista
+### Erista (Safe)
 |         | Handheld | Charging (USB) | Charging (Official) | Docked |
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
-| **CPU** | -        | -              | -                   | -      |
+| **CPU** | 1785     | 1785           | 1785                | 1785   |
+| **GPU** | 460      | 768            | -                   | -      |
+
+
+### Erista (Unsafe allowed)
+|         | Handheld | Charging (USB) | Charging (Official) | Docked |
+|:-------:|:--------:|:--------------:|:-------------------:|:------:|
+| **MEM** | -        | -              | -                   | -      |
+| **CPU** | 1785     | -              | -                   | -      |
 | **GPU** | 460      | 768            | -                   | -      |
 
 
@@ -85,7 +92,7 @@ To protect the battery from excessive strain, clocks requested from config may b
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
 | **CPU** | 1963     | 1963           | 1963                | 1963   |
-| **GPU** | 921      | 921            | 921                 | 921    |
+| **GPU** | 998      | 998            | 998                 | 998    |
 
 
 ### Mariko (Unsafe allowed)
@@ -93,7 +100,7 @@ To protect the battery from excessive strain, clocks requested from config may b
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
 | **CPU** | -        | -              | -                   | -      |
-| **GPU** | 921      | 1267           | -                   | -      |
+| **GPU** | 998      | -              | -                   | -      |
 
 
 ## Installation
