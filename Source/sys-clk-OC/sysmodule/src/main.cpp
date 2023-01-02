@@ -69,10 +69,15 @@ extern "C"
                 hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
             setsysExit();
         }
+
+        rc = i2cInitialize();
+        if (R_FAILED(rc))
+            fatalThrow(rc);
     }
 
     void __appExit(void)
     {
+        i2cExit();
         smExit();
     }
 }

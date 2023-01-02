@@ -32,24 +32,19 @@ bool PsmIsCharging(const PsmChargeInfo* info) {
     return PsmIsChargerConnected(info) && ((info->unk_x14 >> 8) & 1);
 }
 
-bool PsmIsFastChargingEnabled(const PsmChargeInfo* info) {
-    return info->ChargeCurrentLimit > 768;
-}
-
 PsmBatteryState PsmGetBatteryState(const PsmChargeInfo* info) {
     if (!PsmIsChargerConnected(info))
         return PsmBatteryState_Discharging;
     if (!PsmIsCharging(info))
         return PsmBatteryState_ChargingPaused;
-    return PsmIsFastChargingEnabled(info) ? PsmBatteryState_FastCharging : PsmBatteryState_SlowCharging;
+    return PsmBatteryState_FastCharging;
 }
 
 const char* PsmGetBatteryStateIcon(const PsmChargeInfo* info) {
     switch (PsmGetBatteryState(info)) {
         case PsmBatteryState_Discharging:   return "\u25c0"; // ◀
         case PsmBatteryState_ChargingPaused:return "| |";
-        case PsmBatteryState_SlowCharging:  return "\u25b6"; // ▶
-        case PsmBatteryState_FastCharging:  return "\u25b6\u25b6"; // ▶▶
+        case PsmBatteryState_FastCharging:  return "\u25b6"; // ▶
         default:                            return "?";
     }
 }

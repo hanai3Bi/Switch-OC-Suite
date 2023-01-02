@@ -105,13 +105,18 @@ ReverseNXMode ReverseNXSync::RecheckToolMode() {
 }
 
 
-void PsmExt::ChargingHandler(bool fastChargingEnabled, uint32_t chargingLimit) {
+void PsmExt::ChargingHandler(uint32_t chargingCurrent, uint32_t chargingLimit) {
+    u32 current;
+    Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
+    if (R_SUCCEEDED(res)) {
+        current -= current % 100;
+        if (current != chargingCurrent)
+            I2c_Bq24193_SetFastChargeCurrentLimit(chargingCurrent);
+    }
+
     PsmChargeInfo* info = new PsmChargeInfo;
     Service* session = psmGetServiceSession();
     serviceDispatchOut(session, Psm_GetBatteryChargeInfoFields, *info);
-
-    if (PsmIsFastChargingEnabled(info) != fastChargingEnabled)
-        serviceDispatch(session, fastChargingEnabled ? Psm_EnableFastBatteryCharging : Psm_DisableFastBatteryCharging);
 
     if (PsmIsChargerConnected(info)) {
         u32 chargeNow = 0;

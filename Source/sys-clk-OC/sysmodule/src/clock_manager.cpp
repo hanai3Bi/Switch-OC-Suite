@@ -209,9 +209,9 @@ void ClockManager::WaitForNextTick()
 
 bool ClockManager::RefreshContext()
 {
-    bool fastChargingEnabled = !(this->GetConfig()->GetConfigValue(SysClkConfigValue_DisableFastCharging));
+    uint32_t chargingCurrent = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
     uint32_t chargingLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
-    PsmExt::ChargingHandler(fastChargingEnabled, chargingLimit);
+    PsmExt::ChargingHandler(chargingCurrent, chargingLimit);
 
     bool hasChanged = this->config->Refresh();
     if (hasChanged) {

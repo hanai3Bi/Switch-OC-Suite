@@ -28,7 +28,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
   - Modded sys-clk and ReverseNX-RT
     - CPU & GPU frequency governor (Experimental)
-    - Fast-charging (2A) toggle, set charge limit (20% - 100%)
+    - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
     - Global Profile
     - Sync ReverseNX Mode
     
@@ -47,7 +47,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
   - Modded sys-clk and ReverseNX-RT
     - Auto CPU Boost
     - CPU & GPU frequency governor (Experimental)
-    - Fast-charging (2A) toggle, set charge limit (20% - 100%)
+    - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
     - Global Profile
     - Sync ReverseNX Mode
 
@@ -86,9 +86,9 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
     | Defaults   | Mariko        | Erista       |
     | ---------- | ------------- | ------------ |
-    | CPU OC     | 2397 MHz Max  | Disabled     |
+    | CPU OC     | 2397 MHz Max  | 2091 MHz Max |
     | CPU Boost  | 1785 MHz      | N/A          |
-    | CPU Volt   | 1220 mV Max   | Disabled     |
+    | CPU Volt   | 1235 mV Max   | 1257 mV Max  |
     | GPU OC     | 1305 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | N/A           | Disabled     |

@@ -58,7 +58,7 @@ protected:
 };
 
 namespace PsmExt {
-    void ChargingHandler(bool fastChargingEnabled, uint32_t chargingLimit);
+    void ChargingHandler(uint32_t chargingCurrent, uint32_t chargingLimit);
 };
 
 class Governor {

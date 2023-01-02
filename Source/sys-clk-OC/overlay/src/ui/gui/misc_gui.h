@@ -39,7 +39,6 @@ class MiscGui : public BaseMenuGui
 
         void PsmUpdate(uint32_t dispatchId = 0)
         {
-            smInitialize();
             psmInitialize();
 
             if (dispatchId)
@@ -49,113 +48,24 @@ class MiscGui : public BaseMenuGui
             }
 
             serviceDispatchOut(psmGetServiceSession(), 17, *(this->chargeInfo));
+            psmGetBatteryChargePercentage(&(this->batteryChargePerc));
 
             psmExit();
-            smExit();
-        }
-
-        Result I2cRead_OutU16(u8 reg, I2cDevice dev, u16 *out)
-        {
-            // ams::fatal::srv::StopSoundTask::StopSound()
-            // I2C Bus Communication Reference: https://www.ti.com/lit/an/slva704/slva704.pdf
-            struct { u8 reg;  } __attribute__((packed)) cmd;
-            struct { u16 val; } __attribute__((packed)) rec;
-
-            I2cSession _session;
-
-            Result res = i2cOpenSession(&_session, dev);
-            if (res)
-                return res;
-
-            cmd.reg = reg;
-            res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-            if (res) {
-                i2csessionClose(&_session);
-                return res;
-            }
-
-            res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-            if (res) {
-                i2csessionClose(&_session);
-                return res;
-            }
-
-            *out = rec.val;
-            i2csessionClose(&_session);
-            return 0;
-        }
-
-        Result I2cRead_OutU8(u8 reg, I2cDevice dev, u8 *out)
-        {
-            struct { u8 reg; } __attribute__((packed)) cmd;
-            struct { u8 val; } __attribute__((packed)) rec;
-
-            I2cSession _session;
-
-            Result res = i2cOpenSession(&_session, dev);
-            if (res)
-                return res;
-
-            cmd.reg = reg;
-            res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-            if (res) {
-                i2csessionClose(&_session);
-                return res;
-            }
-
-            res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-            if (res) {
-                i2csessionClose(&_session);
-                return res;
-            }
-
-            *out = rec.val;
-            i2csessionClose(&_session);
-            return 0;
         }
 
         void I2cGetInfo(I2cInfo* i2cInfo)
         {
-            smInitialize();
             i2cInitialize();
 
-            // Max17050 fuel gauge regs. Sense resistor and CGain are from Hekate, too lazy to query configuration from reg
-            constexpr float SenseResistor       = 5.; // in uOhm
-            constexpr float CGain               = 1.99993;
-            constexpr u8 Max17050Reg_Current    = 0x0A;
-            // constexpr u8 Max17050Reg_AvgCurrent = 0x0B;
-            // constexpr u8 Max17050Reg_Cycle      = 0x17;
-            u16 tmp = 0;
-            if (R_SUCCEEDED(I2cRead_OutU16(Max17050Reg_Current, I2cDevice_Max17050, &tmp)))
-                i2cInfo->batCurrent = (s16)tmp * (1.5625 / (SenseResistor * CGain));
+            i2cInfo->batCurrent = I2c_Max17050_GetBatteryCurrent();
 
-            auto I2cRead_Max77812_M_VOUT = [this](u8 reg) {
-                constexpr u32 MIN_MV    = 250;
-                constexpr u32 MV_STEP   = 5;
-                constexpr u8  RESET_VAL = 0x78;
+            i2cInfo->cpuVolt  = I2c_Max77812_GetMVOUT(I2c_Max77812_CPUVOLT_REG);
+            i2cInfo->gpuVolt  = I2c_Max77812_GetMVOUT(I2c_Max77812_GPUVOLT_REG);
+            i2cInfo->dramVolt = I2c_Max77812_GetMVOUT(I2c_Max77812_MEMVOLT_REG);
 
-                u8 tmp = RESET_VAL;
-                // Retry 3 times if received RESET_VAL
-                for (int i = 0; i < 3; i++) {
-                    if (R_FAILED(I2cRead_OutU8(reg, I2cDevice_Max77812_2, &tmp)))
-                        return 0u;
-                    if (tmp != RESET_VAL)
-                        break;
-                    usleep(10);
-                }
-
-                return tmp * MV_STEP + MIN_MV;
-            };
-
-            constexpr u8 Max77812Reg_CPUVolt  = 0x26;
-            constexpr u8 Max77812Reg_GPUVolt  = 0x23;
-            constexpr u8 Max77812Reg_DRAMVolt = 0x25;
-            i2cInfo->cpuVolt  = I2cRead_Max77812_M_VOUT(Max77812Reg_CPUVolt);
-            i2cInfo->gpuVolt  = I2cRead_Max77812_M_VOUT(Max77812Reg_GPUVolt);
-            i2cInfo->dramVolt = I2cRead_Max77812_M_VOUT(Max77812Reg_DRAMVolt);
+            I2c_Bq24193_GetFastChargeCurrentLimit(reinterpret_cast<u32 *>(&(chargeInfo->ChargeCurrentLimit)));
 
             i2cExit();
-            smExit();
         }
 
         void UpdateInfo(char* out, size_t outsize)
@@ -193,8 +103,7 @@ class MiscGui : public BaseMenuGui
                 "%dmV\n"
                 ,
                 PsmInfoChargerTypeToStr(chargeInfo->ChargerType), chargWattsInfo,
-                (float)chargeInfo->VoltageAvg / 1000,
-                (float)chargeInfo->BatteryTemperature / 1000,
+                (float)chargeInfo->VoltageAvg / 1000, (float)chargeInfo->BatteryTemperature / 1000,
                 chargeInfo->InputCurrentLimit, chargeInfo->VBUSCurrentLimit,
                 chargeInfo->ChargeCurrentLimit, chargeVoltLimit,
                 (float)chargeInfo->RawBatteryCharge / 1000,
@@ -222,7 +131,6 @@ class MiscGui : public BaseMenuGui
 
         void LblUpdate(bool shouldSwitch = false)
         {
-            smInitialize();
             lblInitialize();
 
             lblGetBacklightSwitchStatus(&lblstatus);
@@ -230,7 +138,6 @@ class MiscGui : public BaseMenuGui
                 lblstatus ? lblSwitchBacklightOff(0) : lblSwitchBacklightOn(0);
 
             lblExit();
-            smExit();
         }
 
         bool isMariko = false;
@@ -240,8 +147,8 @@ class MiscGui : public BaseMenuGui
         void updateConfigToggles();
 
         tsl::elm::ToggleListItem* backlightToggle;
-        tsl::elm::CategoryHeader* chargingLimitHeader;
-        StepTrackBarIcon* chargingLimitBar;
+        tsl::elm::CategoryHeader *chargingCurrentHeader, *chargingLimitHeader;
+        StepTrackBarIcon *chargingCurrentBar, *chargingLimitBar;
 
         SysClkConfigValueList* configList;
         PsmChargeInfo*  chargeInfo;
@@ -250,6 +157,8 @@ class MiscGui : public BaseMenuGui
 
         const char* infoNames = "Charger:\nBattery:\nCurrent Limit:\nCharging Limit:\nRaw Charge:\nBattery Age:\nPower Role:\nCurrent Flow:\n\nCPU Volt:\nGPU Volt:\nDRAM Volt:";
         char infoVals[300] = "";
-        char chargingLimitBarDesc[30] = "";
+        char chargingLimitBarDesc[40] = "";
+        char chargingCurrentBarDesc[45] = "";
+        u32 batteryChargePerc = 0;
         u8 frameCounter = 60;
 };

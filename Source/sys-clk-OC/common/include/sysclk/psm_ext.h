@@ -66,12 +66,10 @@ typedef enum {
 
 bool PsmIsChargerConnected(const PsmChargeInfo* info);
 bool PsmIsCharging(const PsmChargeInfo* info);
-bool PsmIsFastChargingEnabled(const PsmChargeInfo* info);
 
 typedef enum {
     PsmBatteryState_Discharging,
     PsmBatteryState_ChargingPaused,
-    PsmBatteryState_SlowCharging,
     PsmBatteryState_FastCharging
 } PsmBatteryState;
 
