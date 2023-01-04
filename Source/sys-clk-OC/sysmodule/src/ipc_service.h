@@ -39,6 +39,8 @@ class IpcService
     Result SetReverseNXRTMode(ReverseNXMode mode);
     Result GetFrequencyTable(SysClkIpc_GetFrequencyTable_Args* args, SysClkFrequencyTable* out_table);
     Result GetIsMariko(bool* out_is_mariko);
+    Result GetBatteryChargingDisabledOverride(bool* out_is_true);
+    Result SetBatteryChargingDisabledOverride(bool toggle_true);
 
     bool running;
     Thread thread;

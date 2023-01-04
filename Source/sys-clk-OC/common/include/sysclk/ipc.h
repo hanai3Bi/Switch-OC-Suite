@@ -32,6 +32,8 @@ enum SysClkIpcCmd
     SysClkIpcCmd_SetReverseNXRTMode = 11,
     SysClkIpcCmd_GetFrequencyTable = 12,
     SysClkIpcCmd_GetIsMariko = 13,
+    SysClkIpcCmd_GetBatteryChargingDisabledOverride = 14,
+    SysClkIpcCmd_SetBatteryChargingDisabledOverride = 15,
 };
 
 typedef struct

@@ -10,6 +10,10 @@
 #include "file_utils.h"
 #include "clocks.h"
 
+// Forward declaration
+class ClockManager;
+#include "clock_manager.h"
+
 class CpuCoreUtil {
 public:
     CpuCoreUtil (int coreid, uint64_t ns);
@@ -58,8 +62,8 @@ protected:
 };
 
 namespace PsmExt {
-    void ChargingHandler(uint32_t chargingCurrent, uint32_t chargingLimit);
-};
+    void ChargingHandler(ClockManager* instance);
+}
 
 class Governor {
 public:

@@ -62,7 +62,7 @@ typedef enum
 typedef struct
 {
     bool systemCoreBoostCPU;
-    bool allowUnsafeFreq;
+    bool batteryChargingDisabledOverride;
     bool governor;
     SysClkProfile realProfile;
 } SysClkOcExtra;

@@ -19,6 +19,10 @@
 
 #include "oc_extra.h"
 
+// Forward declaration
+class ReverseNXSync;
+class Governor;
+
 class ClockManager
 {
   public:
@@ -33,6 +37,8 @@ class ClockManager
     void SetRNXRTMode(ReverseNXMode mode);
     SysClkContext GetCurrentContext();
     Config* GetConfig();
+    bool GetBatteryChargingDisabledOverride();
+    Result SetBatteryChargingDisabledOverride(bool toggle_true);
 
   protected:
     ClockManager();

@@ -33,6 +33,8 @@ Result sysclkIpcSetConfigValues(SysClkConfigValueList* configValues);
 Result sysclkIpcSetReverseNXRTMode(ReverseNXMode mode);
 Result sysclkIpcGetFrequencyTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table);
 Result sysclkIpcGetIsMariko(bool* out_is_mariko);
+Result sysclkIpcGetBatteryChargingDisabledOverride(bool* out_is_true);
+Result sysclkIpcSetBatteryChargingDisabledOverride(bool toggle_true);
 
 static inline Result sysclkIpcRemoveOverride(SysClkModule module)
 {

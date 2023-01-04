@@ -146,7 +146,7 @@ class MiscGui : public BaseMenuGui
         void addConfigToggle(SysClkConfigValue);
         void updateConfigToggles();
 
-        tsl::elm::ToggleListItem* backlightToggle;
+        tsl::elm::ToggleListItem *chargingDisabledOverrideToggle, *backlightToggle;
         tsl::elm::CategoryHeader *chargingCurrentHeader, *chargingLimitHeader;
         StepTrackBarIcon *chargingCurrentBar, *chargingLimitBar;
 

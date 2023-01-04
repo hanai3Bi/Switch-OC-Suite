@@ -133,3 +133,13 @@ Result sysclkIpcGetIsMariko(bool* out_is_mariko)
 {
     return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetIsMariko, *out_is_mariko);
 }
+
+Result sysclkIpcGetBatteryChargingDisabledOverride(bool* out_is_true)
+{
+    return serviceDispatchOut(&g_sysclkSrv, SysClkIpcCmd_GetBatteryChargingDisabledOverride, *out_is_true);
+}
+
+Result sysclkIpcSetBatteryChargingDisabledOverride(bool toggle_true)
+{
+    return serviceDispatchIn(&g_sysclkSrv, SysClkIpcCmd_SetBatteryChargingDisabledOverride, toggle_true);
+}

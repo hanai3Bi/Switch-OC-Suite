@@ -105,11 +105,12 @@ ReverseNXMode ReverseNXSync::RecheckToolMode() {
 }
 
 
-void PsmExt::ChargingHandler(uint32_t chargingCurrent, uint32_t chargingLimit) {
+void PsmExt::ChargingHandler(ClockManager* instance) {
     u32 current;
     Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
     if (R_SUCCEEDED(res)) {
         current -= current % 100;
+        u32 chargingCurrent = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
         if (current != chargingCurrent)
             I2c_Bq24193_SetFastChargeCurrentLimit(chargingCurrent);
     }
@@ -122,7 +123,9 @@ void PsmExt::ChargingHandler(uint32_t chargingCurrent, uint32_t chargingLimit) {
         u32 chargeNow = 0;
         if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow))) {
             bool isCharging = PsmIsCharging(info);
-            if (isCharging && chargingLimit < chargeNow)
+            u32 chargingLimit = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
+            bool forceDisabled = instance->GetBatteryChargingDisabledOverride();
+            if (isCharging && (forceDisabled || chargingLimit <= chargeNow))
                 serviceDispatch(session, Psm_DisableBatteryCharging);
             if (!isCharging && chargingLimit > chargeNow)
                 serviceDispatch(session, Psm_EnableBatteryCharging);

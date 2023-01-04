@@ -58,6 +58,7 @@ ClockManager::ClockManager()
 
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
+    this->oc->batteryChargingDisabledOverride = false;
     this->oc->governor = false;
     this->oc->realProfile = SysClkProfile_Handheld;
 
@@ -209,9 +210,7 @@ void ClockManager::WaitForNextTick()
 
 bool ClockManager::RefreshContext()
 {
-    uint32_t chargingCurrent = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
-    uint32_t chargingLimit = this->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
-    PsmExt::ChargingHandler(chargingCurrent, chargingLimit);
+    PsmExt::ChargingHandler(this->GetInstance());
 
     bool hasChanged = this->config->Refresh();
     if (hasChanged) {
@@ -259,11 +258,13 @@ bool ClockManager::RefreshContext()
             this->governor->Stop();
     }
 
-    SysClkProfile profile = Clocks::GetCurrentProfile();
-    if (profile != this->oc->realProfile)
+    SysClkProfile realProfile = Clocks::GetCurrentProfile();
+    if (realProfile != this->oc->realProfile)
     {
-        FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(profile, true));
-        this->oc->realProfile = profile;
+        FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(realProfile, true));
+        this->oc->realProfile = realProfile;
+        // Signal that power state has been changed, reset the override
+        this->SetBatteryChargingDisabledOverride(false);
         hasChanged = true;
     }
 
@@ -370,4 +371,13 @@ SysClkContext ClockManager::GetCurrentContext()
 Config* ClockManager::GetConfig()
 {
     return this->config;
+}
+
+bool ClockManager::GetBatteryChargingDisabledOverride() {
+    return this->oc->batteryChargingDisabledOverride;
+}
+
+Result ClockManager::SetBatteryChargingDisabledOverride(bool toggle_true) {
+    this->oc->batteryChargingDisabledOverride = toggle_true;
+    return 0;
 }

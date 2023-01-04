@@ -57,6 +57,7 @@ void MiscGui::updateConfigToggles() {
 
 void MiscGui::listUI()
 {
+    // Config list
     sysclkIpcGetConfigValues(this->configList);
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
@@ -68,6 +69,7 @@ void MiscGui::listUI()
     addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
     addConfigToggle(SysClkConfigValue_GovernorExperimental);
 
+    // Charging Current
     this->chargingCurrentHeader = new tsl::elm::CategoryHeader("");
     this->listElement->addItem(this->chargingCurrentHeader);
     this->chargingCurrentBar = new StepTrackBarIcon("", 2000 / 100 + 1);
@@ -95,6 +97,7 @@ void MiscGui::listUI()
     });
     this->listElement->addItem(this->chargingCurrentBar);
 
+    // Charging Limit
     this->chargingLimitHeader = new tsl::elm::CategoryHeader("");
     this->listElement->addItem(this->chargingLimitHeader);
     this->chargingLimitBar = new StepTrackBarIcon("", 100 + 1);
@@ -121,13 +124,26 @@ void MiscGui::listUI()
       renderer->drawString("\uE016 Long-term use may render the battery gauge \ninaccurate!", false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
     }), SMALL_TEXT_SIZE * 2 + 20);
 
+    // Temporary toggles
     this->listElement->addItem(new tsl::elm::CategoryHeader("Temporary toggles"));
+
+    this->chargingDisabledOverrideToggle = new tsl::elm::ToggleListItem("Force Disable Charging", false);
+    chargingDisabledOverrideToggle->setStateChangedListener([this](bool state) {
+        Result rc = sysclkIpcSetBatteryChargingDisabledOverride(state);
+        if (R_FAILED(rc))
+            FatalGui::openWithResultCode("sysclkIpcSetBatteryChargingDisabledOverride", rc);
+
+        this->lastContextUpdate = armGetSystemTick();
+    });
+    this->listElement->addItem(this->chargingDisabledOverrideToggle);
+
     this->backlightToggle = new tsl::elm::ToggleListItem("Screen Backlight", false);
     backlightToggle->setStateChangedListener([this](bool state) {
         LblUpdate(true);
     });
     this->listElement->addItem(this->backlightToggle);
 
+    // Info
     if (this->isMariko) {
         this->listElement->addItem(new tsl::elm::CategoryHeader("Info"));
         this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
@@ -148,6 +164,12 @@ void MiscGui::refresh() {
 
         PsmUpdate();
         this->chargingLimitBar->setIcon(PsmGetBatteryStateIcon(this->chargeInfo));
+
+        bool chargingDisabledOverride;
+        Result rc = sysclkIpcGetBatteryChargingDisabledOverride(&chargingDisabledOverride);
+        if (R_FAILED(rc))
+            FatalGui::openWithResultCode("sysclkIpcGetBatteryChargingDisabledOverride", rc);
+        this->chargingDisabledOverrideToggle->setState(chargingDisabledOverride);
 
         LblUpdate();
         this->backlightToggle->setState(lblstatus);
