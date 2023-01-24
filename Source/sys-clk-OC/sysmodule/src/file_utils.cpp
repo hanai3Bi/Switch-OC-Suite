@@ -185,11 +185,14 @@ void FileUtils::Exit()
 void FileUtils::ParseLoaderKip() {
     const char* dirs[] = { "/", "/atmosphere/", "/atmosphere/kips/", "/bootloader/" };
     char* full_path = new char[0x200];
+    SCOPE_EXIT { delete[] full_path; };
+
     for (auto const& dir : dirs) {
         struct dirent *entry = NULL;
         DIR *dp = opendir(dir);
         if (!dp)
             continue;
+        SCOPE_EXIT { closedir(dp); };
 
         while ((entry = readdir(dp))) {
             if (entry->d_type != DT_REG)
@@ -219,18 +222,15 @@ void FileUtils::ParseLoaderKip() {
                 continue;
 
             if (R_SUCCEEDED(CustParser(full_path, filesize))) {
-                LogLine("Parsed cust config from %s, maxMemFreq: %u MHz, boostCpuFreq: %u MHz",
+                LogLine("Parsed cust config from \"%s\", maxMemFreq: %u MHz, boostCpuFreq: %u MHz",
                     full_path,
                     Clocks::maxMemFreq / 1'000'000,
                     Clocks::boostCpuFreq / 1'000'000
                 );
-                delete[] full_path;
                 return;
             }
         }
-        closedir(dp);
     }
-    delete[] full_path;
 }
 
 Result FileUtils::CustParser(const char* filepath, size_t filesize) {
@@ -245,17 +245,17 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
     FILE* fp = fopen(filepath, "r");
     if (!fp)
         return ParseError_OpenReadFailed;
+    SCOPE_EXIT { fclose(fp); };
 
     constexpr uint8_t KIP_MAGIC[] = {'K', 'I', 'P', '1', 'L', 'o', 'a', 'd', 'e', 'r'};
     constexpr size_t  BLOCK_SIZE = 0x1000;
 
     char* tmp_block = new char[BLOCK_SIZE];
+    SCOPE_EXIT { delete[] tmp_block; };
     fread(tmp_block, sizeof(char), BLOCK_SIZE, fp);
 
-    if (memcmp(KIP_MAGIC, tmp_block, sizeof(KIP_MAGIC))) {
-        delete[] tmp_block;
+    if (memcmp(KIP_MAGIC, tmp_block, sizeof(KIP_MAGIC)))
         return ParseError_WrongKipMagic;
-    }
 
     CustTable table {};
 
@@ -274,23 +274,15 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
     }
 
   found:
-    delete[] tmp_block;
-
-    if (!cust_pos) {
-        fclose(fp);
+    if (!cust_pos)
         return ParseError_CustNotFound;
-    }
 
     memset(reinterpret_cast<void*>(&table), 0, sizeof(CustTable));
     fsetpos(fp, &cust_pos);
-    if (!fread(reinterpret_cast<char*>(&table), 1, sizeof(CustTable), fp)) {
-        fclose(fp);
+    if (!fread(reinterpret_cast<char*>(&table), 1, sizeof(CustTable), fp))
         return ParseError_OpenReadFailed;
-    }
 
-    fclose(fp);
-
-    if (table.custRev != 2)
+    if (table.custRev != CUST_REV)
         return ParseError_WrongCustRev;
 
     if (Clocks::GetIsMariko()) {
@@ -298,6 +290,11 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
             Clocks::boostCpuFreq = table.marikoCpuBoostClock * 1000;
         if (table.marikoEmcMaxClock)
             Clocks::maxMemFreq = table.marikoEmcMaxClock * 1000;
+        if (table.marikoEmcVolt && table.marikoEmcVolt >= 600'000 && table.marikoEmcVolt <= 650'000) {
+            u32 mvolt = table.marikoEmcVolt / 1000;
+            Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM, mvolt);
+            LogLine("Set EMC volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
+        }
     } else {
         if (table.eristaEmcMaxClock)
             Clocks::maxMemFreq = table.eristaEmcMaxClock * 1000;
@@ -335,6 +332,7 @@ Result FileUtils::mkdir_p(const char* dirpath) {
 
     size_t path_len = strnlen(dirpath, 0x1000);
     char* path_copy = new char[path_len];
+    SCOPE_EXIT { delete[] path_copy; };
     memcpy(path_copy, dirpath, path_len);
     char* p = path_copy;
     while (*p) {
@@ -344,7 +342,7 @@ Result FileUtils::mkdir_p(const char* dirpath) {
 
             if (R_FAILED(mkdir_wrapper(path_copy))) {
                 res = -1;
-                goto end;
+                return res;
             }
 
             *p = '/';
@@ -355,7 +353,5 @@ Result FileUtils::mkdir_p(const char* dirpath) {
     if (R_FAILED(mkdir_wrapper(path_copy)))
         res = -1;
 
-  end:
-    delete[] path_copy;
     return res;
 }

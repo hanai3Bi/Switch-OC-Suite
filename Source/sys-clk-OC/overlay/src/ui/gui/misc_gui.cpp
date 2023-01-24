@@ -65,7 +65,6 @@ void MiscGui::listUI()
         addConfigToggle(SysClkConfigValue_AutoCPUBoost);
     }
 
-    addConfigToggle(SysClkConfigValue_AllowUnsafeFrequencies);
     addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
     addConfigToggle(SysClkConfigValue_GovernorExperimental);
 
@@ -86,7 +85,7 @@ void MiscGui::listUI()
         uint32_t current_ma = val * 100;
         this->configList->values[SysClkConfigValue_ChargingCurrentLimit] = current_ma;
 
-        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA", this->configList->values[SysClkConfigValue_ChargingCurrentLimit]);
+        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA (Now: %+.2f mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], this->i2cInfo->batCurrent);
         this->chargingCurrentHeader->setText(chargingCurrentBarDesc);
 
         Result rc = sysclkIpcSetConfigValues(this->configList);
@@ -109,7 +108,7 @@ void MiscGui::listUI()
         }
         this->configList->values[SysClkConfigValue_ChargingLimitPercentage] = val;
 
-        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Battery Charging Limit: %lu%% (%u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
+        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Battery Charging Limit: %lu%% (Now: %u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
         this->chargingLimitHeader->setText(chargingLimitBarDesc);
         this->chargingLimitBar->setIcon(PsmGetBatteryStateIcon(this->chargeInfo));
 
@@ -144,13 +143,11 @@ void MiscGui::listUI()
     this->listElement->addItem(this->backlightToggle);
 
     // Info
-    if (this->isMariko) {
-        this->listElement->addItem(new tsl::elm::CategoryHeader("Info"));
-        this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
-            renderer->drawString(this->infoNames, false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
-            renderer->drawString(this->infoVals, false, x + 120, y + 20, SMALL_TEXT_SIZE, VALUE_COLOR);
-        }), SMALL_TEXT_SIZE * 12 + 20);
-    }
+    this->listElement->addItem(new tsl::elm::CategoryHeader("Info"));
+    this->listElement->addItem(new tsl::elm::CustomDrawer([this](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+        renderer->drawString(this->infoNames, false, x, y + 20, SMALL_TEXT_SIZE, DESC_COLOR);
+        renderer->drawString(this->infoVals, false, x + 120, y + 20, SMALL_TEXT_SIZE, VALUE_COLOR);
+    }), SMALL_TEXT_SIZE * 12 + 20);
 }
 
 void MiscGui::refresh() {
@@ -175,16 +172,14 @@ void MiscGui::refresh() {
         this->backlightToggle->setState(lblstatus);
 
         this->chargingCurrentBar->setProgress(this->configList->values[SysClkConfigValue_ChargingCurrentLimit] / 100);
-        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA", this->configList->values[SysClkConfigValue_ChargingCurrentLimit]);
+        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA (Now: %+.2f mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], this->i2cInfo->batCurrent);
         this->chargingCurrentHeader->setText(chargingCurrentBarDesc);
 
         this->chargingLimitBar->setProgress(this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
-        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Battery Charging Limit: %lu%% (%u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
+        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Battery Charging Limit: %lu%% (Now: %u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
         this->chargingLimitHeader->setText(chargingLimitBarDesc);
 
-        if (this->isMariko) {
-            I2cGetInfo(this->i2cInfo);
-            UpdateInfo(this->infoVals, sizeof(this->infoVals));
-        }
+        I2cGetInfo(this->i2cInfo);
+        UpdateInfo(this->infoVals, sizeof(this->infoVals));
     }
 }

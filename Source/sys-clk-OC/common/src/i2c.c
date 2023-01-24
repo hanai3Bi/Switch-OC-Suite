@@ -83,24 +83,58 @@ float I2c_Max17050_GetBatteryCurrent() {
     return (s16)val * (1.5625 / (SenseResistor * CGain));
 }
 
-u32 I2c_Max77812_GetMVOUT(I2c_Max77812_Volt_Type type) {
-    u8 reg = (u8)type;
+u32 I2c_BuckConverter_MultiplierToMvOut(const I2c_BuckConverter_Domain* domain, u8 multiplier) {
+    return (domain->uv_min + domain->uv_step * multiplier) / 1000;
+}
 
-    const u32 MIN_MV    = 250;
-    const u32 MV_STEP   = 5;
-    const u8  RESET_VAL = 0x78;
+u8 I2c_BuckConverter_MvOutToMultiplier(const I2c_BuckConverter_Domain* domain, u32 mvolt) {
+    u32 uvolt = mvolt * 1000;
+    if (uvolt < domain->uv_min)
+        uvolt = domain->uv_min;
+    if (uvolt > domain->uv_max)
+        uvolt = domain->uv_max;
 
-    u8 val = RESET_VAL;
-    // Retry 3 times if received RESET_VAL
+    return (uvolt - domain->uv_min) / domain->uv_step;
+}
+
+u32 I2c_BuckConverter_GetMvOut(const I2c_BuckConverter_Domain* domain) {
+    u8 val;
+    Result res;
+    // Retry 3 times if failed or received POR value
     for (int i = 0; i < 3; i++) {
-        if (I2cRead_OutU8(I2cDevice_Max77812_2, reg, &val))
-            return 0u;
-        if (val != RESET_VAL)
-            break;
-        svcSleepThread(10);
+        res = I2cRead_OutU8(domain->device, domain->reg, &val);
+        if (R_FAILED(res) || (domain->por_val && val == domain->por_val)) {
+            svcSleepThread(1000);
+            continue;
+        }
+        return I2c_BuckConverter_MultiplierToMvOut(domain, val & domain->volt_mask);
     }
+    return 0u;
+}
 
-    return val * MV_STEP + MIN_MV;
+Result I2c_BuckConverter_SetMvOut(const I2c_BuckConverter_Domain* domain, u32 mvolt) {
+    u8 val;
+    Result res = I2cRead_OutU8(domain->device, domain->reg, &val);
+    if (R_FAILED(res))
+        return res;
+
+    u8 multiplier = I2c_BuckConverter_MvOutToMultiplier(domain, mvolt);
+    val &= ~domain->volt_mask;
+    val |= multiplier & domain->volt_mask;
+
+    res = I2cSet_U8(domain->device, domain->reg, val);
+    if (R_FAILED(res))
+        return res;
+
+    svcSleepThread(1000);
+    u8 new_val;
+    res = I2cRead_OutU8(domain->device, domain->reg, &new_val);
+    if (R_FAILED(res))
+        return res;
+    if (new_val != val)
+        return -1;
+
+    return 0;
 }
 
 u8 I2c_Bq24193_Convert_mA_Raw(u32 ma) {

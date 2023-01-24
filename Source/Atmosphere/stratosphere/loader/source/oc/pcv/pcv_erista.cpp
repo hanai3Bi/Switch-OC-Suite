@@ -27,10 +27,19 @@ Result CpuFreqCvbTable(u32* ptr) {
     bool validated = std::memcmp(cpu_cvb_table_head, CpuCvbTableDefault, sizeof(CpuCvbTableDefault)) == 0;
     R_UNLESS(validated, ldr::ResultInvalidCpuDvfs());
 
-    if (!C.eristaCpuOCEnabled)
-        R_SKIP();
-
     std::memcpy(reinterpret_cast<void *>(new_start), CpuCvbTableAppend, sizeof(CpuCvbTableAppend));
+
+    // Patch CPU max volt in existing and appended CPU dvfs table
+    if (C.eristaCpuMaxVolt) {
+        size_t table_size = sizeof(CpuCvbTableAppend) / sizeof(cpu_freq_cvb_table_t);
+        cpu_freq_cvb_table_t* entry = new_start;
+        for (size_t i = 0; i < table_size; i++) {
+            if (entry->cvb_dfll_param.c0 == CpuVoltL4T) {
+                PatchOffset(reinterpret_cast<u32 *>(&(entry->cvb_dfll_param.c0)), C.eristaCpuMaxVolt * 1000);
+            }
+            entry++;
+        }
+    }
 
     R_SUCCEED();
 }

@@ -33,7 +33,8 @@ void SafetyCheck() {
     if (C.custRev != CUST_REV       ||
         C.marikoCpuMaxVolt >= 1300  ||
         C.eristaCpuMaxVolt >= 1300  ||
-        (C.eristaEmcVolt && (C.eristaEmcVolt < 600'000 || C.eristaEmcVolt > 1250'000)))
+        (C.eristaEmcVolt && (C.eristaEmcVolt < 600'000 || C.eristaEmcVolt > 1250'000)) ||
+        (C.marikoEmcVolt && (C.marikoEmcVolt < 600'000 || C.marikoEmcVolt > 650'000)))
     {
         CRASH("Triggered");
     }

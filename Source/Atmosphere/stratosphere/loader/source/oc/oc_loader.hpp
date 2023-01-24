@@ -16,6 +16,6 @@
 
 #pragma once
 
-#include "oc_suite_common.hpp"
+#include "oc_common.hpp"
 #include "pcv/pcv.hpp"
 #include "ptm/ptm.hpp"

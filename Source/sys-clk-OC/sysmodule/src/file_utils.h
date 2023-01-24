@@ -38,6 +38,7 @@ class FileUtils
     static void ParseLoaderKip();
     static Result mkdir_p(const char* dirpath);
   protected:
+    static const uint16_t CUST_REV = 3;
     typedef struct CustTable {
         uint8_t  cust[4] = {'C', 'U', 'S', 'T'};
         uint16_t custRev;
@@ -47,7 +48,7 @@ class FileUtils
         uint32_t marikoCpuMaxVolt;
         uint32_t marikoGpuMaxClock;
         uint32_t marikoEmcMaxClock;
-        uint32_t eristaCpuOCEnable;
+        uint32_t marikoEmcVolt;
         uint32_t eristaCpuMaxVolt;
         uint32_t eristaEmcMaxClock;
         uint32_t eristaEmcVolt;

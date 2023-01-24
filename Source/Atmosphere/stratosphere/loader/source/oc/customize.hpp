@@ -16,29 +16,30 @@
 
 #pragma once
 
-#define CUST_REV 2
+#define CUST_REV 3
 
-#include "oc_suite_common.hpp"
+#include "oc_common.hpp"
 
 namespace ams::ldr::oc {
 
 #include "mtc_timing_table.hpp"
 
 enum MtcConfig {
-    AUTO_ADJ_MARIKO_SAFE = 0,
-    AUTO_ADJ_MARIKO_4266 = 1,
+    AUTO_ADJ_MARIKO_SAFE_NO_ADJ_ERISTA = 0,
+    AUTO_ADJ_MARIKO_4266_NO_ADJ_ERISTA = 1,
+    NO_ADJ_ALL = 2,
 };
 
 typedef struct __attribute__((packed)) CustomizeTable {
     u8  cust[4] = {'C', 'U', 'S', 'T'};
     u16 custRev = CUST_REV;
-    u16 mtcConf = AUTO_ADJ_MARIKO_SAFE;
+    u16 mtcConf = AUTO_ADJ_MARIKO_SAFE_NO_ADJ_ERISTA;
     u32 marikoCpuMaxClock;
     u32 marikoCpuBoostClock;
     u32 marikoCpuMaxVolt;
     u32 marikoGpuMaxClock;
     u32 marikoEmcMaxClock;
-    u32 eristaCpuOCEnabled;
+    u32 marikoEmcVolt;
     u32 eristaCpuMaxVolt;
     u32 eristaEmcMaxClock;
     u32 eristaEmcVolt;

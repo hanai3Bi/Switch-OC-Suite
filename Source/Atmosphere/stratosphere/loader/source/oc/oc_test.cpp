@@ -15,8 +15,8 @@
  */
 
 #ifndef ATMOSPHERE_IS_STRATOSPHERE
-#include "oc_suite_test.hpp"
-#include "oc_suite.hpp"
+#include "oc_test.hpp"
+#include "oc_loader.hpp"
 
 void* loadExec(const char* file_loc, size_t* out_size) {
     FILE* fp = fopen(file_loc, "rb");

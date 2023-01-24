@@ -7,24 +7,28 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
 **DISCLAIMER: USE AT YOUR OWN RISK!**
 
-- Overclocking in general will shorten the lifespan of some hardware components.
+- Overclocking in general will shorten the lifespan of some hardware components. **YOU ARE RESPONSIBLE for any problem or potential damage** if unsafe frequencies are ENABLED in sys-clk-OC. Issues like asking for bypassing limit will BE IGNORED OR CLOSED WITHOUT REPLY.
 
-- Due to HorizonOS design, instabilities from unsafe RAM clocks may cause filesystem corruption. **Always make backup before usage.**
-
+- Due to HorizonOS design, instabilities from unsafe RAM clocks may cause filesystem corruption. **Always make backup before enabling DRAM OC.**
 
 ## Features
 
 - Erista variant (HAC-001)
-  - CPU Overclock
-    - Safe: 1785 MHz
-    - Unsafe (due to the limit of board power draw or power IC):
-      - Enable "Allow Unsafe Frequencies" in overlay to unlock frequencies up to 2091 MHz
-      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+  - CPU Overclock (Safe: 1785 MHz)
+    <details><summary>Unsafe</summary>
 
-  - DRAM Overclock
-    - Safe: 1862.4 MHz
-    - Unsafe:
-      - DRAM bus overvolting
+    - Due to the limit of board power draw or power IC
+    - Unlockable frequencies up to 2091 MHz
+    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+
+    </details>
+
+  - DRAM Overclock (Safe: 1862.4 MHz)
+    <details><summary>Unsafe</summary>
+
+    - Up to 2131 MHz with DRAM bus overvolting depending on your DRAM chip
+    
+    </details>
 
   - Modded sys-clk and ReverseNX-RT
     - CPU & GPU frequency governor (Experimental)
@@ -33,16 +37,21 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     - Sync ReverseNX Mode
     
 - Mariko variant (HAC-001-01, HDH-001, HEG-001)
-  - CPU / GPU Overclock
-    - Safe: 1963 / 998 MHz
-    - Unsafe (due to the limit of board power draw or power IC):
-      - Enable "Allow Unsafe Frequencies" in overlay to unlock frequencies up to 2397 / 1305 MHz
-      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+  - CPU / GPU Overclock (Safe: 1963 / 998 MHz)
+    <details><summary>Unsafe</summary>
 
-  - DRAM Overclock
-    - Safe: 1996.8 MHz with built-in timing adjustment
-    - Unsafe:
-      - [DRAM bus overvolting](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+    - Due to the limit of board power draw or power IC
+    - Unlockable frequencies up to 2397 / 1305 MHz or 2295 / 1267 MHz
+    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+
+    </details>
+
+  - DRAM Overclock (Safe: 1996.8 MHz)
+    <details><summary>Unsafe</summary>
+
+    - [DRAM bus overvolting](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
+
+    </details>
 
   - Modded sys-clk and ReverseNX-RT
     - Auto CPU Boost
@@ -59,8 +68,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 - CPU & GPU frequency governor (Experimental)
   - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-- Fast-charging (0.5A/2A) toggle, set charge limit (20% - 100%)
-  - Hoag (Switch Lite) cannot use the fast-charging toggle feature for now [#56](https://github.com/KazushiMe/Switch-OC-Suite/issues/56).
+- Setting charge limit (20% - 100%)
   - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
 - Global profile
@@ -101,23 +109,25 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
 <details>
   <summary>Deprecated: patching sysmodules manually</summary>
-  This method is only served as reference as it could damage your MMC file system if not handled properly.
 
-  Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (normally in `x.0.0`).
+  - This method is only served as reference as it could damage your MMC file system if not handled properly.
 
-  Tools:
-  - Lockpick_RCM
-  - TegraExplorer
-  - [hactool](https://github.com/SciresM/hactool)
-  - [nx2elf](https://github.com/shuffle2/nx2elf)
-  - elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/)
-  - [hacpack](https://github.com/The-4n/hacPack)
+  - Patched sysmodules would be persistent until pcv or ptm was updated in new HOS (normally in `x.0.0`).
+
+  - Tools:
+    - Lockpick_RCM
+    - TegraExplorer
+    - [hactool](https://github.com/SciresM/hactool)
+    - [nx2elf](https://github.com/shuffle2/nx2elf)
+    - elf2nso from [switch-tools](https://github.com/switchbrew/switch-tools/)
+    - [hacpack](https://github.com/The-4n/hacPack)
 
   1. Dump `prod.keys` with Lockpick_RCM
   2. Dump HOS firmware with TegraExplorer
   3. Configure and run `test_patch.sh` to generate patched pcv & ptm sysmodules in nca
   4. Replace nca in `SYSTEM:/Contents/registered/` with TegraExplorer
   5. `ValidateAcidSignature()` should be stubbed to allow unsigned sysmodules to load (a.k.a. `loader_patch`)
+
 </details>
 
 

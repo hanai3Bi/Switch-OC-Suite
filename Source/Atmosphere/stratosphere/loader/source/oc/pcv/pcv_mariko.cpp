@@ -149,6 +149,9 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
      * you'd better calculate timings yourself rather than relying on following algorithm.
      */
 
+    if (C.mtcConf == NO_ADJ_ALL)
+    	return;
+
     #define ADJUST_PROP(TARGET, REF)                                                                        \
         (u32)(std::ceil(REF + ((C.marikoEmcMaxClock-MemClkOSAlt)*(TARGET-REF))/(MemClkOSLimit-MemClkOSAlt)))
 
@@ -186,7 +189,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
 
     /* Timings that are available in or can be derived from LPDDR4X datasheet or TRM */
-    const bool use_4266_spec = C.mtcConf == AUTO_ADJ_MARIKO_4266;
+    const bool use_4266_spec = C.mtcConf == AUTO_ADJ_MARIKO_4266_NO_ADJ_ERISTA;
     // tCK_avg (average clock period) in ns
     const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
     // tRPpb (row precharge time per bank) in ns
@@ -368,6 +371,29 @@ Result MemFreqMax(u32* ptr) {
     R_SUCCEED();
 }
 
+Result MemVoltHandler(u32* ptr) {
+    u32 emc_uv = C.marikoEmcVolt;
+    if (!emc_uv)
+        R_SKIP();
+
+    regulator* entry = reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_2_3.default_uv));
+
+    constexpr u32 uv_step = 5'000;
+    constexpr u32 uv_min  = 250'000;
+
+    if (entry->id != 2 || entry->type != 3 ||
+        entry->type_2_3.step_uv != uv_step ||
+        entry->type_2_3.min_uv != uv_min)
+        R_THROW(ldr::ResultInvalidRegulatorEntry());
+
+    if (emc_uv % uv_step)
+        emc_uv = emc_uv / uv_step * uv_step; // rounding
+
+    PatchOffset(ptr, emc_uv);
+
+    R_SUCCEED();
+}
+
 void Patch(uintptr_t mapped_nso, size_t nso_size) {
     PatcherEntry<u32> patches[] = {
         { "CPU Freq Vdd",   &CpuFreqVdd,        1, nullptr, CpuClkOSLimit },
@@ -380,6 +406,7 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         { "MEM Freq Dvb",   &MemFreqDvbTable,   1, nullptr, MemClkOSLimit },
         { "MEM Freq Max",   &MemFreqMax,        0, nullptr, MemClkOSLimit },
         { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, MemClkPllmLimit },
+        { "MEM Volt",       &MemVoltHandler,    2, nullptr, MemVoltDefault }
     };
 
     for (uintptr_t ptr = mapped_nso;

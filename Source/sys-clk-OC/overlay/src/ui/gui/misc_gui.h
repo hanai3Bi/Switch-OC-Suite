@@ -32,9 +32,9 @@ class MiscGui : public BaseMenuGui
     protected:
         typedef struct {
             float batCurrent;
-            u32 cpuVolt  = 620;
-            u32 gpuVolt  = 610;
-            u32 dramVolt = 600;
+            u32 cpuVolt;
+            u32 gpuVolt;
+            u32 dramVolt;
         } I2cInfo;
 
         void PsmUpdate(uint32_t dispatchId = 0)
@@ -57,11 +57,12 @@ class MiscGui : public BaseMenuGui
         {
             i2cInitialize();
 
-            i2cInfo->batCurrent = I2c_Max17050_GetBatteryCurrent();
+            float batCurrent = I2c_Max17050_GetBatteryCurrent();
+            i2cInfo->batCurrent = std::abs(batCurrent) < 10. ? 0. : batCurrent;
 
-            i2cInfo->cpuVolt  = I2c_Max77812_GetMVOUT(I2c_Max77812_CPUVOLT_REG);
-            i2cInfo->gpuVolt  = I2c_Max77812_GetMVOUT(I2c_Max77812_GPUVOLT_REG);
-            i2cInfo->dramVolt = I2c_Max77812_GetMVOUT(I2c_Max77812_MEMVOLT_REG);
+            i2cInfo->cpuVolt  = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_CPU  : &I2c_Erista_CPU);
+            i2cInfo->gpuVolt  = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_GPU  : &I2c_Erista_GPU);
+            i2cInfo->dramVolt = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_DRAM : &I2c_Erista_DRAM);
 
             I2c_Bq24193_GetFastChargeCurrentLimit(reinterpret_cast<u32 *>(&(chargeInfo->ChargeCurrentLimit)));
 
@@ -78,16 +79,13 @@ class MiscGui : public BaseMenuGui
             if (chargeInfo->ChargeVoltageLimit)
                 snprintf(chargeVoltLimit, sizeof(chargeVoltLimit), ", %umV", chargeInfo->ChargeVoltageLimit);
 
-            char chargWattsInfo[50] = "";
+            char chargWattsInfo[30] = "";
             if (chargeInfo->ChargerType)
                 snprintf(chargWattsInfo, sizeof(chargWattsInfo), " %.1fV/%.1fA (%.1fW)", chargerVoltLimit, chargerCurrLimit, chargerOutWatts);
 
             char batCurInfo[30] = "";
-            if (std::abs(i2cInfo->batCurrent) < 10)
-                snprintf(batCurInfo, sizeof(batCurInfo), "0mA");
-            else
-                snprintf(batCurInfo, sizeof(batCurInfo), "%+.2fmA (%+.2fW)",
-                    i2cInfo->batCurrent, i2cInfo->batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
+            snprintf(batCurInfo, sizeof(batCurInfo), "%+.2fmA (%+.2fW)",
+                i2cInfo->batCurrent, i2cInfo->batCurrent * (float)chargeInfo->VoltageAvg / 1000'000);
 
             snprintf(out, outsize,
                 "%s%s\n"
@@ -155,10 +153,21 @@ class MiscGui : public BaseMenuGui
         I2cInfo*        i2cInfo;
         LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
 
-        const char* infoNames = "Charger:\nBattery:\nCurrent Limit:\nCharging Limit:\nRaw Charge:\nBattery Age:\nPower Role:\nCurrent Flow:\n\nCPU Volt:\nGPU Volt:\nDRAM Volt:";
+        const char* infoNames = 
+            "Charger:\n"\
+            "Battery:\n"\
+            "Current Limit:\n"\
+            "Charging Limit:\n"\
+            "Raw Charge:\n"\
+            "Battery Age:\n"\
+            "Power Role:\n"\
+            "Current Flow:\n\n"\
+            "CPU Volt:\n"\
+            "GPU Volt:\n"\
+            "DRAM Volt:";
         char infoVals[300] = "";
-        char chargingLimitBarDesc[40] = "";
-        char chargingCurrentBarDesc[45] = "";
+        char chargingLimitBarDesc[50] = "";
+        char chargingCurrentBarDesc[60] = "";
         u32 batteryChargePerc = 0;
         u8 frameCounter = 60;
 };

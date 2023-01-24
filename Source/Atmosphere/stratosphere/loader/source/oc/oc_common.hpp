@@ -22,7 +22,7 @@
     #define LOGGING(fmt, ...) ((void)0)
     #define CRASH(msg, ...) { ams::diag::AbortImpl(msg, __PRETTY_FUNCTION__, "", 0); __builtin_unreachable(); }
 #else
-    #include "oc_suite_test.hpp"
+    #include "oc_test.hpp"
 #endif
 
 #include "customize.hpp"
@@ -39,8 +39,9 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1008);
     R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern, 1009);
     R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1010);
-    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1011);
-    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1012);
+    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1011);
+    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1012);
+    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1013);
 }
 
 namespace ams::ldr::oc {

@@ -11,6 +11,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include "cpp_util.hpp"
 extern "C" {
 #endif
 

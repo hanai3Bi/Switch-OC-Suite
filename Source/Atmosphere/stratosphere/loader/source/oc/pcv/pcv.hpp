@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../oc_suite_common.hpp"
+#include "../oc_common.hpp"
 
 namespace ams::ldr::oc::pcv {
 
@@ -87,6 +87,33 @@ typedef struct __attribute__((packed)) dvfs_rail {
     u32 max_mv;
     u32 unk_2[11];
 } dvfs_rail;
+
+typedef struct __attribute__((packed)) regulator {
+    u64 id;
+    const char* name;
+    u32 type;
+    union {
+        struct {
+            u32 volt_reg;
+            u32 step_uv;
+            u32 min_uv;
+            u32 default_uv;
+            u32 max_uv;
+            u32 unk_0[2];
+        } type_1;
+        struct {
+            u32 unk_0;
+            u32 step_uv;
+            u32 unk_1;
+            u32 min_uv;
+            u32 max_uv;
+            u32 unk_2;
+            u32 default_uv;
+        } type_2_3;
+    };
+    u32 unk_x[60];
+} regulator;
+static_assert(sizeof(regulator) == 0x120);
 
 constexpr u32 CpuClkOSLimit   = 1785'000;
 

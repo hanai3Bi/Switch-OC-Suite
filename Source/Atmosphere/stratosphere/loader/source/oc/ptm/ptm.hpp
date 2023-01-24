@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../oc_suite_common.hpp"
+#include "../oc_common.hpp"
 
 namespace ams::ldr::oc::ptm {
 
