@@ -100,16 +100,18 @@ u8 I2c_BuckConverter_MvOutToMultiplier(const I2c_BuckConverter_Domain* domain, u
 u32 I2c_BuckConverter_GetMvOut(const I2c_BuckConverter_Domain* domain) {
     u8 val;
     Result res;
-    // Retry 3 times if failed or received POR value
+    // Retry 3 times if received POR value
     for (int i = 0; i < 3; i++) {
         res = I2cRead_OutU8(domain->device, domain->reg, &val);
-        if (R_FAILED(res) || (domain->por_val && val == domain->por_val)) {
-            svcSleepThread(1000);
-            continue;
-        }
-        return I2c_BuckConverter_MultiplierToMvOut(domain, val & domain->volt_mask);
+        if (R_FAILED(res))
+            return 0u;
+
+        if (!domain->por_val || val != domain->por_val)
+            break;
+
+        svcSleepThread(1000);
     }
-    return 0u;
+    return I2c_BuckConverter_MultiplierToMvOut(domain, val & domain->volt_mask);
 }
 
 Result I2c_BuckConverter_SetMvOut(const I2c_BuckConverter_Domain* domain, u32 mvolt) {

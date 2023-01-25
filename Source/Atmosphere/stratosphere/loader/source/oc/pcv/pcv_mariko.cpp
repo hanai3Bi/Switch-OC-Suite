@@ -372,10 +372,6 @@ Result MemFreqMax(u32* ptr) {
 }
 
 Result MemVoltHandler(u32* ptr) {
-    u32 emc_uv = C.marikoEmcVolt;
-    if (!emc_uv)
-        R_SKIP();
-
     regulator* entry = reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_2_3.default_uv));
 
     constexpr u32 uv_step = 5'000;
@@ -385,6 +381,10 @@ Result MemVoltHandler(u32* ptr) {
         entry->type_2_3.step_uv != uv_step ||
         entry->type_2_3.min_uv != uv_min)
         R_THROW(ldr::ResultInvalidRegulatorEntry());
+
+    u32 emc_uv = C.marikoEmcVolt;
+    if (!emc_uv)
+        R_SKIP();
 
     if (emc_uv % uv_step)
         emc_uv = emc_uv / uv_step * uv_step; // rounding

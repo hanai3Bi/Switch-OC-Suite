@@ -120,11 +120,13 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 ## Build
 
 <details>
+
 Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
 
 Before compiling Atmosphere loader, run `patch.py` in `Atmosphere/stratosphere/loader/source/` to insert oc module into loader sysmodule.
 
 When compilation is done, uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
+
 </details>
 
 
