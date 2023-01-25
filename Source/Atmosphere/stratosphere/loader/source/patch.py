@@ -31,7 +31,7 @@ file_replace_str(ldr_process_creation,
 
 namespace ams::ldr {""",
 """#include "ldr_ro_manager.hpp"
-#include "oc/oc_suite.hpp"
+#include "oc/oc_loader.hpp"
 
 namespace ams::ldr {"""),
     ("""        NsoHeader g_nso_headers[Nso_Count];

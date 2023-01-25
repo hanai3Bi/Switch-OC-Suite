@@ -10,14 +10,5 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C"
-{
-#endif
-
 #include <sysclk.h>
 #include <sysclk/client/ipc.h>
-
-#if defined(__cplusplus)
-}
-#endif

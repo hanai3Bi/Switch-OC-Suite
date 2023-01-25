@@ -1,8 +1,0 @@
-{
-  "devDependencies": {
-    "tailwindcss": "^3.2.2"
-  },
-  "dependencies": {
-    "tw-elements": "^1.0.0-alpha12"
-  }
-}

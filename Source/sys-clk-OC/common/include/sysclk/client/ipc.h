@@ -10,6 +10,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "types.h"
 #include "../config.h"
 #include "../clocks.h"
@@ -40,3 +44,7 @@ static inline Result sysclkIpcRemoveOverride(SysClkModule module)
 {
     return sysclkIpcSetOverride(module, 0);
 }
+
+#ifdef __cplusplus
+}
+#endif

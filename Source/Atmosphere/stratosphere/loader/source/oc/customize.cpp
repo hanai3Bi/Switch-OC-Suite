@@ -71,7 +71,6 @@ volatile CustomizeTable C = {
 .marikoEmcVolt     = 0,
 
 /* Erista CPU:
- * Not tested but enabled by default.
  * - Max Voltage in mV
  */
 .eristaCpuMaxVolt  = 1235,

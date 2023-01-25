@@ -4,6 +4,7 @@
 
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
+[Project Homepage](https://kazushime.github.io/Switch-OC-Suite)
 
 **DISCLAIMER: USE AT YOUR OWN RISK!**
 
@@ -15,20 +16,13 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
 - Erista variant (HAC-001)
   - CPU Overclock (Safe: 1785 MHz)
-    <details><summary>Unsafe</summary>
-
-    - Due to the limit of board power draw or power IC
-    - Unlockable frequencies up to 2091 MHz
-    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
-
-    </details>
+    - Unsafe
+      - Due to the limit of board power draw or power IC
+      - Unlockable frequencies up to 2091 MHz
+      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1862.4 MHz)
-    <details><summary>Unsafe</summary>
-
-    - Up to 2131 MHz with DRAM bus overvolting depending on your DRAM chip
-    
-    </details>
+    - Unsafe: Up to 2131 MHz with DRAM bus overvolting depending on your DRAM chip
 
   - Modded sys-clk and ReverseNX-RT
     - CPU & GPU frequency governor (Experimental)
@@ -38,20 +32,12 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     
 - Mariko variant (HAC-001-01, HDH-001, HEG-001)
   - CPU / GPU Overclock (Safe: 1963 / 998 MHz)
-    <details><summary>Unsafe</summary>
-
-    - Due to the limit of board power draw or power IC
-    - Unlockable frequencies up to 2397 / 1305 MHz or 2295 / 1267 MHz
-    - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
-
-    </details>
+    - Unsafe
+      - Due to the limit of board power draw or power IC
+      - Unlockable frequencies up to 2397 / 1305 MHz or 2295 / 1267 MHz
+      - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1996.8 MHz)
-    <details><summary>Unsafe</summary>
-
-    - [DRAM bus overvolting](https://gist.github.com/KazushiMe/6bb0fcbefe0e03b1274079522516d56d).
-
-    </details>
 
   - Modded sys-clk and ReverseNX-RT
     - Auto CPU Boost
@@ -99,7 +85,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     | CPU Volt   | 1235 mV Max   | 1257 mV Max  |
     | GPU OC     | 1305 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
-    | RAM Volt   | N/A           | Disabled     |
+    | RAM Volt   | Disabled      | Disabled     |
     | RAM Timing | Auto-Adjusted | Disabled     |
 
     </details>
@@ -151,5 +137,5 @@ When compilation is done, uncompress the kip to make it work with configurator: 
 - RetroNX team for [sys-clk](https://github.com/retronx-team/sys-clk)
 - SciresM and Reswitched Team for the state-of-the-art [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) CFW of Switch
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
-- Switchroot for their [modified L4T kernel and device tree]((https://gitlab.com/switchroot/kernel))
+- Switchroot for their [modified L4T kernel and device tree](https://gitlab.com/switchroot/kernel)
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere
