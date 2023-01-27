@@ -29,14 +29,85 @@ Result MemFreqPllmLimit(u32* ptr) {
     R_SUCCEED();
 }
 
+Result MemVoltHandler(u32* ptr) {
+    // ptr value might be default_uv or max_uv
+    regulator* entries[2] = {
+        reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_1.default_uv)),
+        reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_1.max_uv)),
+    };
+
+    constexpr u32 uv_step = 12'500;
+    constexpr u32 uv_min  = 600'000;
+
+    auto validator = [](regulator* entry) {
+        R_UNLESS(entry->id == 1,                    ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type == 1,                  ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type_1.volt_reg == 0x17,    ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type_1.step_uv == uv_step,  ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type_1.min_uv == uv_min,    ldr::ResultInvalidRegulatorEntry());
+        R_SUCCEED();
+    };
+
+    regulator* entry = nullptr;
+    for (auto& i : entries) {
+        if (R_SUCCEEDED(validator(i)))
+            entry = i;
+    }
+
+    R_UNLESS(entry, ldr::ResultInvalidRegulatorEntry());
+
+    u32 emc_uv = C.commonEmcMemVolt;
+    if (!emc_uv)
+        R_SKIP();
+
+    if (emc_uv % uv_step)
+        emc_uv = emc_uv / uv_step * uv_step; // rounding
+
+    PatchOffset(ptr, emc_uv);
+
+    R_SUCCEED();
+}
+
 void SafetyCheck() {
-    if (C.custRev != CUST_REV       ||
-        C.marikoCpuMaxVolt > 1300  ||
-        C.eristaCpuMaxVolt > 1300  ||
-        (C.eristaEmcVolt && (C.eristaEmcVolt < 600'000 || C.eristaEmcVolt > 1250'000)) ||
-        (C.marikoEmcVolt && (C.marikoEmcVolt < 600'000 || C.marikoEmcVolt > 650'000)))
-    {
+    if (C.custRev != CUST_REV)
         CRASH("Triggered");
+
+    struct sValidator {
+        volatile u32 value;
+        u32 min;
+        u32 max;
+        bool value_required = false;
+
+        Result check() {
+            if (!value_required && !value)
+                R_SUCCEED();
+
+            if (min && value < min)
+                R_THROW(ldr::ResultSafetyCheckFailure());
+            if (max && value > max)
+                R_THROW(ldr::ResultSafetyCheckFailure());
+
+            R_SUCCEED();
+        }
+    };
+
+    sValidator validators[] = {
+        { C.marikoCpuMaxClock,   1785'000, 3000'000 },
+        { C.marikoCpuBoostClock, 1020'000, 3000'000, true },
+        { C.marikoCpuMaxVolt,        1100,     1300 },
+        { C.marikoGpuMaxClock,    768'000, 1536'000 },
+        { C.marikoEmcMaxClock,   1600'000, 2400'000 },
+        { C.marikoEmcVddqVolt,    550'000,  650'000 },
+        { C.eristaCpuMaxVolt,        1100,     1300 },
+        { C.eristaEmcMaxClock,   1600'000, 2400'000 },
+        { C.commonEmcMemVolt,    1100'000, 1250'000 },
+    };
+
+    printf("marikoCpuMaxClock: %u\n", C.marikoCpuMaxClock);
+
+    for (auto& i : validators) {
+        if (R_FAILED(i.check()))
+            CRASH("Triggered");
     }
 }
 

@@ -34,7 +34,8 @@ class MiscGui : public BaseMenuGui
             float batCurrent;
             u32 cpuVolt;
             u32 gpuVolt;
-            u32 dramVolt;
+            u32 emcVddq;
+            u32 memVdd2;
         } I2cInfo;
 
         void PsmUpdate(uint32_t dispatchId = 0)
@@ -60,9 +61,17 @@ class MiscGui : public BaseMenuGui
             float batCurrent = I2c_Max17050_GetBatteryCurrent();
             i2cInfo->batCurrent = std::abs(batCurrent) < 10. ? 0. : batCurrent;
 
-            i2cInfo->cpuVolt  = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_CPU  : &I2c_Erista_CPU);
-            i2cInfo->gpuVolt  = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_GPU  : &I2c_Erista_GPU);
-            i2cInfo->dramVolt = I2c_BuckConverter_GetMvOut(isMariko ? &I2c_Mariko_DRAM : &I2c_Erista_DRAM);
+            if (isMariko) {
+                i2cInfo->cpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_CPU);
+                i2cInfo->gpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_GPU);
+                i2cInfo->emcVddq = I2c_BuckConverter_GetMvOut(&I2c_Mariko_DRAM_VDDQ);
+                i2cInfo->memVdd2 = I2c_BuckConverter_GetMvOut(&I2c_Mariko_DRAM_VDD2);
+            } else {
+                i2cInfo->cpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_CPU);
+                i2cInfo->gpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_GPU);
+                i2cInfo->emcVddq = I2c_BuckConverter_GetMvOut(&I2c_Erista_DRAM);
+                i2cInfo->memVdd2 = i2cInfo->emcVddq;
+            }
 
             I2c_Bq24193_GetFastChargeCurrentLimit(reinterpret_cast<u32 *>(&(chargeInfo->ChargeCurrentLimit)));
 
@@ -98,7 +107,7 @@ class MiscGui : public BaseMenuGui
                 "%s\n\n"
                 "%dmV\n"
                 "%dmV\n"
-                "%dmV\n"
+                "Vddq %dmV, Vdd2 %dmV\n"
                 ,
                 PsmInfoChargerTypeToStr(chargeInfo->ChargerType), chargWattsInfo,
                 (float)chargeInfo->VoltageAvg / 1000, (float)chargeInfo->BatteryTemperature / 1000,
@@ -110,7 +119,7 @@ class MiscGui : public BaseMenuGui
                 batCurInfo,
                 i2cInfo->cpuVolt,
                 i2cInfo->gpuVolt,
-                i2cInfo->dramVolt
+                i2cInfo->emcVddq, i2cInfo->memVdd2
             );
         }
 
@@ -166,8 +175,8 @@ class MiscGui : public BaseMenuGui
             "GPU Volt:\n"\
             "DRAM Volt:";
         char infoVals[300] = "";
-        char chargingLimitBarDesc[50] = "";
-        char chargingCurrentBarDesc[60] = "";
+        char chargingLimitBarDesc[40] = "";
+        char chargingCurrentBarDesc[50] = "";
         u32 batteryChargePerc = 0;
         u8 frameCounter = 60;
 };

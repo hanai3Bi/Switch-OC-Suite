@@ -65,6 +65,7 @@ bool PtmTablePatternFn(u32* ptr) {
 
 void Patch(uintptr_t mapped_nso, size_t nso_size) {
     #ifdef ATMOSPHERE_IS_STRATOSPHERE
+    // Ptm patcher is disabled for Erista
     bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
     if (!isMariko)
         return;

@@ -72,7 +72,7 @@ Result MemFreqMtcTable(u32* ptr) {
         R_UNLESS(table_list[i]->rev == MTC_TABLE_REV,       ldr::ResultInvalidMtcTable());
     }
 
-    if (C.eristaEmcMaxClock <= MemClkOSLimit)
+    if (C.eristaEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
     // Make room for new mtc table, discarding useless 40.8 MHz table
@@ -86,24 +86,10 @@ Result MemFreqMtcTable(u32* ptr) {
 }
 
 Result MemFreqMax(u32* ptr) {
-    if (C.eristaEmcMaxClock <= MemClkOSLimit)
+    if (C.eristaEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
     PatchOffset(ptr, C.eristaEmcMaxClock);
-
-    R_SUCCEED();
-}
-
-Result MemVoltHandler(u32* ptr) {
-    u32 emc_uv = C.eristaEmcVolt;
-    if (!emc_uv)
-        R_SKIP();
-
-    constexpr u32 uv_step = 12'500;
-    if (emc_uv % uv_step)
-        emc_uv = emc_uv / uv_step * uv_step; // rounding
-
-    PatchOffset(ptr, emc_uv);
 
     R_SUCCEED();
 }
@@ -112,9 +98,9 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
     PatcherEntry<u32> patches[] = {
         { "CPU Freq Table", &CpuFreqCvbTable,   1, nullptr, CpuClkOSLimit },
         { "CPU Volt Limit", &CpuVoltRange,      0, &CpuMaxVoltPatternFn },
-        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, MemClkOSLimit },
-        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, MemClkOSLimit },
-        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, MemClkPllmLimit },
+        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, EmcClkOSLimit },
+        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, EmcClkOSLimit },
+        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, EmcClkPllmLimit },
         { "MEM Volt",       &MemVoltHandler,    2, nullptr, MemVoltHOS },
     };
 

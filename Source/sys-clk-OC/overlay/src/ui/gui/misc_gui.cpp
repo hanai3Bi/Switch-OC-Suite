@@ -61,10 +61,7 @@ void MiscGui::listUI()
     sysclkIpcGetConfigValues(this->configList);
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
-    if (this->isMariko) {
-        addConfigToggle(SysClkConfigValue_AutoCPUBoost);
-    }
-
+    addConfigToggle(SysClkConfigValue_AutoCPUBoost);
     addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
     addConfigToggle(SysClkConfigValue_GovernorExperimental);
 
@@ -85,7 +82,7 @@ void MiscGui::listUI()
         uint32_t current_ma = val * 100;
         this->configList->values[SysClkConfigValue_ChargingCurrentLimit] = current_ma;
 
-        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA (Now: %+.2f mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], this->i2cInfo->batCurrent);
+        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Charging Current: %lu mA (Now: %+d mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], (int)this->i2cInfo->batCurrent);
         this->chargingCurrentHeader->setText(chargingCurrentBarDesc);
 
         Result rc = sysclkIpcSetConfigValues(this->configList);
@@ -172,11 +169,11 @@ void MiscGui::refresh() {
         this->backlightToggle->setState(lblstatus);
 
         this->chargingCurrentBar->setProgress(this->configList->values[SysClkConfigValue_ChargingCurrentLimit] / 100);
-        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Battery Charging Current: %lu mA (Now: %+.2f mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], this->i2cInfo->batCurrent);
+        snprintf(chargingCurrentBarDesc, sizeof(chargingCurrentBarDesc), "Charging Current: %lu mA (Now: %+d mA)", this->configList->values[SysClkConfigValue_ChargingCurrentLimit], (int)this->i2cInfo->batCurrent);
         this->chargingCurrentHeader->setText(chargingCurrentBarDesc);
 
         this->chargingLimitBar->setProgress(this->configList->values[SysClkConfigValue_ChargingLimitPercentage]);
-        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Battery Charging Limit: %lu%% (Now: %u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
+        snprintf(chargingLimitBarDesc, sizeof(chargingLimitBarDesc), "Charging Limit: %lu%% (Now: %u%%)", this->configList->values[SysClkConfigValue_ChargingLimitPercentage], this->batteryChargePerc);
         this->chargingLimitHeader->setText(chargingLimitBarDesc);
 
         I2cGetInfo(this->i2cInfo);

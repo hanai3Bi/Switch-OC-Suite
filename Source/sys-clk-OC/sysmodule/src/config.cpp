@@ -69,9 +69,7 @@ void Config::Load()
     }
 
     // Erista: Disable Mariko only features
-    if (!Clocks::GetIsMariko()) {
-        this->configValues[SysClkConfigValue_AutoCPUBoost] = 0;
-    }
+    // if (!Clocks::GetIsMariko()) { }
 
     this->loaded = true;
 }

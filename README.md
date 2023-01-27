@@ -1,6 +1,6 @@
 # Switch OC Suite
 
-[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) 
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
@@ -22,14 +22,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
       - See [README for sys-clk-OC](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1862.4 MHz)
-    - Unsafe: Up to 2131 MHz with DRAM bus overvolting depending on your DRAM chip
 
-  - Modded sys-clk and ReverseNX-RT
-    - CPU & GPU frequency governor (Experimental)
-    - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
-    - Global Profile
-    - Sync ReverseNX Mode
-    
 - Mariko variant (HAC-001-01, HDH-001, HEG-001)
   - CPU / GPU Overclock (Safe: 1963 / 998 MHz)
     - Unsafe
@@ -39,50 +32,44 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
   - DRAM Overclock (Safe: 1996.8 MHz)
 
-  - Modded sys-clk and ReverseNX-RT
-    - Auto CPU Boost
-    - CPU & GPU frequency governor (Experimental)
-    - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
-    - Global Profile
-    - Sync ReverseNX Mode
+- Modded sys-clk and ReverseNX-RT
+  - Auto CPU Boost
+    - For faster game loading
+    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
+    - Effective only when charger is connected.
 
-- Auto CPU Boost
-  - For faster game loading
-  - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
-  - Effective only when charger is connected.
+  - CPU & GPU frequency governor (Experimental)
+    - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-- CPU & GPU frequency governor (Experimental)
-  - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
+  - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
+    - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
-- Setting charge limit (20% - 100%)
-  - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
+  - Global Profile
+    - Designated a dummy title id `0xA111111111111111`.
+    - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
 
-- Global profile
-  - Designated a dummy title id `0xA111111111111111`.
-  - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
-
-- Sync ReverseNX Mode
-  - No need to change clocks manually after toggling modes in ReverseNX (-RT and -Tool)
+  - Sync ReverseNX Mode
+    - No need to change clocks manually after toggling modes in ReverseNX (-RT and -Tool)
 
 - **[System Settings (Optional)](https://github.com/KazushiMe/Switch-OC-Suite/blob/master/system_settings.md)**
 
 
 ## Installation
 
-1. Download latest [release](https://github.com/KazushiMe/Switch-OC-Suite/releases/latest).
+1. Download latest [release](https://kazushime.github.io/Switch-OC-Suite/#download).
 
 2. Copy all files in `SdOut` to the root of SD card.
 
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-4. Customization via [online loader configurator](https://kazushime.github.io/Switch-OC-Suite/):
+4. Customization via [online loader configurator](https://kazushime.github.io/Switch-OC-Suite/#config):
     <details>
 
     | Defaults   | Mariko        | Erista       |
     | ---------- | ------------- | ------------ |
     | CPU OC     | 2397 MHz Max  | 2091 MHz Max |
     | CPU Boost  | 1785 MHz      | N/A          |
-    | CPU Volt   | 1235 mV Max   | 1257 mV Max  |
+    | CPU Volt   | 1235 mV Max   | 1235 mV Max  |
     | GPU OC     | 1305 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | Disabled      | Disabled     |

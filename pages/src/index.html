@@ -4,10 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Switch OC Suite</title>
+  <title>Switch OC Suite > Project Homepage | Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW. Licensed under GPL v2.
+  </title>
   <meta name="description"
     content="Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW. Licensed under GPL v2.">
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    div#download_btn_grid > a {
+      margin: 0.5rem 0;
+    }
+  </style>
 </head>
 
 <body>
@@ -79,21 +85,7 @@
                   </li>
                 </ul>
               </li>
-              <li>DRAM Overclock (Safe: 1862.4 MHz)
-                <ul>
-                  <li>Unsafe: Up to 2131 MHz with DRAM bus overvolting depending on your
-                    DRAM chip</li>
-                </ul>
-              </li>
-              <li>Modded sys-clk and ReverseNX-RT
-                <ul>
-                  <li>CPU &amp; GPU frequency governor (Experimental)</li>
-                  <li>Set charging current (100 mA - 2000 mA) and charging limit (20% -
-                    100%)</li>
-                  <li>Global Profile</li>
-                  <li>Sync ReverseNX Mode</li>
-                </ul>
-              </li>
+              <li>DRAM Overclock (Safe: 1862.4 MHz)</li>
             </ul>
           </details>
           <details>
@@ -114,55 +106,46 @@
                 </ul>
               </li>
               <li>DRAM Overclock (Safe: 1996.8 MHz)</li>
-              <li>Modded sys-clk and ReverseNX-RT
+            </ul>
+          </details>
+          <details>
+            <summary>Modded sys-clk and ReverseNX-RT</summary>
+            <ul>
+              <li>Auto CPU Boost
                 <ul>
-                  <li>Auto CPU Boost</li>
-                  <li>CPU &amp; GPU frequency governor (Experimental)</li>
-                  <li>Set charging current (100 mA - 2000 mA) and charging limit (20% -
-                    100%)</li>
-                  <li>Global Profile</li>
-                  <li>Sync ReverseNX Mode</li>
+                  <li>For faster game loading</li>
+                  <li>Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is
+                    stressed (mainly I/O operations).</li>
+                  <li>Effective only when charger is connected.</li>
                 </ul>
               </li>
-            </ul>
-          </details>
-          <details>
-            <summary>Auto CPU Boost</summary>
-            <ul>
-              <li>For faster game loading</li>
-              <li>Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is
-                stressed (mainly I/O operations).</li>
-              <li>Effective only when charger is connected.</li>
-            </ul>
-          </details>
-          <details>
-            <summary>CPU &amp; GPU frequency governor (Experimental)</summary>
-            <ul>
-              <li>Adjust frequency based on load. Might decrease power draw but can
-                introduce stutters. Can be turned off for specific titles.</li>
-            </ul>
-          </details>
-          <details>
-            <summary>Setting charge limit (20% - 100%)</summary>
-            <ul>
-              <li>Long-term use of charge limit may render the battery gauge
-                inaccurate. Performing full cycles could help recalibration, or try <a
-                  href="https://github.com/CTCaer/battery_desync_fix_nx">battery_desync_fix_nx</a>.</li>
-            </ul>
-          </details>
-          <details>
-            <summary>Global profile</summary>
-            <ul>
-              <li>Designated a dummy title id <code>0xA111111111111111</code>.</li>
-              <li>Priority: "Temp overrides" &gt; "Application profile" &gt; "Global
-                profile" &gt; "System default".</li>
-            </ul>
-          </details>
-          <details>
-            <summary>Sync ReverseNX Mode</summary>
-            <ul>
-              <li>No need to change clocks manually after toggling modes in ReverseNX
-                (-RT and -Tool)</li>
+              <li>CPU &amp; GPU frequency governor (Experimental)
+                <ul>
+                  <li>Adjust frequency based on load. Might decrease power draw but can
+                    introduce stutters. Can be turned off for specific titles.</li>
+                </ul>
+              </li>
+              <li>Set charging current (100 mA - 2000 mA) and charging limit (20% -
+                100%)
+                <ul>
+                  <li>Long-term use of charge limit may render the battery gauge
+                    inaccurate. Performing full cycles could help recalibration, or try <a
+                      href="https://github.com/CTCaer/battery_desync_fix_nx">battery_desync_fix_nx</a>.</li>
+                </ul>
+              </li>
+              <li>Global Profile
+                <ul>
+                  <li>Designated a dummy title id <code>0xA111111111111111</code>.</li>
+                  <li>Priority: "Temp overrides" &gt; "Application profile" &gt; "Global
+                    profile" &gt; "System default".</li>
+                </ul>
+              </li>
+              <li>Sync ReverseNX Mode
+                <ul>
+                  <li>No need to change clocks manually after toggling modes in ReverseNX
+                    (-RT and -Tool)</li>
+                </ul>
+              </li>
             </ul>
           </details>
           <details>
@@ -201,7 +184,7 @@
                     <tr>
                       <td>CPU Volt</td>
                       <td>1235 mV Max</td>
-                      <td>1257 mV Max</td>
+                      <td>1235 mV Max</td>
                     </tr>
                     <tr>
                       <td>GPU OC</td>
@@ -336,7 +319,7 @@
         </header>
 
         <body>
-          <div class="grid">
+          <div class="grid" id="download_btn_grid">
             <a role="button" aria-busy="true" id="loader_kip_btn">Generating link, please wait...</a>
             <a role="button" aria-busy="true" id="sdout_zip_btn">Generating link, please wait...</a>
             <a target="_blank" role="button" aria-busy="true" id="ams_btn">Generating link, please wait...</a>

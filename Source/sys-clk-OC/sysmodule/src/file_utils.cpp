@@ -292,8 +292,13 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
             Clocks::maxMemFreq = table.marikoEmcMaxClock * 1000;
         if (table.marikoEmcVolt && table.marikoEmcVolt >= 600'000 && table.marikoEmcVolt <= 650'000) {
             u32 mvolt = table.marikoEmcVolt / 1000;
-            Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM, mvolt);
-            LogLine("Set EMC volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
+            Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDDQ, mvolt);
+            LogLine("Set EMC Vddq volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
+        }
+        if (table.commonEmcMemVolt && table.commonEmcMemVolt >= 1100'000 && table.commonEmcMemVolt <= 1250'000) {
+            u32 mvolt = table.commonEmcMemVolt / 1000;
+            Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDD2, mvolt);
+            LogLine("Set MEM Vdd2 volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
         }
     } else {
         if (table.eristaEmcMaxClock)

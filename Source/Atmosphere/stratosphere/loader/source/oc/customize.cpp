@@ -51,9 +51,9 @@ volatile CustomizeTable C = {
  */
 .marikoGpuMaxClock = 1305600,
 
-/* Mariko EMC:
+/* Mariko EMC(RAM):
  * - RAM Clock in kHz:
- *   Values should be > 1600000, and divided evenly by 9600.
+ *   Values should be ≥ 1600000, and divided evenly by 9600.
  *   [WARNING]
  *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
  *   - Graphical glitches
@@ -61,21 +61,21 @@ volatile CustomizeTable C = {
  *   - NAND corruption
  */
 .marikoEmcMaxClock = 1996800,
-/* - RAM Voltage in uV
- *   Range: 600'000 to 650'000 uV
+/* - EMC Vddq (Mariko Only) Voltage in uV
+ *   Range: 550'000 to 650'000 uV
  *   Value should be divided evenly by 5'000
  *   Default: 600'000
  *   Not enabled by default.
  *   This will not work without sys-clk-OC.
  */
-.marikoEmcVolt     = 0,
+.marikoEmcVddqVolt = 0,
 
 /* Erista CPU:
  * - Max Voltage in mV
  */
 .eristaCpuMaxVolt  = 1235,
 
-/* Erista EMC:
+/* Erista EMC(RAM):
  * - RAM Clock in kHz
  *   [WARNING]
  *   RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM:
@@ -84,13 +84,14 @@ volatile CustomizeTable C = {
  *   - NAND corruption
  */
 .eristaEmcMaxClock = 1862400,
-/* - RAM Voltage in uV
- *   Range: 600'000 to 1250'000 uV
- *   Value should be divided evenly by 12'500
- *   Default(HOS): 1125'000
+/* - EMC Vddq (Erista Only) and RAM Vdd2 Voltage in uV
+ *   Range: 1100'000 to 1250'000 uV
+ *   Erista Default(HOS): 1125'000 (bootloader: 1100'000)
+ *   Mariko Default: 1100'000 (It will not work without sys-clk-OC.)
+ *   Value should be divided evenly by 12'500.
  *   Not enabled by default.
  */
-.eristaEmcVolt     = 0,
+.commonEmcMemVolt  = 0,
 };
 
 }

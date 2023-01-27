@@ -217,10 +217,10 @@ bool ClockManager::RefreshContext()
         this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
         bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
         Clocks::SetAllowUnsafe(allowUnsafe);
-        if (Clocks::GetIsMariko()) {
+
+        this->governor->SetAutoCPUBoost(this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost));
+        if (Clocks::GetIsMariko())
             this->governor->SetCPUBoostHz(Clocks::GetNearestHz(SysClkModule_CPU, SysClkProfile_EnumMax, Clocks::boostCpuFreq));
-            this->governor->SetAutoCPUBoost(this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost));
-        }
     }
 
     bool enabled = this->GetConfig()->Enabled();

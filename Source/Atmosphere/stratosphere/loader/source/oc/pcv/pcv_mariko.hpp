@@ -115,9 +115,10 @@ constexpr emc_dvb_dvfs_table_t EmcDvbTableDefault[] = {
     { 1600000, {  675,  650,  637, } },
 };
 
-constexpr u32 MemClkOSAlt     = 1331'200;
-constexpr u32 MemClkPllmLimit = 2133'000'000;
-constexpr u32 MemVoltDefault  = 600'000;
+constexpr u32 EmcClkOSAlt     = 1331'200;
+constexpr u32 EmcClkPllmLimit = 2133'000'000;
+constexpr u32 EmcVddqDefault  = 600'000;
+constexpr u32 MemVdd2Default  = 1100'000;
 
 constexpr u32 MTC_TABLE_REV = 3;
 

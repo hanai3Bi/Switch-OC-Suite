@@ -67,8 +67,8 @@ static inline uint64_t sysclkDefaultConfigValue(SysClkConfigValue val)
         case SysClkConfigValue_CsvWriteIntervalMs:
         case SysClkConfigValue_AllowUnsafeFrequencies:
         case SysClkConfigValue_GovernorExperimental:
-            return 0ULL;
         case SysClkConfigValue_AutoCPUBoost:
+            return 0ULL;
         case SysClkConfigValue_SyncReverseNXMode:
             return 1ULL;
         case SysClkConfigValue_ChargingCurrentLimit:

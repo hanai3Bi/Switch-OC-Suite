@@ -39,10 +39,10 @@ typedef struct __attribute__((packed)) CustomizeTable {
     u32 marikoCpuMaxVolt;
     u32 marikoGpuMaxClock;
     u32 marikoEmcMaxClock;
-    u32 marikoEmcVolt;
+    u32 marikoEmcVddqVolt;
     u32 eristaCpuMaxVolt;
     u32 eristaEmcMaxClock;
-    u32 eristaEmcVolt;
+    u32 commonEmcMemVolt;
 } CustomizeTable;
 
 extern volatile CustomizeTable C;

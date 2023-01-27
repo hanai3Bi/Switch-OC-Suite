@@ -117,11 +117,12 @@ static_assert(sizeof(regulator) == 0x120);
 
 constexpr u32 CpuClkOSLimit   = 1785'000;
 
-constexpr u32 MemClkOSLimit   = 1600'000;
+constexpr u32 EmcClkOSLimit   = 1600'000;
 
 #define R_SKIP() R_SUCCEED()
 
 Result MemFreqPllmLimit(u32* ptr);
+Result MemVoltHandler(u32* ptr); // Used for Erista MEM Vdd2 + EMC Vddq or Mariko MEM Vdd2
 
 template<typename Table>
 Result MemMtcTableClone(Table* des, Table* src) {

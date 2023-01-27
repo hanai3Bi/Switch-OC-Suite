@@ -203,8 +203,8 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 
 | Key                      | Desc                                                                          | Default   |
 |:------------------------:|-------------------------------------------------------------------------------|:---------:|
-|**allow_unsafe_freq**     | (Mariko Only) Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)    | OFF       |
-|**auto_cpu_boost**        | (Mariko Only) Auto-boost CPU when system Core #3 utilization ≥ 95%            | ON        |
+|**allow_unsafe_freq**     | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF       |
+|**auto_cpu_boost**        | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | OFF       |
 |**sync_reversenx_mode**   | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON        |
 |**charging_current**      | Charging current limit (100 mA - 2000 mA)                                     | 2000 mA   |
 |**charging_limit_perc**   | Charging limit (20% - 100%)                                                   | 100%(OFF) |

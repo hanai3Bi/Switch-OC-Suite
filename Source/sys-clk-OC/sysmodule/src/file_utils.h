@@ -30,8 +30,6 @@ class FileUtils
     static void Exit();
     static Result Initialize();
     static bool IsInitialized();
-    static bool IsLogEnabled();
-    static bool ExistReverseNXTool();
     static void InitializeAsync();
     static void LogLine(const char *format, ...);
     static void WriteContextToCsv(const SysClkContext* context);
@@ -51,7 +49,7 @@ class FileUtils
         uint32_t marikoEmcVolt;
         uint32_t eristaCpuMaxVolt;
         uint32_t eristaEmcMaxClock;
-        uint32_t eristaEmcVolt;
+        uint32_t commonEmcMemVolt;
     } CustTable;
 
     static void RefreshFlags(bool force);

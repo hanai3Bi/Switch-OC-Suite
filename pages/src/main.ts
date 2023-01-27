@@ -1,20 +1,22 @@
 /* Config: Cust */
-var CUST_REV: number | null;
+const CUST_REV = 3;
 var buffer: string | ArrayBuffer;
 
 class CustEntry {
+  id: string;
   name: string;
   size: number;
   desc: string;
   defval: number;
   min: number;
   max: number;
-  step: number;
-  validator: Function | null;
+  step: number; // also as quotient
+  zeroable: boolean;
   value: number | null;
   offset: number | null;
 
-  constructor(name: string, size: number, desc: string, defval: number, minmax = [0, 1_000_000], step = 1, extra_validator?) {
+  constructor(id: string, name: string, size: number, desc: string, defval: number, minmax: [number, number] = [0, 1_000_000], step: number = 1, zeroable: boolean = true) {
+    this.id = id;
     this.name = name;
     this.size = size;
     this.desc = desc;
@@ -22,229 +24,194 @@ class CustEntry {
     this.min = minmax[0];
     this.max = minmax[1];
     this.step = step;
-    this.validator = extra_validator;
+    this.zeroable = zeroable;
     this.value = null;
     this.offset = null;
   };
+
+  validate(): boolean {
+    let tip = new ErrorToolTip(this.id);
+    tip.clear();
+    if (Number.isNaN(this.value) || this.value === null) {
+      tip.setMsg(`Invalid value: Not a number`);
+      tip.show();
+      return false;
+    }
+    if (this.zeroable && this.value == 0)
+      return true;
+    if (this.value < this.min || this.value > this.max) {
+      tip.setMsg(`Expected range: [${this.min}, ${this.max}], got ${this.value}.`);
+      tip.show();
+      return false;
+    }
+    if (this.value % this.step != 0) {
+      tip.setMsg(`${this.value} % ${this.step} ≠ 0`);
+      tip.show();
+      return false;
+    }
+    return true;
+  };
+
+  update() {
+    this.value = Number((document.getElementById(this.id) as HTMLInputElement).value);
+  }
+
+  getInputElement(): HTMLInputElement | null {
+    return document.getElementById(this.id) as HTMLInputElement;
+  }
+
+  createForm() {
+    let form = document.getElementById("form")!;
+    let input = this.getInputElement();
+    if (!input) {
+      let grid = document.createElement("div");
+      grid.classList.add("grid");
+
+      // Label and input
+      input = document.createElement("input");
+      input.min = String(this.min);
+      input.max = String(this.max);
+      input.id = this.id;
+      input.type = "number";
+      input.step = String(this.step);
+      let label = document.createElement("label");
+      label.setAttribute("for", this.id);
+      label.innerHTML = this.name;
+      label.appendChild(input);
+      grid.appendChild(label);
+
+      // Description in blockquote style
+      let desc = document.createElement("blockquote");
+      desc.style["margin-top"] = "0";
+      desc.innerHTML = this.desc;
+      desc.setAttribute("for", this.id);
+      grid.appendChild(desc);
+
+      grid.style["margin-top"] = "3rem";
+      form.appendChild(grid);
+
+      let tooltip = new ErrorToolTip(this.id);
+      tooltip.addChangeListener();
+    }
+    input.value = String(this.value!);
+  }
+
+  clearForm() {
+    let input = this.getInputElement();
+    if (input) {
+      input.parentElement!.parentElement!.remove();
+    }
+  }
 }
 
-var CustTable: Array<CustEntry> | null = null;
-
-const CustTableV2: Array<CustEntry> = [
+var CustTable: Array<CustEntry> = [
   new CustEntry(
     "mtcConf",
+    "DRAM Timing",
     2,
-    "<b>DRAM Timing</b>\
-       <li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)</li>\
-       <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>",
+    "<li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)</li>\
+     <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>\
+     <li><b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.",
     0,
-    [0, 3],
+    [0, 2],
+    1
   ),
   new CustEntry(
     "marikoCpuMaxClock",
+    "Mariko CPU Max Clock in kHz",
     4,
-    "<b>Mariko CPU Max Clock in kHz</b>\
-       <li>System default: 1785000</li>\
-       <li>2397000 might be unreachable for some SoCs.</li>",
+    "<li>System default: 1785000</li>\
+     <li>2397000 might be unreachable for some SoCs.</li>",
     2397_000,
     [1785_000, 3000_000],
-    100,
-    (x: number) => (x % 100) == 0
+    1,
   ),
   new CustEntry(
     "marikoCpuBoostClock",
+    "Mariko CPU Boost Clock in kHz",
     4,
-    "<b>Mariko CPU Boost Clock in kHz</b>\
-       <li>System default: 1785000</li>\
-       <li>Boost clock will be applied when applications request higher CPU frequency for quicker loading.</li>\
-       <li>This will be set regardless of whether sys-clk is enabled.</li>",
+    "<li>System default: 1785000</li>\
+     <li>Boost clock will be applied when applications request higher CPU frequency for quicker loading.</li>\
+     <li>This will be set regardless of whether sys-clk is enabled.</li>",
     1785_000,
-    [1785_000, 3000_000],
-    100,
-    (x: number) => (x % 100) == 0
+    [1020_000, 3000_000],
+    1,
+    false
   ),
   new CustEntry(
     "marikoCpuMaxVolt",
+    "Mariko CPU Max Voltage in mV",
     4,
-    "<b>Mariko CPU Max Voltage in mV</b>\
-       <li>System default: 1120</li>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
+    "<li>System default: 1120</li>\
+     <li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
     1235,
     [1100, 1300],
+    5
   ),
   new CustEntry(
     "marikoGpuMaxClock",
+    "Mariko GPU Max Clock in kHz",
     4,
-    "<b>Mariko GPU Max Clock in kHz</b>\
-       <li>System default: 921600</li>\
-       <li>Tegra X1+ official maximum: 1267200</li>\
-       <li>1305600 might be unreachable for some SoCs.</li>",
+    "<li>System default: 921600</li>\
+     <li>Tegra X1+ official maximum: 1267200</li>\
+     <li>1305600 might be unreachable for some SoCs.</li>",
     1305_600,
     [768_000, 1536_000],
     100,
-    (x: number) => (x % 100) == 0
   ),
   new CustEntry(
     "marikoEmcMaxClock",
+    "Mariko RAM Max Clock in kHz",
     4,
-    "<b>Mariko RAM Max Clock in kHz</b>\
-       <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
+    "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
+     <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
     1996_800,
-    [1612_800, 2400_000],
+    [1600_000, 2400_000],
     3200,
-    (x: number) => (x % 3200) == 0
   ),
   new CustEntry(
-    "eristaOCEnable",
+    "marikoEmcVddqVolt",
+    "EMC Vddq (Mariko Only) Voltage in uV",
     4,
-    "<b>Erista CPU Enable Overclock</b>\
-    <li>Not tested</li>",
-    1,
-    [0, 1]
+    "<li>Acceptable range: 550000 ≤ x ≤ 650000</li>\
+     <li>Value should be divided evenly by 5000</li>\
+     <li>Default: 600000</li>\
+     <li>Not enabled by default.</li>\
+     <li>This will not work without sys-clk-OC.</li>",
+    0,
+    [550_000, 650_000],
+    5000,
   ),
   new CustEntry(
     "eristaCpuMaxVolt",
+    "Erista CPU Max Voltage in mV",
     4,
-    "<b>Erista CPU Max Voltage in mV</b>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
-    1235,
-    [0, 1300],
-    1,
-    (x: number) => x >= 1100
-  ),
-  new CustEntry(
-    "eristaEmcMaxClock",
-    4,
-    "<b>Erista RAM Max Clock in kHz</b>\
-       <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
-    1862_400,
-    [1600_000, 2400_000],
-    3200,
-    (x: number) => (x % 3200) == 0
-  ),
-  new CustEntry(
-    "eristaEmcVolt",
-    4,
-    "<b>Erista RAM Voltage in uV</b>\
-       <li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
-       <li>Not enabled by default</li>",
-    0,
-    [0, 1250_000],
-    12500,
-    (x: number) => (x % 12500) == 0 && x >= 1100000
-  ),
-];
-
-const CustTableV3: Array<CustEntry> = [
-  new CustEntry(
-    "mtcConf",
-    2,
-    "<b>DRAM Timing</b>\
-       <li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)</li>\
-       <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>\
-       <li><b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.",
-    0,
-    [0, 3],
-  ),
-  new CustEntry(
-    "marikoCpuMaxClock",
-    4,
-    "<b>Mariko CPU Max Clock in kHz</b>\
-       <li>System default: 1785000</li>\
-       <li>2397000 might be unreachable for some SoCs.</li>",
-    2397_000,
-    [1785_000, 3000_000],
-    100,
-    (x: number) => (x % 100) == 0
-  ),
-  new CustEntry(
-    "marikoCpuBoostClock",
-    4,
-    "<b>Mariko CPU Boost Clock in kHz</b>\
-       <li>System default: 1785000</li>\
-       <li>Boost clock will be applied when applications request higher CPU frequency for quicker loading.</li>\
-       <li>This will be set regardless of whether sys-clk is enabled.</li>",
-    1785_000,
-    [1785_000, 3000_000],
-    100,
-    (x: number) => (x % 100) == 0
-  ),
-  new CustEntry(
-    "marikoCpuMaxVolt",
-    4,
-    "<b>Mariko CPU Max Voltage in mV</b>\
-       <li>System default: 1120</li>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
+    "<li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
     1235,
     [1100, 1300],
-  ),
-  new CustEntry(
-    "marikoGpuMaxClock",
-    4,
-    "<b>Mariko GPU Max Clock in kHz</b>\
-       <li>System default: 921600</li>\
-       <li>Tegra X1+ official maximum: 1267200</li>\
-       <li>1305600 might be unreachable for some SoCs.</li>",
-    1305_600,
-    [768_000, 1536_000],
-    100,
-    (x: number) => (x % 100) == 0
-  ),
-  new CustEntry(
-    "marikoEmcMaxClock",
-    4,
-    "<b>Mariko RAM Max Clock in kHz</b>\
-       <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
-    1996_800,
-    [1612_800, 2400_000],
-    3200,
-    (x: number) => (x % 3200) == 0
-  ),
-  new CustEntry(
-    "marikoEmcVolt",
-    4,
-    "<b>Mariko RAM Voltage in uV</b>\
-      <li>Acceptable range: 600000 ≤ x ≤ 650000</li>\
-      <li>Value should be divided evenly by 5'000</li>\
-      <li>Not enabled by default.</li>\
-      <li>This will not work without sys-clk-OC.</li>",
     1,
-    [0, 1]
-  ),
-  new CustEntry(
-    "eristaCpuMaxVolt",
-    4,
-    "<b>Erista CPU Max Voltage in mV</b>\
-       <li>Acceptable range: 1100 ≤ x ≤ 1300</li>",
-    1235,
-    [0, 1300],
-    1,
-    (x: number) => x >= 1100
   ),
   new CustEntry(
     "eristaEmcMaxClock",
+    "Erista RAM Max Clock in kHz",
     4,
-    "<b>Erista RAM Max Clock in kHz</b>\
-       <li>Values should be > 1600000, and divided evenly by 3200.</li>\
-       <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
+    "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
+     <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>",
     1862_400,
     [1600_000, 2400_000],
     3200,
-    (x: number) => (x % 3200) == 0
   ),
   new CustEntry(
-    "eristaEmcVolt",
+    "commonEmcMemVolt",
+    "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV",
     4,
-    "<b>Erista RAM Voltage in uV</b>\
-       <li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
-       <li>Not enabled by default</li>",
+    "<li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
+     <li>Erista Default (HOS): 1125000 (bootloader: 1100000)</li>\
+     <li>Mariko Default: 1100000 (It will not work without sys-clk-OC)</li>\
+     <li>Not enabled by default</li>",
     0,
-    [0, 1250_000],
+    [1100_000, 1250_000],
     12500,
-    (x: number) => (x % 12500) == 0 && x >= 1100000
   ),
 ];
 
@@ -263,9 +230,10 @@ class ErrorToolTip {
   message: string | null;
   element: HTMLElement | null;
 
-  constructor(id: string) {
+  constructor(id: string, msg?: string) {
     this.id = id;
     this.element = document.getElementById(id);
+    if (msg) { this.setMsg(msg); }
   };
 
   setMsg(msg: string) {
@@ -295,71 +263,43 @@ class ErrorToolTip {
   addChangeListener() {
     if (this.element) {
       this.element.addEventListener('change', (_evt) => {
-        let obj = CustTable!.filter((obj) => { return obj.name === this.id; })[0];
+        let obj = CustTable.filter((obj) => { return obj.id === this.id; })[0];
         obj.value = Number((this.element as HTMLInputElement).value);
-        ValidateCustEntry(obj);
+        obj.validate();
       });
     }
   }
 };
 
-function ValidateCustEntry(entry: CustEntry): ErrorToolTip | null {
-  let elementId = entry.name;
-  let tip = new ErrorToolTip(elementId);
-  tip.clear();
-  if (entry.value! == 0)
-    return null;
-  if (entry.value! < entry.min || entry.value! > entry.max) {
-    tip.setMsg(`Expected range: [${entry.min}, ${entry.max}], got ${entry.value}.`);
-    tip.show();
-    return tip;
-  }
-  if (entry.validator && !entry.validator(entry.value)) {
-    tip.setMsg(`Invalid value: ${entry.value}. Did not pass this validator: ${entry.validator}.`);
-    tip.show();
-    return tip;
-  }
-  return null;
-}
-
-function ValidateCust() {
-  let tooltips: Array<ErrorToolTip> = [];
-
-  for (let i of CustTable!) {
-    let tip = ValidateCustEntry(i);
-    if (tip) {
-      tooltips.push(tip);
-    }
-  }
-
-  if (tooltips.length > 0) {
-    throw new Error("Invalid cust");
-  }
-}
-
 function SaveCust(buffer) {
   let view = new DataView(buffer);
   let storage = {};
-  storage["custRev"] = CUST_REV;
 
-  for (let i of CustTable!) {
-    let id = i.name;
-    i.value = Number((document.getElementById(id) as HTMLInputElement).value);
-    storage[i.name] = i.value;
+  for (let i of CustTable) {
+    i.update();
+    if (!i.validate() || i.value === null) {
+      document.getElementById(i.id)!.focus();
+      throw new Error(`Invalid ${i.name}`);
+    }
+    if (!i.offset) {
+      document.getElementById(i.id)!.focus();
+      throw new Error(`Failed to get offset for ${i.name}`);;
+    }
     switch (i.size) {
       case 2:
-        view.setUint16(i.offset!, i.value, true);
+        view.setUint16(i.offset, i.value, true);
         break;
       case 4:
-        view.setUint32(i.offset!, i.value, true);
+        view.setUint32(i.offset, i.value, true);
         break;
       default:
-        document.getElementById(i.name)!.focus();
-        throw new Error("Unknown size at " + i);
+        document.getElementById(i.id)!.focus();
+        throw new Error(`Unknown size at ${i.name}`);
     }
+    storage[i.id] = i.value;
   }
-  ValidateCust();
 
+  storage["custRev"] = CUST_REV;
   localStorage.setItem("last_saved", JSON.stringify(storage));
   let a = document.createElement("a");
   a.href = window.URL.createObjectURL(new Blob([buffer], { type: "application/octet-stream" }));
@@ -394,61 +334,20 @@ function LoadLastSaved() {
 }
 
 function LoadDefault() {
-  for (let i of CustTable!) {
-    let id = i.name;
-    (document.getElementById(id) as HTMLInputElement).value = String(i.defval);
+  for (let i of CustTable) {
+    (document.getElementById(i.id) as HTMLInputElement).value = String(i.defval);
   }
 }
 
 function ClearHTMLForm() {
-  if (!CustTable) {
-    return;
-  }
   for (let i of CustTable) {
-    let id = i.name;
-    let input = document.getElementById(id) as HTMLInputElement;
-    input.parentElement?.parentElement?.remove();
+    i.clearForm();
   }
 }
 
 function UpdateHTMLForm() {
-  let dict = Object.assign({}, ...CustTable!.map((x: { name: any; }) => ({ [x.name]: x })));
-  let form = document.getElementById("form")!;
-  for (let i of CustTable!) {
-    let id = i.name;
-    let input = document.getElementById(id) as HTMLInputElement;
-    if (!input) {
-      let grid = document.createElement("div");
-      grid.classList.add("grid");
-
-      // Label and input box
-      input = document.createElement("input");
-      input.min = dict[i.name].min;
-      input.max = dict[i.name].max;
-      input.id = id;
-      input.type = "number";
-      input.step = dict[i.name].step;
-      let label = document.createElement("label");
-      label.setAttribute("for", id);
-      label.innerHTML = id;
-      label.appendChild(input);
-      grid.appendChild(label);
-
-      // Description in blockquote style
-      let desc = dict[i.name].desc!;
-      let block = document.createElement("blockquote");
-      block.style["margin-top"] = "0";
-      block.innerHTML = desc;
-      block.setAttribute("for", id);
-      grid.appendChild(block);
-
-      grid.style["margin-top"] = "3rem";
-      form.appendChild(grid);
-
-      let tooltip = new ErrorToolTip(id);
-      tooltip.addChangeListener();
-    }
-    input.value = dict[i.name].value;
+  for (let i of CustTable) {
+    i.createForm();
   }
 
   let default_btn = document.getElementById("load_default")!;
@@ -457,12 +356,15 @@ function UpdateHTMLForm() {
     LoadDefault();
   });
 
+  let last_btn = document.getElementById("load_saved")!;
   if (LastSaved()) {
-    let last_btn = document.getElementById("load_saved")!;
+    last_btn.style.removeProperty("display");
     last_btn.removeAttribute("disabled");
     last_btn.addEventListener('click', () => {
       LoadLastSaved();
     });
+  } else {
+    last_btn.style.setProperty("display", "none");
   }
 
   let save_btn = document.getElementById("save")!;
@@ -481,16 +383,10 @@ function ParseCust(magicOffset, buffer) {
   let view = new DataView(buffer);
   let offset = magicOffset + 4;
   let rev = view.getUint16(offset, true);
-  if (rev != 2 && rev != 3) {
-    throw new Error("Unsupported custRev, expected: 2 or 3, got " + rev);
+  if (rev != CUST_REV) {
+    throw new Error(`Unsupported custRev, expected: ${CUST_REV}, got ${rev}`);
   }
-  CUST_REV = rev;
   document.getElementById("cust_rev")!.innerHTML = `Cust V${CUST_REV} is loaded.`;
-  if (rev == 2) {
-    CustTable = CustTableV2;
-  } else {
-    CustTable = CustTableV3;
-  }
 
   offset += 2;
   for (let i of CustTable) {
@@ -503,10 +399,11 @@ function ParseCust(magicOffset, buffer) {
         i.value = view.getUint32(offset, true);
         break;
       default:
-        document.getElementById(i.name)!.focus();
+        document.getElementById(i.id)!.focus();
         throw new Error("Unknown size at " + i);
     }
     offset += i.size;
+    i.validate();
   }
 }
 
@@ -521,7 +418,6 @@ fileInput.addEventListener('change', (event) => {
         let offset = FindMagicOffset(buffer);
         ClearHTMLForm();
         ParseCust(offset, buffer);
-        ValidateCust();
         UpdateHTMLForm();
       } catch (e) {
         console.log(e);
@@ -536,7 +432,9 @@ fileInput.addEventListener('change', (event) => {
 type ReleaseInfo = {
   OCSuiteVer: string;
   LoaderKipUrl: string;
+  LoaderKipTime: string;
   SdOutZipUrl: string;
+  SdOutZipTime: string;
   AMSVer: string;
   AMSUrl: string;
 };
@@ -568,7 +466,9 @@ async function fetchRelease(): Promise<ReleaseInfo | void> {
     let info: ReleaseInfo = {
       OCSuiteVer: latestVerFromSuite,
       LoaderKipUrl: loaderKip.browser_download_url,
+      LoaderKipTime: loaderKip.updated_at,
       SdOutZipUrl: sdOut.browser_download_url,
+      SdOutZipTime: sdOut.updated_at,
       AMSVer: correspondingVerFromAMS,
       AMSUrl: amsReleaseUrl
     };
@@ -589,13 +489,13 @@ async function updateDownloadUrls() {
 
   let info = await fetchRelease();
   if (info) {
-    const loaderKipName = `loader.kip ${info.OCSuiteVer}`;
+    const loaderKipName = `loader.kip <b>${info.OCSuiteVer}</b><br>${info.LoaderKipTime}`;
     updateHref("loader_kip_btn", loaderKipName, info.LoaderKipUrl);
 
-    const sdOutName = `SdOut.zip ${info.OCSuiteVer}`;
+    const sdOutName = `SdOut.zip <b>${info.OCSuiteVer}</b><br>${info.SdOutZipTime}`;
     updateHref("sdout_zip_btn", sdOutName, info.SdOutZipUrl);
 
-    const amsName = `Atmosphere-NX ${info.AMSVer}`;
+    const amsName = `Atmosphere-NX <b>${info.AMSVer}</b>`;
     updateHref("ams_btn", amsName, info.AMSUrl);
   }
 }

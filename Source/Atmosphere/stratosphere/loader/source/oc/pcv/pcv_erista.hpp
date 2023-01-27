@@ -56,7 +56,7 @@ inline bool CpuMaxVoltPatternFn(u32* ptr32) {
 }
 
 constexpr u32 MemVoltHOS      = 1125'000;
-constexpr u32 MemClkPllmLimit = 1866'000'000;
+constexpr u32 EmcClkPllmLimit = 1866'000'000;
 
 constexpr u32 MTC_TABLE_REV = 7;
 

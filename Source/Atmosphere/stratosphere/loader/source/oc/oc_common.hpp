@@ -42,6 +42,7 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1011);
     R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1012);
     R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1013);
+    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,       1014);
 }
 
 namespace ams::ldr::oc {

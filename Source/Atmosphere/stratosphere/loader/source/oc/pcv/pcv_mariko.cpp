@@ -153,7 +153,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     	return;
 
     #define ADJUST_PROP(TARGET, REF)                                                                        \
-        (u32)(std::ceil(REF + ((C.marikoEmcMaxClock-MemClkOSAlt)*(TARGET-REF))/(MemClkOSLimit-MemClkOSAlt)))
+        (u32)(std::ceil(REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt)))
 
     #define ADJUST_PARAM(TARGET, REF)     \
         TARGET = ADJUST_PROP(TARGET, REF);
@@ -319,7 +319,7 @@ Result MemFreqMtcTable(u32* ptr) {
         R_UNLESS(table_list[i]->rev == MTC_TABLE_REV,       ldr::ResultInvalidMtcTable());
     }
 
-    if (C.marikoEmcMaxClock <= MemClkOSLimit)
+    if (C.marikoEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
     MarikoMtcTable *table_alt = table_list[1], *table_max = table_list[0];
@@ -349,7 +349,7 @@ Result MemFreqDvbTable(u32* ptr) {
     bool validated = std::memcmp(mem_dvb_table_head, EmcDvbTableDefault, sizeof(EmcDvbTableDefault)) == 0;
     R_UNLESS(validated, ldr::ResultInvalidDvbTable());
 
-    if (C.marikoEmcMaxClock <= MemClkOSLimit)
+    if (C.marikoEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
     if (C.marikoEmcMaxClock <= 1862400) {
@@ -364,25 +364,30 @@ Result MemFreqDvbTable(u32* ptr) {
 }
 
 Result MemFreqMax(u32* ptr) {
-    if (C.marikoEmcMaxClock <= MemClkOSLimit)
+    if (C.marikoEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
     PatchOffset(ptr, C.marikoEmcMaxClock);
     R_SUCCEED();
 }
 
-Result MemVoltHandler(u32* ptr) {
+Result EmcVddqVolt(u32* ptr) {
     regulator* entry = reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_2_3.default_uv));
 
     constexpr u32 uv_step = 5'000;
     constexpr u32 uv_min  = 250'000;
 
-    if (entry->id != 2 || entry->type != 3 ||
-        entry->type_2_3.step_uv != uv_step ||
-        entry->type_2_3.min_uv != uv_min)
-        R_THROW(ldr::ResultInvalidRegulatorEntry());
+    auto validator = [entry]() {
+        R_UNLESS(entry->id == 2,                        ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type == 3,                      ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type_2_3.step_uv == uv_step,    ldr::ResultInvalidRegulatorEntry());
+        R_UNLESS(entry->type_2_3.min_uv == uv_min,      ldr::ResultInvalidRegulatorEntry());
+        R_SUCCEED();
+    };
+    
+    R_TRY(validator());
 
-    u32 emc_uv = C.marikoEmcVolt;
+    u32 emc_uv = C.marikoEmcVddqVolt;
     if (!emc_uv)
         R_SKIP();
 
@@ -402,11 +407,12 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         { "GPU Freq Table", &GpuFreqCvbTable,   1, nullptr, GpuClkOfficial },
         { "GPU Freq Asm",   &GpuFreqMaxAsm,     2, &GpuMaxClockPatternFn },
         { "GPU Freq PLL",   &GpuFreqPllLimit,   1, nullptr, GpuClkPllLimit },
-        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, MemClkOSLimit },
-        { "MEM Freq Dvb",   &MemFreqDvbTable,   1, nullptr, MemClkOSLimit },
-        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, MemClkOSLimit },
-        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, MemClkPllmLimit },
-        { "MEM Volt",       &MemVoltHandler,    2, nullptr, MemVoltDefault }
+        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, EmcClkOSLimit },
+        { "MEM Freq Dvb",   &MemFreqDvbTable,   1, nullptr, EmcClkOSLimit },
+        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, EmcClkOSLimit },
+        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, EmcClkPllmLimit },
+        { "MEM Vddq",       &EmcVddqVolt,       2, nullptr, EmcVddqDefault },
+        { "MEM Vdd2",       &MemVoltHandler,    2, nullptr, MemVdd2Default }
     };
 
     for (uintptr_t ptr = mapped_nso;
