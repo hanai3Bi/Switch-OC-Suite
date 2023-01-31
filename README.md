@@ -73,7 +73,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     | GPU OC     | 1305 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | Disabled      | Disabled     |
-    | RAM Timing | Auto-Adjusted | Disabled     |
+    | RAM Timing | Auto-Adjusted | N/A          |
 
     </details>
 

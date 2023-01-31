@@ -22,8 +22,8 @@ def file_replace_str(file_path, search_replace_list):
 
 dir_path = os.path.dirname(__file__)
 
-ldr_main = os.path.join(dir_path, "ldr_main.cpp")
-file_replace_str(ldr_main, [("constinit u8 g_heap_memory[16_KB];", "constinit u8 g_heap_memory[16_KB + 5_KB];")])
+os.chdir(dir_path)
+os.system("git reset --hard")
 
 ldr_process_creation = os.path.join(dir_path, "ldr_process_creation.cpp")
 file_replace_str(ldr_process_creation,

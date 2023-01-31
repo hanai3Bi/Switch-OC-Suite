@@ -103,8 +103,6 @@ void SafetyCheck() {
         { C.commonEmcMemVolt,    1100'000, 1250'000 },
     };
 
-    printf("marikoCpuMaxClock: %u\n", C.marikoCpuMaxClock);
-
     for (auto& i : validators) {
         if (R_FAILED(i.check()))
             CRASH("Triggered");

@@ -10,10 +10,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 /* Config: Cust */
 const CUST_REV = 3;
 var buffer;
+var CustPlatform;
+(function (CustPlatform) {
+    CustPlatform[CustPlatform["Undefined"] = 0] = "Undefined";
+    CustPlatform[CustPlatform["Erista"] = 1] = "Erista";
+    CustPlatform[CustPlatform["Mariko"] = 2] = "Mariko";
+    CustPlatform[CustPlatform["All"] = 3] = "All";
+})(CustPlatform || (CustPlatform = {}));
+;
 class CustEntry {
-    constructor(id, name, size, desc, defval, minmax = [0, 1000000], step = 1, zeroable = true) {
+    constructor(id, name, platform, size, desc, defval, minmax = [0, 1000000], step = 1, zeroable = true) {
         this.id = id;
         this.name = name;
+        this.platform = platform;
         this.size = size;
         this.desc = desc;
         this.defval = defval;
@@ -21,14 +30,12 @@ class CustEntry {
         this.max = minmax[1];
         this.step = step;
         this.zeroable = zeroable;
-        this.value = null;
-        this.offset = null;
     }
     ;
     validate() {
         let tip = new ErrorToolTip(this.id);
         tip.clear();
-        if (Number.isNaN(this.value) || this.value === null) {
+        if (Number.isNaN(this.value) || !this.value) {
             tip.setMsg(`Invalid value: Not a number`);
             tip.show();
             return false;
@@ -48,21 +55,24 @@ class CustEntry {
         return true;
     }
     ;
-    update() {
-        this.value = Number(document.getElementById(this.id).value);
-    }
     getInputElement() {
         return document.getElementById(this.id);
     }
-    createForm() {
+    updateValueFromElement() {
+        this.value = Number(this.getInputElement().value);
+    }
+    isAvailableFor(platform) {
+        return platform === CustPlatform.Undefined || this.platform === platform || this.platform === CustPlatform.All;
+    }
+    createElement() {
         let form = document.getElementById("form");
         let input = this.getInputElement();
         if (!input) {
             let grid = document.createElement("div");
-            grid.classList.add("grid");
+            grid.classList.add("grid", "cust-element");
             // Label and input
             input = document.createElement("input");
-            input.min = String(this.min);
+            input.min = String(this.zeroable ? 0 : this.min);
             input.max = String(this.max);
             input.id = this.id;
             input.type = "number";
@@ -74,49 +84,62 @@ class CustEntry {
             grid.appendChild(label);
             // Description in blockquote style
             let desc = document.createElement("blockquote");
-            desc.style["margin-top"] = "0";
             desc.innerHTML = this.desc;
             desc.setAttribute("for", this.id);
             grid.appendChild(desc);
-            grid.style["margin-top"] = "3rem";
             form.appendChild(grid);
             let tooltip = new ErrorToolTip(this.id);
             tooltip.addChangeListener();
         }
         input.value = String(this.value);
     }
-    clearForm() {
+    setElementDefaultValue() {
+        document.getElementById(this.id).value = String(this.defval);
+    }
+    removeElement() {
         let input = this.getInputElement();
         if (input) {
             input.parentElement.parentElement.remove();
         }
     }
+    showElement() {
+        let input = this.getInputElement();
+        if (input) {
+            input.parentElement.parentElement.style.removeProperty("display");
+        }
+    }
+    hideElement() {
+        let input = this.getInputElement();
+        if (input) {
+            input.parentElement.parentElement.style.setProperty("display", "none");
+        }
+    }
 }
 var CustTable = [
-    new CustEntry("mtcConf", "DRAM Timing", 2, "<li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)</li>\
+    new CustEntry("mtcConf", "DRAM Timing", CustPlatform.Mariko, 2, "<li><b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)</li>\
      <li><b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.</li>\
      <li><b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.", 0, [0, 2], 1),
-    new CustEntry("marikoCpuMaxClock", "Mariko CPU Max Clock in kHz", 4, "<li>System default: 1785000</li>\
+    new CustEntry("marikoCpuMaxClock", "Mariko CPU Max Clock in kHz", CustPlatform.Mariko, 4, "<li>System default: 1785000</li>\
      <li>2397000 might be unreachable for some SoCs.</li>", 2397000, [1785000, 3000000], 1),
-    new CustEntry("marikoCpuBoostClock", "Mariko CPU Boost Clock in kHz", 4, "<li>System default: 1785000</li>\
+    new CustEntry("marikoCpuBoostClock", "Mariko CPU Boost Clock in kHz", CustPlatform.Mariko, 4, "<li>System default: 1785000</li>\
      <li>Boost clock will be applied when applications request higher CPU frequency for quicker loading.</li>\
      <li>This will be set regardless of whether sys-clk is enabled.</li>", 1785000, [1020000, 3000000], 1, false),
-    new CustEntry("marikoCpuMaxVolt", "Mariko CPU Max Voltage in mV", 4, "<li>System default: 1120</li>\
+    new CustEntry("marikoCpuMaxVolt", "Mariko CPU Max Voltage in mV", CustPlatform.Mariko, 4, "<li>System default: 1120</li>\
      <li>Acceptable range: 1100 ≤ x ≤ 1300</li>", 1235, [1100, 1300], 5),
-    new CustEntry("marikoGpuMaxClock", "Mariko GPU Max Clock in kHz", 4, "<li>System default: 921600</li>\
+    new CustEntry("marikoGpuMaxClock", "Mariko GPU Max Clock in kHz", CustPlatform.Mariko, 4, "<li>System default: 921600</li>\
      <li>Tegra X1+ official maximum: 1267200</li>\
      <li>1305600 might be unreachable for some SoCs.</li>", 1305600, [768000, 1536000], 100),
-    new CustEntry("marikoEmcMaxClock", "Mariko RAM Max Clock in kHz", 4, "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
+    new CustEntry("marikoEmcMaxClock", "Mariko RAM Max Clock in kHz", CustPlatform.Mariko, 4, "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
      <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1996800, [1600000, 2400000], 3200),
-    new CustEntry("marikoEmcVddqVolt", "EMC Vddq (Mariko Only) Voltage in uV", 4, "<li>Acceptable range: 550000 ≤ x ≤ 650000</li>\
+    new CustEntry("marikoEmcVddqVolt", "EMC Vddq (Mariko Only) Voltage in uV", CustPlatform.Mariko, 4, "<li>Acceptable range: 550000 ≤ x ≤ 650000</li>\
      <li>Value should be divided evenly by 5000</li>\
      <li>Default: 600000</li>\
      <li>Not enabled by default.</li>\
      <li>This will not work without sys-clk-OC.</li>", 0, [550000, 650000], 5000),
-    new CustEntry("eristaCpuMaxVolt", "Erista CPU Max Voltage in mV", 4, "<li>Acceptable range: 1100 ≤ x ≤ 1300</li>", 1235, [1100, 1300], 1),
-    new CustEntry("eristaEmcMaxClock", "Erista RAM Max Clock in kHz", 4, "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
+    new CustEntry("eristaCpuMaxVolt", "Erista CPU Max Voltage in mV", CustPlatform.Erista, 4, "<li>Acceptable range: 1100 ≤ x ≤ 1300</li>", 1235, [1100, 1300], 1),
+    new CustEntry("eristaEmcMaxClock", "Erista RAM Max Clock in kHz", CustPlatform.Erista, 4, "<li>Values should be ≥ 1600000, and divided evenly by 3200.</li>\
      <li><b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM</li>", 1862400, [1600000, 2400000], 3200),
-    new CustEntry("commonEmcMemVolt", "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV", 4, "<li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
+    new CustEntry("commonEmcMemVolt", "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV", CustPlatform.All, 4, "<li>Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.</li>\
      <li>Erista Default (HOS): 1125000 (bootloader: 1100000)</li>\
      <li>Mariko Default: 1100000 (It will not work without sys-clk-OC)</li>\
      <li>Not enabled by default</li>", 0, [1100000, 1250000], 12500),
@@ -175,9 +198,9 @@ class ErrorToolTip {
 function SaveCust(buffer) {
     let view = new DataView(buffer);
     let storage = {};
-    for (let i of CustTable) {
-        i.update();
-        if (!i.validate() || i.value === null) {
+    CustTable.forEach(i => {
+        i.updateValueFromElement();
+        if (!i.validate() || !i.value) {
             document.getElementById(i.id).focus();
             throw new Error(`Invalid ${i.name}`);
         }
@@ -198,7 +221,7 @@ function SaveCust(buffer) {
                 throw new Error(`Unknown size at ${i.name}`);
         }
         storage[i.id] = i.value;
-    }
+    });
     storage["custRev"] = CUST_REV;
     localStorage.setItem("last_saved", JSON.stringify(storage));
     let a = document.createElement("a");
@@ -218,43 +241,42 @@ function LastSaved() {
     }
     return true;
 }
-function LoadLastSaved() {
-    if (LastSaved()) {
-        let storage = localStorage.getItem("last_saved");
-        let sObj = JSON.parse(storage);
-        for (let key in sObj) {
-            if (key == "custRev") {
-                continue;
-            }
-            document.getElementById(key).value = sObj[key];
-        }
-    }
-}
-function LoadDefault() {
-    for (let i of CustTable) {
-        document.getElementById(i.id).value = String(i.defval);
-    }
-}
-function ClearHTMLForm() {
-    for (let i of CustTable) {
-        i.clearForm();
-    }
+function CustNavTabsInit() {
+    const custNavTabs = Array.from(document.querySelectorAll(`nav[role="tab-control"] > button`));
+    custNavTabs.forEach(i => {
+        i.removeAttribute("disabled");
+        let platform = Number(i.getAttribute("data-filter"));
+        i.addEventListener('click', (_evt) => {
+            const unfocusedClasses = ["outline", "secondary"];
+            i.classList.remove(...unfocusedClasses);
+            custNavTabs.filter(j => j != i).forEach(k => k.classList.add(...unfocusedClasses));
+            CustTable.forEach(e => {
+                if (e.isAvailableFor(platform)) {
+                    e.showElement();
+                }
+                else {
+                    e.hideElement();
+                }
+            });
+        });
+    });
 }
 function UpdateHTMLForm() {
-    for (let i of CustTable) {
-        i.createForm();
-    }
+    CustTable.forEach(i => i.createElement());
     let default_btn = document.getElementById("load_default");
     default_btn.removeAttribute("disabled");
     default_btn.addEventListener('click', () => {
-        LoadDefault();
+        CustTable.forEach(i => i.setElementDefaultValue());
     });
     let last_btn = document.getElementById("load_saved");
     if (LastSaved()) {
         last_btn.style.removeProperty("display");
         last_btn.removeAttribute("disabled");
         last_btn.addEventListener('click', () => {
-            LoadLastSaved();
+            // Load last saved from localStorage
+            JSON.parse(localStorage.getItem("last_saved"))
+                .filter((key) => key != "custRev")
+                .forEach((key) => document.getElementById(key).value = key);
         });
     }
     else {
@@ -276,12 +298,12 @@ function ParseCust(magicOffset, buffer) {
     let view = new DataView(buffer);
     let offset = magicOffset + 4;
     let rev = view.getUint16(offset, true);
+    offset += 2;
     if (rev != CUST_REV) {
         throw new Error(`Unsupported custRev, expected: ${CUST_REV}, got ${rev}`);
     }
     document.getElementById("cust_rev").innerHTML = `Cust V${CUST_REV} is loaded.`;
-    offset += 2;
-    for (let i of CustTable) {
+    CustTable.forEach(i => {
         i.offset = offset;
         switch (i.size) {
             case 2:
@@ -296,7 +318,7 @@ function ParseCust(magicOffset, buffer) {
         }
         offset += i.size;
         i.validate();
-    }
+    });
 }
 const fileInput = document.getElementById("file");
 fileInput.addEventListener('change', (event) => {
@@ -304,11 +326,12 @@ fileInput.addEventListener('change', (event) => {
     reader.readAsArrayBuffer(event.target.files[0]);
     reader.onloadend = (progEvent) => {
         if (progEvent.target.readyState === FileReader.DONE) {
-            buffer = progEvent.target.result;
+            buffer = (progEvent.target.result);
             try {
                 let offset = FindMagicOffset(buffer);
-                ClearHTMLForm();
+                CustTable.forEach(i => i.removeElement());
                 ParseCust(offset, buffer);
+                CustNavTabsInit();
                 UpdateHTMLForm();
             }
             catch (e) {
@@ -333,21 +356,21 @@ function fetchRelease() {
             }
             const resultFromSuite = yield responseFromSuite.json();
             const latestVerFromSuite = resultFromSuite.tag_name;
-            const correspondingVerFromAMS = latestVerFromSuite.split(".").slice(0, 3).join(".");
+            const amsVer = latestVerFromSuite.split(".").slice(0, 3).join(".");
             const loaderKip = resultFromSuite.assets.filter((obj) => {
                 return obj.name.endsWith("loader.kip");
             })[0];
             const sdOut = resultFromSuite.assets.filter((obj) => {
                 return obj.name.endsWith(".zip");
             })[0];
-            const amsReleaseUrl = `https://github.com/Atmosphere-NX/Atmosphere/releases/tags/${correspondingVerFromAMS}`;
+            const amsReleaseUrl = `https://github.com/Atmosphere-NX/Atmosphere/releases/tags/${amsVer}`;
             let info = {
                 OCSuiteVer: latestVerFromSuite,
                 LoaderKipUrl: loaderKip.browser_download_url,
                 LoaderKipTime: loaderKip.updated_at,
                 SdOutZipUrl: sdOut.browser_download_url,
                 SdOutZipTime: sdOut.updated_at,
-                AMSVer: correspondingVerFromAMS,
+                AMSVer: amsVer,
                 AMSUrl: amsReleaseUrl
             };
             return info;

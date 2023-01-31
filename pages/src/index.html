@@ -4,12 +4,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Switch OC Suite > Project Homepage | Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW. Licensed under GPL v2.
+  <title>Switch OC Suite | Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW. Licensed under GPL v2.
   </title>
   <meta name="description"
     content="Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW. Licensed under GPL v2.">
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
+    nav[role="tab-control"] > button {
+      border-radius: 0;
+      border-left-width: calc(var(--border-width) / 2);
+      border-right-width: calc(var(--border-width) / 2);
+    }
+
+    nav[role="tab-control"] > button:first-child {
+      border-top-left-radius: var(--border-radius);
+      border-bottom-left-radius: var(--border-radius);
+      border-left-width: var(--border-width);
+    }
+
+    nav[role="tab-control"] > button:last-child {
+      border-top-right-radius: var(--border-radius);
+      border-bottom-right-radius: var(--border-radius);
+      border-right-width: var(--border-width);
+    }
+
+    nav[role="tab-control"] > button:not(.secondary) {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    div.cust-element {
+      margin: 1.5rem 0 1.5rem 0;
+    }
+
+    div.cust-element > blockquote {
+      margin-top: 0;
+    }
+
     div#download_btn_grid > a {
       margin: 0.5rem 0;
     }
@@ -50,7 +81,7 @@
         <header>
           <hgroup>
             <h2>Read Me</h2>
-            <h3>DISCLAIMER: 🚨USE AT YOUR OWN RISK!🚨</h3>
+            <h3>🚨DISCLAIMER: THIS IS PROVIDED AS IS. USE AT YOUR OWN RISK!🚨</h3>
           </hgroup>
           <li>
             Overclocking in general will shorten the lifespan of some
@@ -337,15 +368,22 @@
         <header>
           <hgroup>
             <h2>Configurator</h2>
-            <h3>Configure frequencies and voltages to suit your hardware and yourself.</h3>
+            <h3>Configure frequencies and voltages to suit your hardware and preferences.</h3>
           </hgroup>
         </header>
-        <form id="form">
-          <label for="file">File loader.kip
-            <input id="file" type="file">
-            <small id="cust_rev"></small>
-          </label>
-        </form>
+        <body>
+          <nav role="tab-control">
+            <button class="" id="tab_all" data-filter="0" disabled>Show All</button>
+            <button class="outline secondary" id="tab_erista" data-filter="1" disabled>For Erista</button>
+            <button class="outline secondary" id="tab_mariko" data-filter="2" disabled>For Mariko</button>
+          </nav>
+          <form id="form">
+            <label for="file">
+              <input id="file" type="file">
+              <p id="cust_rev">Upload loader.kip here</p>
+            </label>
+          </form>
+        </body>
         <footer>
           <div class="grid">
             <button id="load_default" role="button" disabled>Load Default</button>
