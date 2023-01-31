@@ -72,7 +72,6 @@ class CustEntry {
   }
 
   createElement() {
-    let form = document.getElementById("form")!;
     let input = this.getInputElement();
     if (!input) {
       let grid = document.createElement("div");
@@ -97,7 +96,7 @@ class CustEntry {
       desc.setAttribute("for", this.id);
       grid.appendChild(desc);
 
-      form.appendChild(grid);
+      document.getElementById("form")!.appendChild(grid);
 
       let tooltip = new ErrorToolTip(this.id);
       tooltip.addChangeListener();

@@ -1,6 +1,15 @@
 #!/bin/bash
 
+[ -d "./tmp" ] || mkdir ./tmp
 [ -d "./dist" ] || mkdir ./dist
-cp -Rf ./src/*.html ./dist/
+
 # README_HTML=`pandoc -f gfm -t html5 ../README.md`
-tsc ./src/main.ts --outDir ./dist/ -lib es2015,dom -t es2015
+
+cp -Rf ./src/*.html ./tmp/
+tsc ./src/main.ts --outDir ./tmp/ -lib es2015,dom -t es2015
+
+for FILE in ./tmp/*; do
+    minify "${FILE}" > "./dist/${FILE/.\/tmp\/}"
+done
+
+rm -fr ./tmp
