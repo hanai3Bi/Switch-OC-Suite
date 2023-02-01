@@ -28,7 +28,7 @@
       border-right-width: var(--border-width);
     }
 
-    nav[role="tab-control"] > button:not(.secondary) {
+    nav[role="tab-control"] > button:not(.outline) {
       pointer-events: none;
       cursor: default;
     }
@@ -374,8 +374,8 @@
         <body>
           <nav role="tab-control">
             <button class="" id="tab_all" data-filter="0" disabled>Show All</button>
-            <button class="outline secondary" id="tab_erista" data-filter="1" disabled>For Erista</button>
-            <button class="outline secondary" id="tab_mariko" data-filter="2" disabled>For Mariko</button>
+            <button class="outline" id="tab_erista" data-filter="1" disabled>For Erista</button>
+            <button class="outline" id="tab_mariko" data-filter="2" disabled>For Mariko</button>
           </nav>
           <form id="form">
             <label for="file">

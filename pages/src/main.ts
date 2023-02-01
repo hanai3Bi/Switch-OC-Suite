@@ -39,7 +39,7 @@ class CustEntry {
   validate(): boolean {
     let tip = new ErrorToolTip(this.id);
     tip.clear();
-    if (Number.isNaN(this.value) || !this.value) {
+    if (Number.isNaN(this.value) || this.value === undefined) {
       tip.setMsg(`Invalid value: Not a number`);
       tip.show();
       return false;
@@ -313,7 +313,7 @@ function SaveCust(buffer) {
 
   CustTable.forEach(i => {
     i.updateValueFromElement();
-    if (!i.validate() || !i.value) {
+    if (!i.validate()) {
       document.getElementById(i.id)!.focus();
       throw new Error(`Invalid ${i.name}`);
     }
@@ -323,10 +323,10 @@ function SaveCust(buffer) {
     }
     switch (i.size) {
       case 2:
-        view.setUint16(i.offset, i.value, true);
+        view.setUint16(i.offset, i.value!, true);
         break;
       case 4:
-        view.setUint32(i.offset, i.value, true);
+        view.setUint32(i.offset, i.value!, true);
         break;
       default:
         document.getElementById(i.id)!.focus();
@@ -362,7 +362,7 @@ function CustNavTabsInit() {
     i.removeAttribute("disabled");
     let platform = Number(i.getAttribute("data-filter")!) as CustPlatform;
     i.addEventListener('click', (_evt) => {
-      const unfocusedClasses = ["outline", "secondary"];
+      const unfocusedClasses = ["outline"];
       i.classList.remove(...unfocusedClasses);
       custNavTabs.filter(j => j != i).forEach(k => k.classList.add(...unfocusedClasses));
 
@@ -513,7 +513,22 @@ async function fetchRelease(): Promise<ReleaseInfo | void> {
   }
 }
 
+const isElementVisible = (element: HTMLElement): boolean => {
+  let rect = element.getBoundingClientRect();
+  return (
+    rect.top > 0 &&
+    rect.left > 0 &&
+    rect.bottom - rect.height < (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.right - rect.width < (window.innerWidth || document.documentElement.clientWidth)
+  );
+};
+
 async function updateDownloadUrls() {
+  // Wait until download buttons are visible
+  while (!isElementVisible(document.getElementById("download_btn_grid")!)) {
+    await new Promise(r => setTimeout(r, 1000));
+  };
+
   const updateHref = (id: string, name: string, url: string) => {
     let element = document.getElementById(id)!;
     element.innerHTML = name;
