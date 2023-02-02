@@ -113,9 +113,7 @@ uint32_t ClockManager::GetHz(SysClkModule module)
                         768'000'000 : 460'800'000;
                 break;
             case SysClkModule_MEM:
-                hz = (mode == ReverseNX_Docked ||
-                      this->oc->realProfile == SysClkProfile_Docked) ?
-                        Clocks::maxMemFreq : 1600'000'000;
+                hz = MEM_CLOCK_DOCK;
                 break;
             default:
                 break;

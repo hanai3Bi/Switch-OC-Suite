@@ -251,7 +251,7 @@ uint32_t Clocks::GetStockClock(SysClkApmConfiguration* apm, SysClkModule module)
         case SysClkModule_GPU:
             return apm->gpu_hz;
         case SysClkModule_MEM:
-            return apm->mem_hz;
+            return GetIsMariko() ? MEM_CLOCK_MARIKO_MIN : apm->mem_hz;
         default:
             ERROR_THROW("Unknown SysClkModule: %x", module);
             return 0;
@@ -270,15 +270,15 @@ void Clocks::ResetToStock(unsigned int module)
 
         if (module == SysClkModule_EnumMax || module == SysClkModule_CPU)
         {
-            Clocks::SetHz(SysClkModule_CPU, apmConfiguration->cpu_hz);
+            Clocks::SetHz(SysClkModule_CPU, GetStockClock(apmConfiguration, SysClkModule_CPU));
         }
         if (module == SysClkModule_EnumMax || module == SysClkModule_GPU)
         {
-            Clocks::SetHz(SysClkModule_GPU, apmConfiguration->gpu_hz);
+            Clocks::SetHz(SysClkModule_GPU, GetStockClock(apmConfiguration, SysClkModule_GPU));
         }
         if (module == SysClkModule_EnumMax || module == SysClkModule_MEM)
         {
-            Clocks::SetHz(SysClkModule_MEM, apmConfiguration->mem_hz);
+            Clocks::SetHz(SysClkModule_MEM, GetStockClock(apmConfiguration, SysClkModule_MEM));
         }
     }
     else

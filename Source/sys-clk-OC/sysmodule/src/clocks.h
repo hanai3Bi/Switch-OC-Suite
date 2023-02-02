@@ -13,8 +13,10 @@
 #include <switch.h>
 #include <sysclk.h>
 
-#define MAX_MEM_CLOCK 1862'400'000
-#define BOOST_THRESHOLD 95'0
+#define MAX_MEM_CLOCK         1862'400'000
+#define MEM_CLOCK_MARIKO_MIN  1600'000'000
+#define MEM_CLOCK_DOCK        1600'000'000
+#define BOOST_THRESHOLD       95'0
 
 class Clocks
 {

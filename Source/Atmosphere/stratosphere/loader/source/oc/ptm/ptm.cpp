@@ -30,19 +30,7 @@ Result CpuPtmBoost(perf_conf_entry* entry) {
     R_SUCCEED();
 }
 
-Result MemPtmMax(perf_conf_entry* entry) {
-    if (!C.marikoEmcMaxClock)
-        R_SUCCEED();
-
-    u32 memPtmMax = C.marikoEmcMaxClock * 1000;
-
-    PatchOffset(&(entry->emc_freq_1), memPtmMax);
-    PatchOffset(&(entry->emc_freq_2), memPtmMax);
-
-    R_SUCCEED();
-}
-
-Result MemPtmAlt(perf_conf_entry* entry) {
+Result MemPtm(perf_conf_entry* entry) {
     PatchOffset(&(entry->emc_freq_1), memPtmLimit);
     PatchOffset(&(entry->emc_freq_2), memPtmLimit);
 
@@ -89,8 +77,7 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
 
     PatcherEntry<perf_conf_entry> patches[] = {
         { "CPU Ptm Boost",  &CpuPtmBoost,   2, },
-        { "MEM Ptm Max",    &MemPtmMax,     9, },
-        { "MEM Ptm Alt",    &MemPtmAlt,     7, },
+        { "MEM Ptm",        &MemPtm,       16, },
     };
 
     for (u32 i = 0; i < entryCnt; i++) {
@@ -115,11 +102,9 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
 
         switch (entry->emc_freq_1) {
             case memPtmLimit:
-                patches[1].Apply(entry);
-                break;
             case memPtmAlt:
             case memPtmClamp:
-                patches[2].Apply(entry);
+                patches[1].Apply(entry);
                 break;
             default:
                 LOGGING("%u (0x%08x) @%p", entry->emc_freq_1, entry->conf_id, &(entry->emc_freq_2));

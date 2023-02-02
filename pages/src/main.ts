@@ -392,9 +392,9 @@ function UpdateHTMLForm() {
     last_btn.removeAttribute("disabled");
     last_btn.addEventListener('click', () => {
       // Load last saved from localStorage
-      JSON.parse(localStorage.getItem("last_saved")!)
-        .filter((key: string) => key != "custRev")
-        .forEach((key: string) => (document.getElementById(key) as HTMLInputElement).value = key);
+      let dict = JSON.parse(localStorage.getItem("last_saved")!);
+      delete dict["custRev"];
+      dict.forEach((key: string) => (document.getElementById(key) as HTMLInputElement).value = key);
     });
   } else {
     last_btn.style.setProperty("display", "none");
