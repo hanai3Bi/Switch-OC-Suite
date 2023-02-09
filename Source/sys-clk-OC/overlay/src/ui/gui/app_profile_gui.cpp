@@ -73,14 +73,29 @@ void AppProfileGui::listUI()
         bool globalGovernorEnabled = configList->values[SysClkConfigValue_GovernorExperimental];
 
         if (globalGovernorEnabled) {
-            tsl::elm::ToggleListItem* governorToggle = new tsl::elm::ToggleListItem("Disable governor", this->profileList->governorDisabled);
-            governorToggle->setStateChangedListener([this](bool state) {
-                this->profileList->governorDisabled = state;
+            tsl::elm::ToggleListItem* cpuGovernorToggle = new tsl::elm::ToggleListItem("CPU Freq Governor",
+                (this->profileList->governorConfig >> SysClkOcGovernorConfig_CPU_Shift) & 1);
+            cpuGovernorToggle->setStateChangedListener([this](bool state) {
+                this->profileList->governorConfig =
+                    SysClkOcGovernorConfig((this->profileList->governorConfig & SysClkOcGovernorConfig_GPUOnly) | state << SysClkOcGovernorConfig_CPU_Shift);
+
                 Result rc = sysclkIpcSetProfiles(this->applicationId, this->profileList);
                 if (R_FAILED(rc))
                     FatalGui::openWithResultCode("sysclkIpcSetProfiles", rc);
             });
-            this->listElement->addItem(governorToggle);
+            this->listElement->addItem(cpuGovernorToggle);
+
+            tsl::elm::ToggleListItem* gpuGovernorToggle = new tsl::elm::ToggleListItem("GPU Freq Governor",
+                (this->profileList->governorConfig >> SysClkOcGovernorConfig_GPU_Shift) & 1);
+            gpuGovernorToggle->setStateChangedListener([this](bool state) {
+                this->profileList->governorConfig =
+                    SysClkOcGovernorConfig((this->profileList->governorConfig & SysClkOcGovernorConfig_CPUOnly) | state << SysClkOcGovernorConfig_GPU_Shift);
+
+                Result rc = sysclkIpcSetProfiles(this->applicationId, this->profileList);
+                if (R_FAILED(rc))
+                    FatalGui::openWithResultCode("sysclkIpcSetProfiles", rc);
+            });
+            this->listElement->addItem(gpuGovernorToggle);
         }
 
         delete configList;

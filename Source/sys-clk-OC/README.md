@@ -135,7 +135,7 @@ Copy the `atmosphere`, and `switch` folders at the root of your sdcard, overwrit
 * sys-clk overlay (accessible from anywhere by invoking the [Tesla menu](https://gbatemp.net/threads/tesla-the-nintendo-switch-overlay-menu.557362/))
 
 	`/switch/.overlays/sys-clk-overlay.ovl`
-	
+
 * sys-clk core sysmodule
 
 	`/atmosphere/contents/00FF0000636C6BFF/exefs.nsp`
@@ -143,7 +143,7 @@ Copy the `atmosphere`, and `switch` folders at the root of your sdcard, overwrit
 
 ## Config
 
-Presets can be customized by adding them to the ini config file located at `/config/sys-clk/config.ini`, using the following template for each app 
+Presets can be customized by adding them to the ini config file located at `/config/sys-clk/config.ini`, using the following template for each app
 
 ```
 [Application Title ID]
@@ -162,14 +162,14 @@ handheld_charging_official_mem=
 handheld_cpu=
 handheld_gpu=
 handheld_mem=
-governor_disabled=
+governor_config=
 ```
 
 * Replace `Application Title ID` with the title id of the game/application you're interested in customizing.
 A list of games title id can be found in the [Switchbrew wiki](https://switchbrew.org/wiki/Title_list/Games).
 * Frequencies are expressed in mhz, and will be scaled to the nearest possible values, described in the clock table below.
 * If any key is omitted, value is empty or set to 0, it will be ignored, and stock clocks will apply.
-* If charging, sys-clk will look for the frequencies in that order, picking the first found 
+* If charging, sys-clk will look for the frequencies in that order, picking the first found
 	1. Charger specific config (USB or Official) `handheld_charging_usb_X` or `handheld_charging_official_X`
 	2. Non specific charging config `handheld_charging_X`
 	3. Handheld config `handheld_X`

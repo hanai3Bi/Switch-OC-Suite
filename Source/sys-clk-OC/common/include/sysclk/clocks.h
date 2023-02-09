@@ -63,7 +63,6 @@ typedef struct
 {
     bool systemCoreBoostCPU;
     bool batteryChargingDisabledOverride;
-    bool governor;
     SysClkProfile realProfile;
 } SysClkOcExtra;
 
@@ -72,7 +71,20 @@ typedef struct
     uint32_t values[20];
 } SysClkFrequencyTable;
 
-uint32_t* GetTable(SysClkModule module);
+uint32_t* GetModuleFreqTable(SysClkModule module);
+uint32_t GetModuleMaximumFreq(SysClkModule module);
+
+typedef enum {
+    SysClkOcGovernorConfig_AllDisabled  = 0,
+    SysClkOcGovernorConfig_CPU_Shift    = 0,
+    SysClkOcGovernorConfig_CPUOnly      = 1,
+    SysClkOcGovernorConfig_CPU          = 1 << SysClkOcGovernorConfig_CPU_Shift,
+    SysClkOcGovernorConfig_GPU_Shift    = 1 << SysClkOcGovernorConfig_CPU_Shift,
+    SysClkOcGovernorConfig_GPUOnly      = 1 << SysClkOcGovernorConfig_GPU_Shift,
+    SysClkOcGovernorConfig_GPU          = 1 << SysClkOcGovernorConfig_GPU_Shift,
+    SysClkOcGovernorConfig_Default      = 3,
+    SysClkOcGovernorConfig_Mask         = 3,
+} SysClkOcGovernorConfig;
 
 typedef struct
 {
@@ -80,7 +92,7 @@ typedef struct
         uint32_t mhz[(size_t)SysClkProfile_EnumMax * (size_t)SysClkModule_EnumMax];
         uint32_t mhzMap[SysClkProfile_EnumMax][SysClkModule_EnumMax];
     };
-    bool governorDisabled;
+    SysClkOcGovernorConfig governorConfig;
 } SysClkTitleProfileList;
 
 #define SYSCLK_GLOBAL_PROFILE_TID       0xA111111111111111

@@ -59,7 +59,6 @@ ClockManager::ClockManager()
     this->oc = new SysClkOcExtra;
     this->oc->systemCoreBoostCPU = false;
     this->oc->batteryChargingDisabledOverride = false;
-    this->oc->governor = false;
     this->oc->realProfile = SysClkProfile_Handheld;
 
     this->rnxSync = new ReverseNXSync;
@@ -150,12 +149,12 @@ void ClockManager::Tick()
             uint32_t hz = GetHz((SysClkModule)module);
             this->governor->SetMaxHz(hz, (SysClkModule)module);
 
-            bool handledByGovernor = this->oc->governor && (module != SysClkModule_MEM);
-            if (hz && hz != this->context->freqs[module] && !handledByGovernor)
+            if (hz && hz != this->context->freqs[module] && !this->governor->IsHandledByGovernor((SysClkModule)module))
             {
                 // Skip setting CPU or GPU clocks in CpuBoostMode if CPU <= boostCPUFreq or GPU >= 76.8MHz
-                bool skipBoost = apmExtIsBoostMode(this->context->perfConfId);
-                skipBoost &= (module == SysClkModule_CPU && hz <= Clocks::boostCpuFreq) || module == SysClkModule_GPU;
+                bool skipBoost = apmExtIsBoostMode(this->context->perfConfId) &&
+                    ((module == SysClkModule_CPU && hz <= Clocks::boostCpuFreq) || module == SysClkModule_GPU);
+
                 if (!skipBoost) {
                     FileUtils::LogLine("[mgr] %s clock set : %u.%u MHz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                     Clocks::SetHz((SysClkModule)module, hz);
@@ -174,7 +173,7 @@ void ClockManager::WaitForNextTick()
     /* Self-check system core (#3) usage via idleticks at intervals (Not enabled at higher CPU freq or without charger) */
     uint64_t tickWaitTimeMs = this->GetConfig()->GetConfigValue(SysClkConfigValue_PollingIntervalMs);
 
-    if (this->oc->governor) {
+    if (this->governor->IsHandledByGovernor(SysClkModule_CPU)) {
         svcSleepThread(tickWaitTimeMs * 1000'000ULL);
         return;
     }
@@ -240,21 +239,14 @@ bool ClockManager::RefreshContext()
         this->rnxSync->Reset(applicationId);
     }
 
-    bool governor = this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorExperimental);
-    governor &= !this->GetConfig()->GetTitleGovernorDisabled(applicationId);
-    if (governor != this->oc->governor)
-    {
-        this->oc->governor = governor;
-        FileUtils::LogLine("[mgr] Governor status: %s", governor ? "enabled" : "disabled");
-        hasChanged = true;
+    SysClkOcGovernorConfig governorConfig = SysClkOcGovernorConfig_AllDisabled;
+    if (this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorExperimental)) {
+        governorConfig = SysClkOcGovernorConfig_Default;
+        SysClkOcGovernorConfig governorConfigTitle = this->GetConfig()->GetTitleGovernorConfig(applicationId);
+        if (governorConfig != governorConfigTitle)
+            governorConfig = governorConfigTitle;
     }
-
-    if (hasChanged) {
-        if (enabled && governor)
-            this->governor->Start();
-        else
-            this->governor->Stop();
-    }
+    this->governor->SetConfig(governorConfig);
 
     SysClkProfile realProfile = Clocks::GetCurrentProfile();
     if (realProfile != this->oc->realProfile)
@@ -301,8 +293,7 @@ bool ClockManager::RefreshContext()
         if (hz != 0 && hz != this->context->freqs[module])
         {
             this->context->freqs[module] = hz;
-            bool handledByGovernor = this->oc->governor && (module != SysClkModule_MEM);
-            if (!handledByGovernor) {
+            if (!this->governor->IsHandledByGovernor((SysClkModule)module)) {
                 FileUtils::LogLine("[mgr] %s clock change: %u.%u MHz", Clocks::GetModuleName((SysClkModule)module, true), hz/1000000, hz/100000 - hz/1000000*10);
                 hasChanged = true;
             }

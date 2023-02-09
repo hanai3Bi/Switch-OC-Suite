@@ -25,7 +25,7 @@ Config::Config(std::string path)
     this->loaded = false;
     this->profileMhzMap = std::map<std::tuple<std::uint64_t, SysClkProfile, SysClkModule>, std::uint32_t>();
     this->profileCountMap = std::map<std::uint64_t, std::uint8_t>();
-    this->profileGovernorDisabled = std::map<std::uint64_t, bool>();
+    this->profileGovernorMap = std::map<std::uint64_t, SysClkOcGovernorConfig>();
     this->mtime = 0;
     this->enabled = false;
     for(unsigned int i = 0; i < SysClkModule_EnumMax; i++)
@@ -79,7 +79,7 @@ void Config::Close()
     this->loaded = false;
     this->profileMhzMap.clear();
     this->profileCountMap.clear();
-    this->profileGovernorDisabled.clear();
+    this->profileGovernorMap.clear();
 
     for(unsigned int i = 0; i < SysClkConfigValue_EnumMax; i++)
     {
@@ -171,18 +171,18 @@ std::uint32_t Config::GetAutoClockHz(std::uint64_t tid, SysClkModule module, Sys
     return 0;
 }
 
-bool Config::GetTitleGovernorDisabled(std::uint64_t tid)
+SysClkOcGovernorConfig Config::GetTitleGovernorConfig(std::uint64_t tid)
 {
     if (this->loaded)
     {
-        std::map<uint64_t, bool>::const_iterator it = this->profileGovernorDisabled.find(tid);
-        if (it != this->profileGovernorDisabled.end())
+        std::map<uint64_t, SysClkOcGovernorConfig>::const_iterator it = this->profileGovernorMap.find(tid);
+        if (it != this->profileGovernorMap.end())
         {
             return it->second;
         }
     }
 
-    return false;
+    return SysClkOcGovernorConfig_Default;
 }
 
 void Config::GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles)
@@ -197,11 +197,12 @@ void Config::GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles
         }
     }
 
-    std::map<uint64_t, bool>::const_iterator it = this->profileGovernorDisabled.find(tid);
-    bool governorDisabled = false;
-    if (it != this->profileGovernorDisabled.end() && it->second)
-        governorDisabled = true;
-    out_profiles->governorDisabled = governorDisabled;
+    std::map<uint64_t, SysClkOcGovernorConfig>::const_iterator it = this->profileGovernorMap.find(tid);
+    SysClkOcGovernorConfig governor = SysClkOcGovernorConfig_Default;
+    // Found
+    if (it != this->profileGovernorMap.end())
+        governor = it->second;
+    out_profiles->governorConfig = governor;
 }
 
 bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bool immediate)
@@ -254,9 +255,9 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
         }
     }
 
-    if (profiles->governorDisabled) {
-        snprintf(sk, 0x40, "%s", CONFIG_KEY_TITLE_GOVERNOR_DISABLED);
-        snprintf(sv, 0x10, "%d", profiles->governorDisabled);
+    if (profiles->governorConfig != SysClkOcGovernorConfig_Default) {
+        snprintf(sk, 0x40, "%s", CONFIG_KEY_TITLE_GOVERNOR_CONFIG);
+        snprintf(sv, 0x10, "%d", profiles->governorConfig);
         *ik++ = sk;
         *iv++ = sv;
     }
@@ -290,10 +291,10 @@ bool Config::SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bo
             }
         }
 
-        if (profiles->governorDisabled)
-            this->profileGovernorDisabled[tid] = profiles->governorDisabled;
+        if (profiles->governorConfig == SysClkOcGovernorConfig_Default)
+            this->profileGovernorMap.erase(tid);
         else
-            this->profileGovernorDisabled.erase(tid);
+            this->profileGovernorMap[tid] = profiles->governorConfig;
     }
 
     return true;
@@ -343,13 +344,13 @@ int Config::BrowseIniFunc(const char* section, const char* key, const char* valu
         return 1;
     }
 
-    if (!strcmp(key, CONFIG_KEY_TITLE_GOVERNOR_DISABLED)) {
+    if (!strcmp(key, CONFIG_KEY_TITLE_GOVERNOR_CONFIG)) {
         input = strtoul(value, NULL, 0);
-        if ((input & 0x1) != input) {
-            input = 0;
+        if ((input & SysClkOcGovernorConfig_Mask) != input) {
+            input = SysClkOcGovernorConfig_Default;
             FileUtils::LogLine("[cfg] Invalid value for key '%s' in section '%s': using default %d", key, section, input);
         }
-        config->profileGovernorDisabled[tid] = (bool)input;
+        config->profileGovernorMap[tid] = (SysClkOcGovernorConfig)input;
         return 1;
     }
 

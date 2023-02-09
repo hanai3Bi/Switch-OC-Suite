@@ -76,7 +76,7 @@ uint32_t g_freq_table_gpu_hz[] = {
     0,
 };
 
-uint32_t* GetTable(SysClkModule module) {
+uint32_t* GetModuleFreqTable(SysClkModule module) {
     switch (module) {
         case SysClkModule_CPU:
             return &g_freq_table_cpu_hz[0];
@@ -87,4 +87,13 @@ uint32_t* GetTable(SysClkModule module) {
         default:
             return NULL;
     }
+}
+
+uint32_t GetModuleMaximumFreq(SysClkModule module) {
+    uint32_t* p = GetModuleFreqTable(module);
+    if (p == NULL || *p == 0)
+        return UINT32_MAX;
+
+    while (*(++p));
+    return *(--p);
 }

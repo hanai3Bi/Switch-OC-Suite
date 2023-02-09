@@ -21,7 +21,7 @@
 
 #define CONFIG_VAL_SECTION "values"
 
-#define CONFIG_KEY_TITLE_GOVERNOR_DISABLED "governor_disabled"
+#define CONFIG_KEY_TITLE_GOVERNOR_CONFIG "governor_config"
 
 class Config
 {
@@ -39,7 +39,7 @@ class Config
     void GetProfiles(std::uint64_t tid, SysClkTitleProfileList* out_profiles);
     bool SetProfiles(std::uint64_t tid, SysClkTitleProfileList* profiles, bool immediate);
     std::uint32_t GetAutoClockHz(std::uint64_t tid, SysClkModule module, SysClkProfile profile);
-    bool GetTitleGovernorDisabled(std::uint64_t tid);
+    SysClkOcGovernorConfig GetTitleGovernorConfig(std::uint64_t tid);
 
     void SetEnabled(bool enabled);
     bool Enabled();
@@ -61,7 +61,7 @@ class Config
 
     std::map<std::tuple<std::uint64_t, SysClkProfile, SysClkModule>, std::uint32_t> profileMhzMap;
     std::map<std::uint64_t, std::uint8_t> profileCountMap;
-    std::map<std::uint64_t, bool> profileGovernorDisabled;
+    std::map<std::uint64_t, SysClkOcGovernorConfig> profileGovernorMap;
     bool loaded;
     std::string path;
     time_t mtime;
