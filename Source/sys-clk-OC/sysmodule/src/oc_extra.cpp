@@ -257,19 +257,6 @@ void GpuGovernor::Apply() {
 
 }
 
-bool Governor::IsHandledByGovernor(SysClkModule module) {
-    switch (module) {
-        case SysClkModule_CPU:
-            return ((this->GetConfig() >> SysClkOcGovernorConfig_CPU_Shift) & 1);
-        case SysClkModule_GPU:
-            return ((this->GetConfig() >> SysClkOcGovernorConfig_GPU_Shift) & 1);
-        case SysClkModule_MEM:
-            return false;
-        default:
-            return this->GetConfig() != SysClkOcGovernorConfig_AllDisabled;
-    }
-}
-
 void Governor::SetConfig(SysClkOcGovernorConfig config) {
     if (m_config == config)
         return;
@@ -342,16 +329,16 @@ void Governor::GovernorManager::ContextManager(void* args) {
             }
 
             uint32_t perf_conf = self->GetPerfConf();
-            if ((gpuThrottled = apmExtIsBoostMode(perf_conf)) && (self->GetConfig() & SysClkOcGovernorConfig_GPU))
+            if ((gpuThrottled = apmExtIsBoostMode(perf_conf)) && self->IsHandledByGovernor(SysClkModule_GPU))
                 self->m_gpu_gov->ApplyBoost();
 
-            if ((cpuBoosted = apmExtIsCPUBoosted(perf_conf)) && (self->GetConfig() & SysClkOcGovernorConfig_CPU))
+            if ((cpuBoosted = apmExtIsCPUBoosted(perf_conf)) && self->IsHandledByGovernor(SysClkModule_CPU))
                 self->m_cpu_gov->ApplyBoost();
         }
 
-        if (!gpuThrottled && (self->GetConfig() & SysClkOcGovernorConfig_GPU))
+        if (!gpuThrottled && self->IsHandledByGovernor(SysClkModule_GPU))
             self->m_gpu_gov->Apply();
-        if (!cpuBoosted && (self->GetConfig() & SysClkOcGovernorConfig_CPU))
+        if (!cpuBoosted && self->IsHandledByGovernor(SysClkModule_CPU))
             self->m_cpu_gov->Apply();
 
         svcSleepThread(TICK_TIME_NS);

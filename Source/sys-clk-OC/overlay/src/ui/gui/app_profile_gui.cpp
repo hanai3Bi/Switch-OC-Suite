@@ -74,10 +74,9 @@ void AppProfileGui::listUI()
 
         if (globalGovernorEnabled) {
             tsl::elm::ToggleListItem* cpuGovernorToggle = new tsl::elm::ToggleListItem("CPU Freq Governor",
-                (this->profileList->governorConfig >> SysClkOcGovernorConfig_CPU_Shift) & 1);
+                GetGovernorEnabled(this->profileList->governorConfig, SysClkModule_CPU));
             cpuGovernorToggle->setStateChangedListener([this](bool state) {
-                this->profileList->governorConfig =
-                    SysClkOcGovernorConfig((this->profileList->governorConfig & SysClkOcGovernorConfig_GPUOnly) | state << SysClkOcGovernorConfig_CPU_Shift);
+                this->profileList->governorConfig = ToggleGovernor(this->profileList->governorConfig, SysClkModule_CPU, state);
 
                 Result rc = sysclkIpcSetProfiles(this->applicationId, this->profileList);
                 if (R_FAILED(rc))
@@ -86,10 +85,9 @@ void AppProfileGui::listUI()
             this->listElement->addItem(cpuGovernorToggle);
 
             tsl::elm::ToggleListItem* gpuGovernorToggle = new tsl::elm::ToggleListItem("GPU Freq Governor",
-                (this->profileList->governorConfig >> SysClkOcGovernorConfig_GPU_Shift) & 1);
+                GetGovernorEnabled(this->profileList->governorConfig, SysClkModule_GPU));
             gpuGovernorToggle->setStateChangedListener([this](bool state) {
-                this->profileList->governorConfig =
-                    SysClkOcGovernorConfig((this->profileList->governorConfig & SysClkOcGovernorConfig_CPUOnly) | state << SysClkOcGovernorConfig_GPU_Shift);
+                this->profileList->governorConfig = ToggleGovernor(this->profileList->governorConfig, SysClkModule_GPU, state);
 
                 Result rc = sysclkIpcSetProfiles(this->applicationId, this->profileList);
                 if (R_FAILED(rc))

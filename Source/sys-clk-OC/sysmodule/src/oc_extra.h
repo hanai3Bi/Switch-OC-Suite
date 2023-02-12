@@ -329,7 +329,7 @@ public:
     };
 
     SysClkOcGovernorConfig GetConfig() { return m_config; };
-    bool IsHandledByGovernor(SysClkModule module = SysClkModule_EnumMax);
+    inline bool IsHandledByGovernor(SysClkModule module) { return GetGovernorEnabled(this->GetConfig(), module); };
     void SetConfig(SysClkOcGovernorConfig config);
 
     void SetPerfConf(uint32_t id);

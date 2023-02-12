@@ -77,14 +77,45 @@ uint32_t GetModuleMaximumFreq(SysClkModule module);
 typedef enum {
     SysClkOcGovernorConfig_AllDisabled  = 0,
     SysClkOcGovernorConfig_CPU_Shift    = 0,
-    SysClkOcGovernorConfig_CPUOnly      = 1,
+    SysClkOcGovernorConfig_CPUOnly      = 1 << SysClkOcGovernorConfig_CPU_Shift,
     SysClkOcGovernorConfig_CPU          = 1 << SysClkOcGovernorConfig_CPU_Shift,
-    SysClkOcGovernorConfig_GPU_Shift    = 1 << SysClkOcGovernorConfig_CPU_Shift,
+    SysClkOcGovernorConfig_GPU_Shift    = 1,
     SysClkOcGovernorConfig_GPUOnly      = 1 << SysClkOcGovernorConfig_GPU_Shift,
     SysClkOcGovernorConfig_GPU          = 1 << SysClkOcGovernorConfig_GPU_Shift,
+    SysClkOcGovernorConfig_AllEnabled   = 3,
     SysClkOcGovernorConfig_Default      = 3,
     SysClkOcGovernorConfig_Mask         = 3,
 } SysClkOcGovernorConfig;
+
+inline bool GetGovernorEnabled(SysClkOcGovernorConfig config, SysClkModule module) {
+    switch (module) {
+        case SysClkModule_CPU:
+            return (config >> SysClkOcGovernorConfig_CPU_Shift) & 1;
+        case SysClkModule_GPU:
+            return (config >> SysClkOcGovernorConfig_GPU_Shift) & 1;
+        case SysClkModule_MEM:
+            return false;
+        default:
+            return config != SysClkOcGovernorConfig_AllDisabled;
+    }
+}
+
+inline SysClkOcGovernorConfig ToggleGovernor(SysClkOcGovernorConfig prev, SysClkModule module, bool state) {
+    uint8_t shift;
+    switch (module) {
+        case SysClkModule_CPU:
+            shift = SysClkOcGovernorConfig_CPU_Shift;
+            break;
+        case SysClkModule_GPU:
+            shift = SysClkOcGovernorConfig_GPU_Shift;
+            break;
+        case SysClkModule_MEM:
+            return prev;
+        default:
+            return state ? SysClkOcGovernorConfig_AllEnabled : SysClkOcGovernorConfig_AllDisabled;
+    }
+    return (SysClkOcGovernorConfig)((prev & ~(1 << shift)) | state << shift);
+}
 
 typedef struct
 {
