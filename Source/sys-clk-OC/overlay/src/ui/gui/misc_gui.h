@@ -150,7 +150,7 @@ class MiscGui : public BaseMenuGui
         bool isMariko = false;
 
         std::map<SysClkConfigValue, tsl::elm::ToggleListItem*> configToggles;
-        void addConfigToggle(SysClkConfigValue);
+        void addConfigToggle(SysClkConfigValue, const char*);
         void updateConfigToggles();
 
         tsl::elm::ToggleListItem *chargingDisabledOverrideToggle, *backlightToggle;
@@ -162,7 +162,7 @@ class MiscGui : public BaseMenuGui
         I2cInfo*        i2cInfo;
         LblBacklightSwitchStatus lblstatus = LblBacklightSwitchStatus_Disabled;
 
-        const char* infoNames = 
+        const char* infoNames =
             "Charger:\n"\
             "Battery:\n"\
             "Current Limit:\n"\

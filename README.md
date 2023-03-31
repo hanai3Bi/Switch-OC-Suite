@@ -36,12 +36,13 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
   - Auto CPU Boost
     - For faster game loading
     - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
-    - Effective only when charger is connected.
+    - Effective only when charger is connected or governor is enabled.
+    - This feature is considered unsafe on Erista, especially when combined with high GPU frequency or with governor enabled.
 
   - CPU & GPU frequency governor (Experimental)
     - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-  - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
+  - Set charging current (100 mA - 3000 mA) and charging limit (20% - 100%)
     - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
   - Global Profile

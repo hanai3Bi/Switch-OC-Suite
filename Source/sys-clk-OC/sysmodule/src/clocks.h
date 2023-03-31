@@ -20,13 +20,67 @@
 
 class Clocks
 {
-  public:
+public:
     static inline uint32_t boostCpuFreq = 1785000000;
     static inline uint32_t maxMemFreq = 0;
 
-    static void GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max);
+    static inline uint32_t* GetNearestHzPtr(uint32_t* hzListStart, uint32_t* hzListEnd, uint32_t freq) {
+        uint32_t* p = hzListStart;
+        while (p < hzListEnd) {
+            if (freq <= *p)
+                return p;
+            p++;
+        }
+        return hzListEnd;
+    }
+
+    static inline SysClkFrequencyTable freqTable[SysClkModule_EnumMax] = {
+        {}, // CPU
+        {}, // GPU
+        {   // MEM
+            665600000,
+            800000000,
+            1065600000,
+            1331200000,
+            1600000000,
+        },
+    };
+
+    typedef struct FreqRange {
+        uint32_t* first;
+        uint32_t* last;
+        uint32_t* min;
+        uint32_t* max[SysClkProfile_EnumMax];
+
+        void InitDefault(SysClkModule module) {
+            SysClkFrequencyTable* table_head = &freqTable[module];
+            uint32_t* p = this->first = this->min = &table_head->freq[0];
+
+            // Get pointer to last value
+            for (int i = 0; i < FREQ_TABLE_MAX_ENTRY_COUNT; i++) {
+                if (!*(++p)) {
+                    --p;
+                    break;
+                }
+            }
+
+            this->last = p;
+            for (auto& m: this->max) {
+                m = p;
+            }
+        };
+
+        uint32_t* FindFreq(uint32_t freq, SysClkProfile profile = SysClkProfile_Docked) {
+            return GetNearestHzPtr(this->min, this->max[profile], freq);
+        };
+    } FreqRange;
+
+    static inline FreqRange freqRange[SysClkModule_EnumMax];
+    static void UpdateFreqRange();
+
+    static Result GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max);
     static Result GetTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table);
-    static void SetAllowUnsafe(bool allow) { allowUnsafe = allow; };
+    static void SetAllowUnsafe(bool allow);
     static bool GetIsMariko() { return isMariko; };
     static void Exit();
     static void Initialize();
@@ -42,7 +96,7 @@ class Clocks
     static std::uint32_t GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz);
     static std::uint32_t GetTemperatureMilli(SysClkThermalSensor sensor);
 
-  protected:
+protected:
     static inline bool allowUnsafe;
     static inline bool isMariko;
     static std::int32_t GetTsTemperatureMilli(TsLocation location);

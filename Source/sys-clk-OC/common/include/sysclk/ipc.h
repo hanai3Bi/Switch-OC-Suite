@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include "clocks.h"
 
-#define SYSCLK_IPC_API_VERSION 1
+#define SYSCLK_IPC_API_VERSION 2
 #define SYSCLK_IPC_SERVICE_NAME "sysclkOC"
 
 enum SysClkIpcCmd

@@ -18,4 +18,5 @@ typedef enum
     SysClkError_Generic = 0,
     SysClkError_ConfigNotLoaded = 1,
     SysClkError_ConfigSaveFailed = 2,
+    SysClkError_InternalFrequencyTableError = 3,
 } SysClkError;

@@ -1,5 +1,5 @@
 /* Config: Cust */
-const CUST_REV = 3;
+const CUST_REV = 4;
 
 enum CustPlatform {
   Undefined = 0,
@@ -135,20 +135,9 @@ var CustTable: Array<CustEntry> = [
     1
   ),
   new CustEntry(
-    "marikoCpuMaxClock",
-    "Mariko CPU Max Clock in kHz",
-    CustPlatform.Mariko,
-    4,
-    ["System default: 1785000",
-     "2397000 might be unreachable for some SoCs."],
-    2397_000,
-    [1785_000, 3000_000],
-    1,
-  ),
-  new CustEntry(
-    "marikoCpuBoostClock",
-    "Mariko CPU Boost Clock in kHz",
-    CustPlatform.Mariko,
+    "commonCpuBoostClock",
+    "Boost Clock in kHz",
+    CustPlatform.All,
     4,
     ["System default: 1785000",
      "Boost clock will be applied when applications request higher CPU frequency for quicker loading.",
@@ -157,6 +146,41 @@ var CustTable: Array<CustEntry> = [
     [1020_000, 3000_000],
     1,
     false
+  ),
+  new CustEntry(
+    "commonEmcMemVolt",
+    "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV",
+    CustPlatform.All,
+    4,
+    ["Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.",
+     "Erista Default (HOS): 1125000 (bootloader: 1100000)",
+     "Mariko Default: 1100000 (It will not work without sys-clk-OC)",
+     "Not enabled by default"],
+    0,
+    [1100_000, 1250_000],
+    12500,
+  ),
+  new CustEntry(
+    "eristaCpuMaxVolt",
+    "Erista CPU Max Voltage in mV",
+    CustPlatform.Erista,
+    4,
+    ["Acceptable range: 1100 ≤ x ≤ 1300",
+     "L4T Default: 1235"],
+    1235,
+    [1100, 1300],
+    1,
+  ),
+  new CustEntry(
+    "eristaEmcMaxClock",
+    "Erista RAM Max Clock in kHz",
+    CustPlatform.Erista,
+    4,
+    ["Values should be ≥ 1600000, and divided evenly by 3200.",
+     "<b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM"],
+    1862_400,
+    [1600_000, 2400_000],
+    3200,
   ),
   new CustEntry(
     "marikoCpuMaxVolt",
@@ -168,18 +192,6 @@ var CustTable: Array<CustEntry> = [
     1235,
     [1100, 1300],
     5
-  ),
-  new CustEntry(
-    "marikoGpuMaxClock",
-    "Mariko GPU Max Clock in kHz",
-    CustPlatform.Mariko,
-    4,
-    ["System default: 921600",
-     "Tegra X1+ official maximum: 1267200",
-     "1305600 might be unreachable for some SoCs."],
-    1305_600,
-    [768_000, 1536_000],
-    100,
   ),
   new CustEntry(
     "marikoEmcMaxClock",
@@ -205,40 +217,6 @@ var CustTable: Array<CustEntry> = [
     0,
     [550_000, 650_000],
     5000,
-  ),
-  new CustEntry(
-    "eristaCpuMaxVolt",
-    "Erista CPU Max Voltage in mV",
-    CustPlatform.Erista,
-    4,
-    ["Acceptable range: 1100 ≤ x ≤ 1300"],
-    1235,
-    [1100, 1300],
-    1,
-  ),
-  new CustEntry(
-    "eristaEmcMaxClock",
-    "Erista RAM Max Clock in kHz",
-    CustPlatform.Erista,
-    4,
-    ["Values should be ≥ 1600000, and divided evenly by 3200.",
-     "<b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM"],
-    1862_400,
-    [1600_000, 2400_000],
-    3200,
-  ),
-  new CustEntry(
-    "commonEmcMemVolt",
-    "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV",
-    CustPlatform.All,
-    4,
-    ["Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.",
-     "Erista Default (HOS): 1125000 (bootloader: 1100000)",
-     "Mariko Default: 1100000 (It will not work without sys-clk-OC)",
-     "Not enabled by default"],
-    0,
-    [1100_000, 1250_000],
-    12500,
   ),
 ];
 
@@ -415,6 +393,10 @@ class Cust {
 
   createHTMLForm() {
     CustTable.forEach(i => i.createElement());
+
+    let advanced = document.createElement("p");
+    advanced.innerHTML = "Advanced configuration: Coming soon...";
+    document.getElementById("config-list-advanced")?.appendChild(advanced);
 
     let default_btn = document.getElementById("load_default")!;
     default_btn.removeAttribute("disabled");

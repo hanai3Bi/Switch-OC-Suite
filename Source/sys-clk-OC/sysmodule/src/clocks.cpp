@@ -14,65 +14,97 @@
 #include "errors.h"
 #include "file_utils.h"
 
-void Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max)
+Result Clocks::GetRange(SysClkModule module, SysClkProfile profile, uint32_t** min, uint32_t** max)
 {
-    if (module == SysClkModule_MEM) {
-        *min = isMariko ? &g_freq_table_mem_hz[4] : &g_freq_table_mem_hz[0]; // 1600 / 665
-        *max = &g_freq_table_mem_hz[5]; // 1862 - Max
-        return;
+    switch (module) {
+        case SysClkModule_CPU:
+        case SysClkModule_GPU:
+        case SysClkModule_MEM:
+            *min = freqRange[module].min;
+            *max = freqRange[module].max[profile];
+            break;
+        default:
+            ERROR_THROW("No such PcvModule: %u", module);
     }
 
-    if (module == SysClkModule_CPU) {
-        *min = &g_freq_table_cpu_hz[0];
-        if (isMariko)
-            *max = !allowUnsafe ? &g_freq_table_cpu_hz[15] : &g_freq_table_cpu_hz[19]; // 1963 / 2397
-        else
-            *max = (!allowUnsafe || profile == SysClkProfile_Handheld) ?
-                    &g_freq_table_cpu_hz[13] : &g_freq_table_cpu_hz[16]; // 1785 / 2091
+    if (!*min || !*max || *max < *min || size_t(*max - *min + 1) > sizeof(SysClkFrequencyTable))
+        return SYSCLK_ERROR(InternalFrequencyTableError);
 
-        return;
+    return 0;
+}
+
+void Clocks::UpdateFreqRange() {
+    freqRange[SysClkModule_MEM].InitDefault(SysClkModule_MEM);
+    if (isMariko) {
+        freqRange[SysClkModule_MEM].first = freqRange[SysClkModule_MEM].min = freqRange[SysClkModule_MEM].FindFreq(1600'000'000);
     }
 
-    if (module == SysClkModule_GPU) {
-        *min = &g_freq_table_gpu_hz[0];
-        if (isMariko) {
-            *max = (!allowUnsafe || profile == SysClkProfile_Handheld) ?
-                    &g_freq_table_gpu_hz[12] : &g_freq_table_gpu_hz[17]; // 998 / 1305
-            return;
+    freqRange[SysClkModule_CPU].InitDefault(SysClkModule_CPU);
+    uint32_t* cpu_max_freq = freqRange[SysClkModule_CPU].last;
+    uint32_t CPU_SAFE_MAX = isMariko ? 1963'500'000 : 1785'000'000;
+    uint32_t CPU_UNSAFE_MAX[SysClkProfile_EnumMax];
+    for (auto &m : CPU_UNSAFE_MAX) {
+        m = *cpu_max_freq;
+    }
+    if (!isMariko) {
+        CPU_UNSAFE_MAX[SysClkProfile_Handheld] = 1785'000'000;
+    }
+
+    freqRange[SysClkModule_GPU].InitDefault(SysClkModule_GPU);
+    uint32_t* gpu_max_freq = freqRange[SysClkModule_GPU].last;
+    uint32_t GPU_SAFE_MAX[SysClkProfile_EnumMax];
+    if (isMariko) {
+        for (auto &m : GPU_SAFE_MAX) {
+            m = 998'400'000;
         }
-
-        switch (profile) {
-            case SysClkProfile_Handheld:
-                *max = &g_freq_table_gpu_hz[5]; // 460
-                break;
-            case SysClkProfile_HandheldChargingUSB:
-                *max = &g_freq_table_gpu_hz[9]; // 768
-                break;
-            default:
-                *max = &g_freq_table_gpu_hz[11]; // 921
-                break;
-        }
-        return;
+    } else {
+        GPU_SAFE_MAX[SysClkProfile_Handheld] = \
+        GPU_SAFE_MAX[SysClkProfile_HandheldCharging] = 460'800'000;
+        GPU_SAFE_MAX[SysClkProfile_HandheldChargingUSB] = 768'000'000;
+        GPU_SAFE_MAX[SysClkProfile_HandheldChargingOfficial] = \
+        GPU_SAFE_MAX[SysClkProfile_Docked] = 921'600'000;
+    };
+    uint32_t GPU_UNSAFE_MAX[SysClkProfile_EnumMax];
+    for (auto &m : GPU_UNSAFE_MAX) {
+        m = *gpu_max_freq;
+    }
+    if (isMariko) {
+        GPU_UNSAFE_MAX[SysClkProfile_Handheld] = 998'400'000;
+    } else {
+        memcpy(GPU_UNSAFE_MAX, GPU_SAFE_MAX, sizeof(GPU_UNSAFE_MAX));
     }
 
-    ERROR_THROW("No such PcvModule: %u", module);
+    const bool use_unsafe = allowUnsafe;
+    for (int i = 0; i < int(SysClkProfile_EnumMax); i++) {
+        freqRange[SysClkModule_CPU].max[i] = std::min(cpu_max_freq,
+            freqRange[SysClkModule_CPU].FindFreq(use_unsafe ? CPU_UNSAFE_MAX[i] : CPU_SAFE_MAX, SysClkProfile(i)));
+        freqRange[SysClkModule_GPU].max[i] = std::min(gpu_max_freq,
+            freqRange[SysClkModule_GPU].FindFreq(use_unsafe ? GPU_UNSAFE_MAX[i] : GPU_SAFE_MAX[i], SysClkProfile(i)));
+    }
 }
 
 Result Clocks::GetTable(SysClkModule module, SysClkProfile profile, SysClkFrequencyTable* out_table) {
     uint32_t* min = NULL;
     uint32_t* max = NULL;
-    GetRange(module, profile, &min, &max);
-    if (!min || !max || (max - min) / sizeof(uint32_t) >= sizeof(SysClkFrequencyTable) / sizeof(uint32_t))
-        return 1;
+    if (Result res = GetRange(module, profile, &min, &max)) {
+        return res;
+    }
 
     memset(out_table, 0, sizeof(SysClkFrequencyTable));
     uint32_t* p = min;
     size_t idx = 0;
     while(p <= max)
-        out_table->values[idx++] = *p++;
+        out_table->freq[idx++] = *p++;
 
     return 0;
 }
+
+void Clocks::SetAllowUnsafe(bool allow) {
+    if (allowUnsafe != allow) {
+        allowUnsafe = allow;
+        UpdateFreqRange();
+    }
+};
 
 void Clocks::Initialize()
 {
@@ -129,16 +161,7 @@ void Clocks::Initialize()
 
     FileUtils::ParseLoaderKip();
 
-    if (!maxMemFreq) {
-        uint32_t curr_mem_hz = GetCurrentHz(SysClkModule_MEM);
-        SetHz(SysClkModule_MEM, MAX_MEM_CLOCK);
-        svcSleepThread(1'000'000);
-        if (uint32_t hz = GetCurrentHz(SysClkModule_MEM))
-            maxMemFreq = hz;
-        else
-            maxMemFreq = MAX_MEM_CLOCK;
-        SetHz(SysClkModule_MEM, curr_mem_hz);
-    }
+    UpdateFreqRange();
 }
 
 void Clocks::Exit()
@@ -371,25 +394,11 @@ std::uint32_t Clocks::GetCurrentHz(SysClkModule module)
 
 std::uint32_t Clocks::GetNearestHz(SysClkModule module, SysClkProfile profile, std::uint32_t inHz)
 {
-    uint32_t inMHz = inHz / 1000000U;
-    if (module == SysClkModule_MEM && inMHz == MAX_MEM_CLOCK / 1000'000)
-        return Clocks::maxMemFreq;
-
-    uint32_t* min = NULL;
-    uint32_t* max = NULL;
-    GetRange(module, profile, &min, &max);
-
-    if (!min || !max)
+    uint32_t *min = nullptr, *max = nullptr;
+    if (GetRange(module, profile, &min, &max))
         ERROR_THROW("table lookup failed for SysClkModule: %u", module);
 
-    uint32_t* p = min;
-    while(p <= max) {
-        if (inMHz == *p / 1000000U)
-            return *p;
-        p++;
-    }
-
-    return *max;
+    return *GetNearestHzPtr(min, max, inHz);
 }
 
 std::int32_t Clocks::GetTsTemperatureMilli(TsLocation location)

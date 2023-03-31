@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcv_mariko.hpp"
+#include "pcv.hpp"
 
 namespace ams::ldr::oc::pcv::mariko {
 
@@ -26,37 +26,7 @@ Result CpuFreqVdd(u32* ptr) {
     R_UNLESS(entry->step_mv == 5000,    ldr::ResultInvalidCpuFreqVddEntry());
     R_UNLESS(entry->max_mv == 1525'000, ldr::ResultInvalidCpuFreqVddEntry());
 
-    if (!C.marikoCpuMaxClock)
-        R_SKIP();
-
-    PatchOffset(ptr, C.marikoCpuMaxClock);
-
-    R_SUCCEED();
-}
-
-Result CpuFreqCvbTable(u32* ptr) {
-    cpu_freq_cvb_table_t* default_end = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
-    cpu_freq_cvb_table_t* new_start = default_end + 1;
-
-    // Validate existing table
-    void* cpu_cvb_table_head = reinterpret_cast<u8 *>(new_start) - sizeof(CpuCvbTableDefault);
-    bool validated = std::memcmp(cpu_cvb_table_head, CpuCvbTableDefault, sizeof(CpuCvbTableDefault)) == 0;
-    R_UNLESS(validated, ldr::ResultInvalidCpuDvfs());
-
-    if (C.marikoCpuMaxClock > CpuClkOfficial)
-        std::memcpy(reinterpret_cast<void *>(new_start), CpuCvbTableAppend, sizeof(CpuCvbTableAppend));
-
-    // Patch CPU max volt in existing and appended CPU dvfs table
-    if (C.marikoCpuMaxVolt) {
-        size_t table_size = (sizeof(CpuCvbTableDefault) + sizeof(CpuCvbTableAppend)) / sizeof(cpu_freq_cvb_table_t);
-        cpu_freq_cvb_table_t* entry = static_cast<cpu_freq_cvb_table_t *>(cpu_cvb_table_head);
-        for (size_t i = 0; i < table_size; i++) {
-            if (entry->cvb_pll_param.c0 == CpuVoltOfficial * 1000) {
-                PatchOffset(reinterpret_cast<u32 *>(&(entry->cvb_pll_param.c0)), C.marikoCpuMaxVolt * 1000);
-            }
-            entry++;
-        }
-    }
+    PATCH_OFFSET(ptr, GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
 
     R_SUCCEED();
 }
@@ -70,27 +40,10 @@ Result CpuVoltRange(u32* ptr) {
         if (!C.marikoCpuMaxVolt)
             R_SKIP();
 
-        PatchOffset(ptr, C.marikoCpuMaxVolt);
+        PATCH_OFFSET(ptr, C.marikoCpuMaxVolt);
         R_SUCCEED();
     }
     R_THROW(ldr::ResultInvalidCpuMinVolt());
-}
-
-Result GpuFreqCvbTable(u32* ptr) {
-    gpu_cvb_pll_table_t* default_end = reinterpret_cast<gpu_cvb_pll_table_t *>(ptr);
-    gpu_cvb_pll_table_t* new_start = default_end + 1;
-
-    // Validate existing table
-    void* gpu_cvb_table_head = reinterpret_cast<u8 *>(new_start) - sizeof(GpuCvbTableDefault);
-    bool validated = std::memcmp(gpu_cvb_table_head, GpuCvbTableDefault, sizeof(GpuCvbTableDefault)) == 0;
-    R_UNLESS(validated, ldr::ResultInvalidGpuDvfs());
-
-    if (C.marikoGpuMaxClock <= GpuClkOfficial)
-        R_SKIP();
-
-    std::memcpy(reinterpret_cast<void *>(new_start), GpuCvbTableAppend, sizeof(GpuCvbTableAppend));
-
-    R_SUCCEED();
 }
 
 Result GpuFreqMaxAsm(u32* ptr32) {
@@ -104,15 +57,13 @@ Result GpuFreqMaxAsm(u32* ptr32) {
     if (rd != asm_get_rd(ins2))
         R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
 
-    if (!C.marikoGpuMaxClock)
-        R_SKIP();
-
+    u32 max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
     u32 asm_patch[2] = {
-        asm_set_rd(asm_set_imm16(asm_pattern[0], C.marikoGpuMaxClock), rd),
-        asm_set_rd(asm_set_imm16(asm_pattern[1], C.marikoGpuMaxClock >> 16), rd)
+        asm_set_rd(asm_set_imm16(asm_pattern[0], max_clock), rd),
+        asm_set_rd(asm_set_imm16(asm_pattern[1], max_clock >> 16), rd)
     };
-    PatchOffset(ptr32, asm_patch[0]);
-    PatchOffset(ptr32 + 1, asm_patch[1]);
+    PATCH_OFFSET(ptr32, asm_patch[0]);
+    PATCH_OFFSET(ptr32 + 1, asm_patch[1]);
 
     R_SUCCEED();
 }
@@ -149,7 +100,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
      * you'd better calculate timings yourself rather than relying on following algorithm.
      */
 
-    if (C.mtcConf == NO_ADJ_ALL)
+    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY && C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY)
     	return;
 
     #define ADJUST_PROP(TARGET, REF)                                                                        \
@@ -189,7 +140,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
 
     /* Timings that are available in or can be derived from LPDDR4X datasheet or TRM */
-    const bool use_4266_spec = C.mtcConf == AUTO_ADJ_MARIKO_4266_NO_ADJ_ERISTA;
+    const bool use_4266_spec = C.mtcConf == AUTO_ADJ_4266_MARIKO_ONLY;
     // tCK_avg (average clock period) in ns
     const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
     // tRPpb (row precharge time per bank) in ns
@@ -335,7 +286,12 @@ Result MemFreqMtcTable(u32* ptr) {
 
     delete tmp;
 
-    PatchOffset(ptr, C.marikoEmcMaxClock);
+    PATCH_OFFSET(ptr, C.marikoEmcMaxClock);
+
+    // Handle customize table replacement
+    if (C.mtcConf == CUSTOMIZED_ALL) {
+        MemMtcCustomizeTable(table_list[0], reinterpret_cast<MarikoMtcTable *>(reinterpret_cast<u8 *>(C.marikoMtcTable)));
+    }
 
     R_SUCCEED();
 }
@@ -367,7 +323,7 @@ Result MemFreqMax(u32* ptr) {
     if (C.marikoEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
-    PatchOffset(ptr, C.marikoEmcMaxClock);
+    PATCH_OFFSET(ptr, C.marikoEmcMaxClock);
     R_SUCCEED();
 }
 
@@ -384,7 +340,7 @@ Result EmcVddqVolt(u32* ptr) {
         R_UNLESS(entry->type_2_3.min_uv == uv_min,      ldr::ResultInvalidRegulatorEntry());
         R_SUCCEED();
     };
-    
+
     R_TRY(validator());
 
     u32 emc_uv = C.marikoEmcVddqVolt;
@@ -394,25 +350,28 @@ Result EmcVddqVolt(u32* ptr) {
     if (emc_uv % uv_step)
         emc_uv = emc_uv / uv_step * uv_step; // rounding
 
-    PatchOffset(ptr, emc_uv);
+    PATCH_OFFSET(ptr, emc_uv);
 
     R_SUCCEED();
 }
 
 void Patch(uintptr_t mapped_nso, size_t nso_size) {
+    u32 CpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(CpuCvbTableDefault)->freq);
+    u32 GpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(GpuCvbTableDefault)->freq);
+
     PatcherEntry<u32> patches[] = {
-        { "CPU Freq Vdd",   &CpuFreqVdd,        1, nullptr, CpuClkOSLimit },
-        { "CPU Freq Table", &CpuFreqCvbTable,   1, nullptr, CpuClkOfficial },
-        { "CPU Volt Limit", &CpuVoltRange,     13, nullptr, CpuVoltOfficial },
-        { "GPU Freq Table", &GpuFreqCvbTable,   1, nullptr, GpuClkOfficial },
-        { "GPU Freq Asm",   &GpuFreqMaxAsm,     2, &GpuMaxClockPatternFn },
-        { "GPU Freq PLL",   &GpuFreqPllLimit,   1, nullptr, GpuClkPllLimit },
-        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, EmcClkOSLimit },
-        { "MEM Freq Dvb",   &MemFreqDvbTable,   1, nullptr, EmcClkOSLimit },
-        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, EmcClkOSLimit },
-        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, EmcClkPllmLimit },
-        { "MEM Vddq",       &EmcVddqVolt,       2, nullptr, EmcVddqDefault },
-        { "MEM Vdd2",       &MemVoltHandler,    2, nullptr, MemVdd2Default }
+        { "CPU Freq Vdd",   &CpuFreqVdd,            1, nullptr, CpuClkOSLimit },
+        { "CPU Freq Table", CpuFreqCvbTable<true>,  1, nullptr, CpuCvbDefaultMaxFreq },
+        { "CPU Volt Limit", &CpuVoltRange,         13, nullptr, CpuVoltOfficial },
+        { "GPU Freq Table", GpuFreqCvbTable<true>,  1, nullptr, GpuCvbDefaultMaxFreq },
+        { "GPU Freq Asm",   &GpuFreqMaxAsm,         2, &GpuMaxClockPatternFn },
+        { "GPU Freq PLL",   &GpuFreqPllLimit,       1, nullptr, GpuClkPllLimit },
+        { "MEM Freq Mtc",   &MemFreqMtcTable,       0, nullptr, EmcClkOSLimit },
+        { "MEM Freq Dvb",   &MemFreqDvbTable,       1, nullptr, EmcClkOSLimit },
+        { "MEM Freq Max",   &MemFreqMax,            0, nullptr, EmcClkOSLimit },
+        { "MEM Freq PLLM",  &MemFreqPllmLimit,      2, nullptr, EmcClkPllmLimit },
+        { "MEM Vddq",       &EmcVddqVolt,           2, nullptr, EmcVddqDefault },
+        { "MEM Vdd2",       &MemVoltHandler,        2, nullptr, MemVdd2Default }
     };
 
     for (uintptr_t ptr = mapped_nso;

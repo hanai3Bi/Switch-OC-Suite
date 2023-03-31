@@ -33,8 +33,8 @@ MiscGui::~MiscGui()
     smExit();
 }
 
-void MiscGui::addConfigToggle(SysClkConfigValue configVal) {
-    const char* configName = sysclkFormatConfigValue(configVal, true);
+void MiscGui::addConfigToggle(SysClkConfigValue configVal, const char* altName = nullptr) {
+    const char* configName = altName ? altName : sysclkFormatConfigValue(configVal, true);
     tsl::elm::ToggleListItem* toggle = new tsl::elm::ToggleListItem(configName, this->configList->values[configVal]);
     toggle->setStateChangedListener([this, configVal](bool state) {
         this->configList->values[configVal] = uint64_t(state);
@@ -61,22 +61,23 @@ void MiscGui::listUI()
     sysclkIpcGetConfigValues(this->configList);
     this->listElement->addItem(new tsl::elm::CategoryHeader("Config"));
 
-    addConfigToggle(SysClkConfigValue_AutoCPUBoost);
+    addConfigToggle(SysClkConfigValue_AutoCPUBoost, this->isMariko ? nullptr : "Auto CPU Boost (Unsafe)");
     addConfigToggle(SysClkConfigValue_SyncReverseNXMode);
     addConfigToggle(SysClkConfigValue_GovernorExperimental);
 
     // Charging Current
     this->chargingCurrentHeader = new tsl::elm::CategoryHeader("");
     this->listElement->addItem(this->chargingCurrentHeader);
-    this->chargingCurrentBar = new StepTrackBarIcon("", 2000 / 100 + 1);
+    constexpr size_t current_steps = CHARGING_CURRENT_MA_LIMIT / 100;
+    this->chargingCurrentBar = new StepTrackBarIcon("", current_steps + 1);
     this->chargingCurrentBar->setProgress(this->configList->values[SysClkConfigValue_ChargingCurrentLimit]);
     this->chargingCurrentBar->setValueChangedListener([this](u8 val) {
         if (val < 1) {
             val = 1;
             this->chargingCurrentBar->setProgress(val);
         }
-        if (val > 20) {
-            val = 20;
+        if (val > current_steps) {
+            val = current_steps;
             this->chargingCurrentBar->setProgress(val);
         }
         uint32_t current_ma = val * 100;

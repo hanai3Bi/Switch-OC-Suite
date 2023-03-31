@@ -27,6 +27,10 @@
 
 #include "customize.hpp"
 
+#define PATCH_OFFSET(offset, value) \
+    static_assert(sizeof(__typeof__(offset)) <= sizeof(u64)); \
+    *(offset) = value;
+
 namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(OutOfRange,               1000);
     R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,      1001);
@@ -92,7 +96,4 @@ namespace ams::ldr::oc {
             R_SUCCEED();
         }
     };
-
-    template<typename T>
-    inline void PatchOffset(T* offset, T value) { static_assert(sizeof(T) < sizeof(u64)); *(offset) = value; }
 }

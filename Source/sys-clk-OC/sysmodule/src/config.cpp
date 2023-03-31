@@ -392,6 +392,11 @@ int Config::BrowseIniFunc(const char* section, const char* key, const char* valu
         return 1;
     }
 
+    // Mem freq > 1600'000'000 will be regarded as Clocks::maxMemFreq for consistency
+    if (parsedModule == SysClkModule_MEM && mhz > 1600) {
+        mhz = Clocks::maxMemFreq / 1000'000;
+    }
+
     config->profileMhzMap[std::make_tuple(tid, parsedProfile, parsedModule)] = mhz;
     std::map<std::uint64_t, std::uint8_t>::iterator it = config->profileCountMap.find(tid);
     if (it == config->profileCountMap.end())

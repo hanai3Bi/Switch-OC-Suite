@@ -13,6 +13,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+const uint32_t CHARGING_CURRENT_MA_LIMIT = 3000;
+
 typedef enum {
     SysClkConfigValue_PollingIntervalMs = 0,
     SysClkConfigValue_TempLogIntervalMs,
@@ -95,7 +97,7 @@ static inline uint64_t sysclkValidConfigValue(SysClkConfigValue val, uint64_t in
         case SysClkConfigValue_GovernorExperimental:
             return (input & 0x1) == input;
         case SysClkConfigValue_ChargingCurrentLimit:
-            return (input >= 100 && input <= 2000 && input % 100 == 0);
+            return (input >= 100 && input <= CHARGING_CURRENT_MA_LIMIT && input % 100 == 0);
         case SysClkConfigValue_ChargingLimitPercentage:
             return (input <= 100 && input >= 20);
         default:

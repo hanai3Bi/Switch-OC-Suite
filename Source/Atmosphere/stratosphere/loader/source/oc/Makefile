@@ -3,6 +3,8 @@ TARGET_EXEC := test
 BUILD_DIR := ./build
 SRC_DIRS := ./
 
+# CXX := clang++ g++-12
+
 # Find all the C and C++ files we want to compile
 # Note the single quotes around the * expressions. Make will incorrectly expand these otherwise.
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')

@@ -18,8 +18,6 @@ static inline std::string formatListFreqMhz(std::uint32_t mhz)
 {
     if(mhz == 0)
         return FREQ_DEFAULT_TEXT;
-    if(mhz == 1862) // MEM
-        return "Maximum";
 
     char buf[10];
     return std::string(buf, snprintf(buf, sizeof(buf), "%u MHz", mhz));

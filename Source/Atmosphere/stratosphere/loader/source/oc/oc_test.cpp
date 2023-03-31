@@ -62,7 +62,53 @@ void saveExec(const char* file_loc, const void* buf, size_t size) {
     fclose(fp);
 }
 
+Result Test_PcvDvfsTable() {
+    using namespace ams::ldr::oc::pcv;
+
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&mariko::CpuCvbTableDefault)) == 18);
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&erista::CpuCvbTableDefault)) == 16);
+
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&mariko::GpuCvbTableDefault)) == 17);
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&erista::GpuCvbTableDefault)) == 12);
+
+    cvb_entry_t last_mariko_cpu_cvb_entry_default = { 1963500, { 1675751, -38635, 27 }, { 1120000 } };
+    assert(memcmp(GetDvfsTableLastEntry((cvb_entry_t *)(&mariko::CpuCvbTableDefault)), (void *)&last_mariko_cpu_cvb_entry_default, sizeof(last_mariko_cpu_cvb_entry_default)) == 0);
+    assert(GetDvfsTableLastEntry((cvb_entry_t *)(&erista::GpuCvbTableDefault))->freq == 921600);
+
+    // Customized table default
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&ams::ldr::oc::C.eristaCpuDvfsTable)) == 19);
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&ams::ldr::oc::C.marikoCpuDvfsTable)) == 22);
+
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&ams::ldr::oc::C.eristaGpuDvfsTable)) == 12);
+    assert(GetDvfsTableEntryCount((cvb_entry_t *)(&ams::ldr::oc::C.marikoGpuDvfsTable)) == 18);
+
+    constexpr size_t limit = ams::ldr::oc::pcv::DvfsTableEntryLimit;
+    cvb_entry_t customized_table[limit] = {};
+    for (int i = 0; i < limit; i++) {
+        assert(GetDvfsTableEntryCount(customized_table) == i);
+        auto p = GetDvfsTableLastEntry(customized_table);
+        if (p)
+            assert(p->freq == i);
+
+        customized_table[i].freq = i + 1;
+    }
+
+    R_SUCCEED();
+}
+
+void unitTest() {
+    UnitTest test[] = {
+        { "PCV DVFS Table", &Test_PcvDvfsTable }
+    };
+
+    for (auto &t : test) {
+        t.Test();
+    }
+}
+
 int main(int argc, char** argv) {
+    unitTest();
+
     const char* pcv_opt    = "pcv";
     const char* ptm_opt    = "ptm";
     const char* save_opt   = "-s";

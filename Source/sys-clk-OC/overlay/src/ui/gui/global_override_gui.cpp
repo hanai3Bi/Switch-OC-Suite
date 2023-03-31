@@ -24,7 +24,7 @@ GlobalOverrideGui::GlobalOverrideGui()
 
 void GlobalOverrideGui::openFreqChoiceGui(SysClkModule module)
 {
-    tsl::changeTo<FreqChoiceGui>(this->context->overrideFreqs[module] / 1000'000, module, SysClkProfile_EnumMax, [this, module](std::uint32_t mhz) {
+    tsl::changeTo<FreqChoiceGui>(this->context->overrideFreqs[module] / 1000'000, module, this->context->profile, [this, module](std::uint32_t mhz) {
         Result rc = sysclkIpcSetOverride(module, mhz * 1000'000);
         if(R_FAILED(rc))
         {

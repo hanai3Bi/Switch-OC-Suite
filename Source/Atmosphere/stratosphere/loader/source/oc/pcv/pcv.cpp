@@ -63,7 +63,7 @@ Result MemVoltHandler(u32* ptr) {
     if (emc_uv % uv_step)
         emc_uv = emc_uv / uv_step * uv_step; // rounding
 
-    PatchOffset(ptr, emc_uv);
+    PATCH_OFFSET(ptr, emc_uv);
 
     R_SUCCEED();
 }
@@ -91,16 +91,23 @@ void SafetyCheck() {
         }
     };
 
+    u32 eristaCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.eristaCpuDvfsTable)->freq);
+    u32 marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
+    u32 eristaGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.eristaGpuDvfsTable)->freq);
+    u32 marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq);
+
     sValidator validators[] = {
-        { C.marikoCpuMaxClock,   1785'000, 3000'000 },
-        { C.marikoCpuBoostClock, 1020'000, 3000'000, true },
-        { C.marikoCpuMaxVolt,        1100,     1300 },
-        { C.marikoGpuMaxClock,    768'000, 1536'000 },
-        { C.marikoEmcMaxClock,   1600'000, 2400'000 },
-        { C.marikoEmcVddqVolt,    550'000,  650'000 },
+        { C.commonCpuBoostClock, 1020'000, 3000'000, true },
+        { C.commonEmcMemVolt,    1100'000, 1250'000 },
         { C.eristaCpuMaxVolt,        1100,     1300 },
         { C.eristaEmcMaxClock,   1600'000, 2400'000 },
-        { C.commonEmcMemVolt,    1100'000, 1250'000 },
+        { C.marikoCpuMaxVolt,        1100,     1300 },
+        { C.marikoEmcMaxClock,   1600'000, 2400'000 },
+        { C.marikoEmcVddqVolt,    550'000,  650'000 },
+        { eristaCpuDvfsMaxFreq,  1785'000, 3000'000 },
+        { marikoCpuDvfsMaxFreq,  1785'000, 3000'000 },
+        { eristaGpuDvfsMaxFreq,   768'000, 1536'000 },
+        { marikoGpuDvfsMaxFreq,   768'000, 1536'000 },
     };
 
     for (auto& i : validators) {
