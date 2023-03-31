@@ -16,6 +16,8 @@
  * from GCC preprocessor output
  */
 
+#pragma once
+
 struct MarikoTiming {
     uint32_t emc_rc;
     uint32_t emc_rfc;

@@ -19,10 +19,12 @@
 #ifndef ATMOSPHERE_IS_STRATOSPHERE
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cctype>
 
 typedef uint8_t  u8;
 typedef uint16_t u16;
@@ -42,5 +44,35 @@ typedef int      Result;
 
 #define R_DEFINE_ERROR_RESULT(name, rc)        \
     inline Result Result##name() { return rc; }
+
+#define HEXDUMP(ptr, len)                                           \
+    {                                                               \
+        const uint8_t* p = reinterpret_cast<const uint8_t *>(ptr);  \
+        size_t i, j;                                                \
+        for (i = 0; i < len; i += 16) {                             \
+            printf("%06zx: ", i);                                   \
+            for (j = 0; j < 16 && i + j < len; j++)                 \
+                printf("%02x ", p[i + j]);                          \
+            for (; j < 16; j++)                                     \
+                printf("   ");                                      \
+            for (j = 0; j < 16 && i + j < len; j++)                 \
+                printf("%c", isprint(p[i + j]) ? p[i + j] : '.');   \
+            printf("\n");                                           \
+        }                                                           \
+    }                                                               \
+
+typedef struct UnitTest {
+    using Func = Result(*)();
+
+    const char* description;
+    Func        fun = nullptr;
+
+    void Test() {
+        Result res = fun();
+        if (R_FAILED(res)) {
+            CRASH(description);
+        }
+    }
+} UnitTest;
 
 #endif

@@ -62,7 +62,7 @@ ClockManager::ClockManager()
     this->oc->realProfile = SysClkProfile_Handheld;
 
     this->rnxSync = new ReverseNXSync;
-    this->governor = new Governor;
+    this->governor = new Governor();
 }
 
 ClockManager::~ClockManager()
@@ -209,15 +209,25 @@ bool ClockManager::RefreshContext()
 {
     PsmExt::ChargingHandler(this->GetInstance());
 
-    bool hasChanged = this->config->Refresh();
+    bool hasChanged = false;
+    SysClkProfile realProfile = Clocks::GetCurrentProfile();
+    if (realProfile != this->oc->realProfile)
+    {
+        FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(realProfile, true));
+        this->oc->realProfile = realProfile;
+        // Signal that power state has been changed, reset the override
+        this->SetBatteryChargingDisabledOverride(false);
+        hasChanged = true;
+    }
+
+    hasChanged = this->config->Refresh();
     if (hasChanged) {
         this->rnxSync->ToggleSync(this->GetConfig()->GetConfigValue(SysClkConfigValue_SyncReverseNXMode));
         bool allowUnsafe = this->GetConfig()->GetConfigValue(SysClkConfigValue_AllowUnsafeFrequencies);
         Clocks::SetAllowUnsafe(allowUnsafe);
 
         this->governor->SetAutoCPUBoost(this->GetConfig()->GetConfigValue(SysClkConfigValue_AutoCPUBoost));
-        if (Clocks::GetIsMariko())
-            this->governor->SetCPUBoostHz(Clocks::GetNearestHz(SysClkModule_CPU, SysClkProfile_EnumMax, Clocks::boostCpuFreq));
+        this->governor->SetCPUBoostHz(Clocks::GetNearestHz(SysClkModule_CPU, this->oc->realProfile, Clocks::boostCpuFreq));
     }
 
     bool enabled = this->GetConfig()->Enabled();
@@ -247,16 +257,6 @@ bool ClockManager::RefreshContext()
             governorConfig = governorConfigTitle;
     }
     this->governor->SetConfig(governorConfig);
-
-    SysClkProfile realProfile = Clocks::GetCurrentProfile();
-    if (realProfile != this->oc->realProfile)
-    {
-        FileUtils::LogLine("[mgr] Profile change: %s", Clocks::GetProfileName(realProfile, true));
-        this->oc->realProfile = realProfile;
-        // Signal that power state has been changed, reset the override
-        this->SetBatteryChargingDisabledOverride(false);
-        hasChanged = true;
-    }
 
     /* Update PerformanceConfigurationId */
     {

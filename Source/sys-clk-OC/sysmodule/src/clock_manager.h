@@ -45,6 +45,7 @@ class ClockManager
     virtual ~ClockManager();
 
     bool RefreshContext();
+    uint32_t GetHz(SysClkModule);
 
     static ClockManager *instance;
     std::atomic_bool running;
@@ -57,6 +58,4 @@ class ClockManager
     SysClkOcExtra *oc;
     ReverseNXSync *rnxSync;
     Governor *governor;
-
-    uint32_t GetHz(SysClkModule);
 };

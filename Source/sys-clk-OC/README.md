@@ -128,10 +128,6 @@ Copy the `atmosphere`, and `switch` folders at the root of your sdcard, overwrit
 
 	`/config/sys-clk/context.csv`
 
-* sys-clk manager app (accessible from the hbmenu)
-
-	`/switch/sys-clk-manager.nro`
-
 * sys-clk overlay (accessible from anywhere by invoking the [Tesla menu](https://gbatemp.net/threads/tesla-the-nintendo-switch-overlay-menu.557362/))
 
 	`/switch/.overlays/sys-clk-overlay.ovl`

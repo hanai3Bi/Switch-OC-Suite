@@ -24,6 +24,48 @@
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
 #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
 
+typedef struct cvb_coefficients {
+    s32 c0 = 0;
+    s32 c1 = 0;
+    s32 c2 = 0;
+    s32 c3 = 0;
+    s32 c4 = 0;
+    s32 c5 = 0;
+} cvb_coefficients;
+
+typedef struct cvb_entry_t {
+    u64 freq;
+    cvb_coefficients cvb_dfll_param;
+    cvb_coefficients cvb_pll_param;
+} cvb_entry_t;
+static_assert(sizeof(cvb_entry_t) == 0x38);
+
+using CustomizeCpuDvfsTable = cvb_entry_t[FREQ_TABLE_MAX_ENTRY_COUNT];
+using CustomizeGpuDvfsTable = cvb_entry_t[FREQ_TABLE_MAX_ENTRY_COUNT];
+
+constexpr uint32_t CUST_REV = 4;
+
+typedef struct CustTable {
+    u8  cust[4] = {'C', 'U', 'S', 'T'};
+    u32 custRev;
+    u32 mtcConf;
+    u32 commonCpuBoostClock;
+    u32 commonEmcMemVolt;
+    u32 eristaCpuMaxVolt;
+    u32 eristaEmcMaxClock;
+    u32 marikoCpuMaxVolt;
+    u32 marikoEmcMaxClock;
+    u32 marikoEmcVddqVolt;
+    CustomizeCpuDvfsTable eristaCpuDvfsTable;
+    CustomizeCpuDvfsTable marikoCpuDvfsTable;
+    CustomizeGpuDvfsTable eristaGpuDvfsTable;
+    CustomizeGpuDvfsTable marikoGpuDvfsTable;
+    void* eristaMtcTable;
+    void* marikoMtcTable;
+} CustTable;
+static_assert(sizeof(CustTable) == sizeof(u8) * 4 + sizeof(u32) * 9 + sizeof(CustomizeCpuDvfsTable) * 4 + sizeof(void*) * 2);
+static_assert(sizeof(CustTable) == 7000);
+
 class FileUtils
 {
   public:
@@ -36,22 +78,6 @@ class FileUtils
     static void ParseLoaderKip();
     static Result mkdir_p(const char* dirpath);
   protected:
-    static const uint16_t CUST_REV = 3;
-    typedef struct CustTable {
-        uint8_t  cust[4] = {'C', 'U', 'S', 'T'};
-        uint16_t custRev;
-        uint16_t mtcConf;
-        uint32_t marikoCpuMaxClock;
-        uint32_t marikoCpuBoostClock;
-        uint32_t marikoCpuMaxVolt;
-        uint32_t marikoGpuMaxClock;
-        uint32_t marikoEmcMaxClock;
-        uint32_t marikoEmcVolt;
-        uint32_t eristaCpuMaxVolt;
-        uint32_t eristaEmcMaxClock;
-        uint32_t commonEmcMemVolt;
-    } CustTable;
-
     static void RefreshFlags(bool force);
     static Result CustParser(const char* path, size_t filesize);
 };

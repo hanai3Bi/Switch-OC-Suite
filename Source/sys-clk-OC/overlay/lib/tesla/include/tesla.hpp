@@ -3662,7 +3662,11 @@ extern "C" {
         tsl::hlp::doWithSmSession([]{
             ASSERT_FATAL(fsInitialize());
             ASSERT_FATAL(hidInitialize());                          // Controller inputs and Touch
-            ASSERT_FATAL(plInitialize(PlServiceType_System));       // Font data. Use pl:s to prevent qlaunch/overlaydisp session exhaustion
+            if (hosversionAtLeast(16,0,0)) {
+                ASSERT_FATAL(plInitialize(PlServiceType_User));     // Font data. Use pl:u for 16.0.0+
+            } else {
+                ASSERT_FATAL(plInitialize(PlServiceType_System));   // Use pl:s for 15.0.1 and below to prevent qlaunch/overlaydisp session exhaustion 
+            }
             ASSERT_FATAL(pmdmntInitialize());                       // PID querying
             ASSERT_FATAL(hidsysInitialize());                       // Focus control
             ASSERT_FATAL(setsysInitialize());                       // Settings querying

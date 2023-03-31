@@ -37,7 +37,10 @@ class AppOverlay : public tsl::Overlay
                     "sys-clk is not running.\n\n"
                     "\n"
                     "Please make sure it is correctly\n\n"
-                    "installed and enabled.",
+                    "installed and enabled.\n\n"
+                    "\n"
+                    "Loader.kip is required to\n\n"
+                    "use this version of sys-clk.",
                     ""
                 );
             }

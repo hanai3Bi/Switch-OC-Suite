@@ -56,7 +56,7 @@ void FreqChoiceGui::listUI()
 
     size_t idx = 0;
     uint32_t freq;
-    while(idx < MAX_ENTRIES && (freq = this->hzTable->values[idx]))
+    while(idx < FREQ_TABLE_MAX_ENTRY_COUNT && (freq = this->hzTable->freq[idx]))
     {
         uint32_t mhz = freq / 1000'000;
         this->listElement->addItem(this->createFreqListItem(mhz, mhz == this->selectedMHz));

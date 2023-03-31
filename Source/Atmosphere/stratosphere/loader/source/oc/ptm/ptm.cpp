@@ -19,20 +19,20 @@
 namespace ams::ldr::oc::ptm {
 
 Result CpuPtmBoost(perf_conf_entry* entry) {
-    if (!C.marikoCpuBoostClock)
+    if (!C.commonCpuBoostClock)
         R_SUCCEED();
 
-    u32 cpuPtmBoostNew = C.marikoCpuBoostClock * 1000;
+    u32 cpuPtmBoostNew = C.commonCpuBoostClock * 1000;
 
-    PatchOffset(&(entry->cpu_freq_1), cpuPtmBoostNew);
-    PatchOffset(&(entry->cpu_freq_2), cpuPtmBoostNew);
+    PATCH_OFFSET(&(entry->cpu_freq_1), cpuPtmBoostNew);
+    PATCH_OFFSET(&(entry->cpu_freq_2), cpuPtmBoostNew);
 
     R_SUCCEED();
 }
 
 Result MemPtm(perf_conf_entry* entry) {
-    PatchOffset(&(entry->emc_freq_1), memPtmLimit);
-    PatchOffset(&(entry->emc_freq_2), memPtmLimit);
+    PATCH_OFFSET(&(entry->emc_freq_1), memPtmLimit);
+    PATCH_OFFSET(&(entry->emc_freq_2), memPtmLimit);
 
     R_SUCCEED();
 }
@@ -52,13 +52,6 @@ bool PtmTablePatternFn(u32* ptr) {
 }
 
 void Patch(uintptr_t mapped_nso, size_t nso_size) {
-    #ifdef ATMOSPHERE_IS_STRATOSPHERE
-    // Ptm patcher is disabled for Erista
-    bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
-    if (!isMariko)
-        return;
-    #endif
-
     perf_conf_entry* confTable = nullptr;
     for (uintptr_t ptr = mapped_nso;
          ptr <= mapped_nso + nso_size - sizeof(perf_conf_entry) * entryCnt;
@@ -75,10 +68,15 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         CRASH("confTable not found!");
     }
 
-    PatcherEntry<perf_conf_entry> patches[] = {
-        { "CPU Ptm Boost",  &CpuPtmBoost,   2, },
-        { "MEM Ptm",        &MemPtm,       16, },
-    };
+    PatcherEntry<perf_conf_entry> cpuPtmBoostPatch = { "CPU Ptm Boost", &CpuPtmBoost, 2, };
+    PatcherEntry<perf_conf_entry> memPtmPatch = { "MEM Ptm", &MemPtm, 16, };
+
+    #ifdef ATMOSPHERE_IS_STRATOSPHERE
+    bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
+    #else
+    bool isMariko = true;
+    #endif
+
 
     for (u32 i = 0; i < entryCnt; i++) {
         perf_conf_entry* entry = confTable + i;
@@ -90,7 +88,7 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
 
         switch (entry->cpu_freq_1) {
             case cpuPtmBoost:
-                patches[0].Apply(entry);
+                cpuPtmBoostPatch.Apply(entry);
                 break;
             case cpuPtmDefault:
             case cpuPtmDevOC:
@@ -104,7 +102,9 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
             case memPtmLimit:
             case memPtmAlt:
             case memPtmClamp:
-                patches[1].Apply(entry);
+                if (isMariko) {
+                    memPtmPatch.Apply(entry);
+                }
                 break;
             default:
                 LOGGING("%u (0x%08x) @%p", entry->emc_freq_1, entry->conf_id, &(entry->emc_freq_2));
@@ -112,10 +112,14 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         }
     }
 
-    for (auto& patch : patches) {
-        LOGGING("%s Count: %zu", patch.description, patch.patched_count);
-        if (R_FAILED(patch.CheckResult()))
-            CRASH(patch.description);
+    LOGGING("%s Count: %zu", cpuPtmBoostPatch.description, cpuPtmBoostPatch.patched_count);
+    if (R_FAILED(cpuPtmBoostPatch.CheckResult()))
+        CRASH(cpuPtmBoostPatch.description);
+
+    if (isMariko) {
+        LOGGING("%s Count: %zu", memPtmPatch.description, memPtmPatch.patched_count);
+        if (R_FAILED(memPtmPatch.CheckResult()))
+            CRASH(memPtmPatch.description);
     }
 }
 

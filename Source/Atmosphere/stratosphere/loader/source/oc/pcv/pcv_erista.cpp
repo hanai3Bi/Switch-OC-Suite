@@ -14,35 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcv_erista.hpp"
+#include "pcv.hpp"
 
 namespace ams::ldr::oc::pcv::erista {
-
-Result CpuFreqCvbTable(u32* ptr) {
-    cpu_freq_cvb_table_t* default_end = reinterpret_cast<cpu_freq_cvb_table_t *>(ptr);
-    cpu_freq_cvb_table_t* new_start = default_end + 1;
-
-    // Validate existing table
-    void* cpu_cvb_table_head = reinterpret_cast<u8 *>(new_start) - sizeof(CpuCvbTableDefault);
-    bool validated = std::memcmp(cpu_cvb_table_head, CpuCvbTableDefault, sizeof(CpuCvbTableDefault)) == 0;
-    R_UNLESS(validated, ldr::ResultInvalidCpuDvfs());
-
-    std::memcpy(reinterpret_cast<void *>(new_start), CpuCvbTableAppend, sizeof(CpuCvbTableAppend));
-
-    // Patch CPU max volt in existing and appended CPU dvfs table
-    if (C.eristaCpuMaxVolt) {
-        size_t table_size = sizeof(CpuCvbTableAppend) / sizeof(cpu_freq_cvb_table_t);
-        cpu_freq_cvb_table_t* entry = new_start;
-        for (size_t i = 0; i < table_size; i++) {
-            if (entry->cvb_dfll_param.c0 == CpuVoltL4T) {
-                PatchOffset(reinterpret_cast<u32 *>(&(entry->cvb_dfll_param.c0)), C.eristaCpuMaxVolt * 1000);
-            }
-            entry++;
-        }
-    }
-
-    R_SUCCEED();
-}
 
 Result CpuVoltRange(u32* ptr) {
     u32 min_volt_got = *(ptr - 1);
@@ -53,7 +27,7 @@ Result CpuVoltRange(u32* ptr) {
         if (!C.eristaCpuMaxVolt)
             R_SKIP();
 
-        PatchOffset(ptr, C.eristaCpuMaxVolt);
+        PATCH_OFFSET(ptr, C.eristaCpuMaxVolt);
         R_SUCCEED();
     }
     R_THROW(ldr::ResultInvalidCpuMinVolt());
@@ -80,7 +54,12 @@ Result MemFreqMtcTable(u32* ptr) {
     for (u32 i = khz_list_size - 1; i > 0; i--)
         std::memcpy(static_cast<void *>(table_list[i]), static_cast<void *>(table_list[i - 1]), sizeof(EristaMtcTable));
 
-    PatchOffset(ptr, C.eristaEmcMaxClock);
+    PATCH_OFFSET(ptr, C.eristaEmcMaxClock);
+
+    // Handle customize table replacement
+    if (C.mtcConf == CUSTOMIZED_ALL) {
+        MemMtcCustomizeTable(table_list[0], const_cast<EristaMtcTable *>(C.eristaMtcTable));
+    }
 
     R_SUCCEED();
 }
@@ -89,19 +68,23 @@ Result MemFreqMax(u32* ptr) {
     if (C.eristaEmcMaxClock <= EmcClkOSLimit)
         R_SKIP();
 
-    PatchOffset(ptr, C.eristaEmcMaxClock);
+    PATCH_OFFSET(ptr, C.eristaEmcMaxClock);
 
     R_SUCCEED();
 }
 
 void Patch(uintptr_t mapped_nso, size_t nso_size) {
+    u32 CpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(CpuCvbTableDefault)->freq);
+    u32 GpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(GpuCvbTableDefault)->freq);
+
     PatcherEntry<u32> patches[] = {
-        { "CPU Freq Table", &CpuFreqCvbTable,   1, nullptr, CpuClkOSLimit },
-        { "CPU Volt Limit", &CpuVoltRange,      0, &CpuMaxVoltPatternFn },
-        { "MEM Freq Mtc",   &MemFreqMtcTable,   0, nullptr, EmcClkOSLimit },
-        { "MEM Freq Max",   &MemFreqMax,        0, nullptr, EmcClkOSLimit },
-        { "MEM Freq PLLM",  &MemFreqPllmLimit,  2, nullptr, EmcClkPllmLimit },
-        { "MEM Volt",       &MemVoltHandler,    2, nullptr, MemVoltHOS },
+        { "CPU Freq Table", CpuFreqCvbTable<false>, 1, nullptr, CpuCvbDefaultMaxFreq },
+        { "CPU Volt Limit", &CpuVoltRange,          0, &CpuMaxVoltPatternFn },
+        { "GPU Freq Table", GpuFreqCvbTable<false>, 1, nullptr, GpuCvbDefaultMaxFreq },
+        { "MEM Freq Mtc",   &MemFreqMtcTable,       0, nullptr, EmcClkOSLimit },
+        { "MEM Freq Max",   &MemFreqMax,            0, nullptr, EmcClkOSLimit },
+        { "MEM Freq PLLM",  &MemFreqPllmLimit,      2, nullptr, EmcClkPllmLimit },
+        { "MEM Volt",       &MemVoltHandler,        2, nullptr, MemVoltHOS },
     };
 
     for (uintptr_t ptr = mapped_nso;

@@ -81,8 +81,8 @@ namespace GovernorImpl {
     class BaseGovernor {
     public:
         BaseGovernor(SysClkModule module) : m_module(module) {
-            m_hz_list = GetModuleFreqTable(module);
-            m_ref_hz  = GetModuleMaximumFreq(module);
+            m_hz_list = Clocks::freqTable[module].freq;
+            m_ref_hz  = *Clocks::freqRange[module].last;
         };
 
         uint32_t RefreshContext() { return this->m_target_hz = Clocks::GetCurrentHz(this->m_module); };
@@ -104,12 +104,6 @@ namespace GovernorImpl {
             Clocks::SetHz(m_module, hz);
         };
 
-        void ApplyBoost() {
-            ApplyTargetFreq(
-                (m_module == SysClkModule_CPU && max_hz > boost_hz) ? max_hz : boost_hz
-            );
-        };
-
         SysClkModule m_module;
         uint32_t* m_hz_list;
         uint32_t m_target_hz, m_ref_hz;
@@ -128,6 +122,10 @@ namespace GovernorImpl {
         ~CpuGovernor() { this->m_worker.Stop(); };
 
         void Apply();
+
+        void ApplyBoost() {
+            ApplyTargetFreq((max_hz > boost_hz) ? max_hz : boost_hz);
+        };
 
         bool auto_boost;
 
@@ -204,7 +202,9 @@ namespace GovernorImpl {
             nvExit();
         };
 
-        void SetMaxHz(uint32_t maxHz);
+        void ApplyBoost() {
+            ApplyTargetFreq(boost_hz);
+        };
 
         void Apply();
 
@@ -317,7 +317,7 @@ namespace GovernorImpl {
 
 class Governor {
 public:
-    Governor()  {
+    Governor() {
         m_cpu_gov = new GovernorImpl::CpuGovernor(this);
         m_gpu_gov = new GovernorImpl::GpuGovernor();
     };

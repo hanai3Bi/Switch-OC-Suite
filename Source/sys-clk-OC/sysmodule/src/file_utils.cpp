@@ -12,6 +12,7 @@
 #include "clocks.h"
 #include <dirent.h>
 #include <nxExt.h>
+#include "errors.h"
 
 static LockableMutex g_log_mutex;
 static LockableMutex g_csv_mutex;
@@ -222,15 +223,13 @@ void FileUtils::ParseLoaderKip() {
                 continue;
 
             if (R_SUCCEEDED(CustParser(full_path, filesize))) {
-                LogLine("Parsed cust config from \"%s\", maxMemFreq: %u MHz, boostCpuFreq: %u MHz",
-                    full_path,
-                    Clocks::maxMemFreq / 1'000'000,
-                    Clocks::boostCpuFreq / 1'000'000
-                );
+                LogLine("Parsed cust config from \"%s\"", full_path);
                 return;
             }
         }
     }
+
+    ERROR_THROW("Cannot locate loader.kip in /, /atmosphere/, /atmosphere/kips/ and /bootloader/");
 }
 
 Result FileUtils::CustParser(const char* filepath, size_t filesize) {
@@ -285,13 +284,17 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
     if (table.custRev != CUST_REV)
         return ParseError_WrongCustRev;
 
+    if (table.commonCpuBoostClock)
+        Clocks::boostCpuFreq = table.commonCpuBoostClock * 1000;
+
+    CustomizeCpuDvfsTable* cpu_dvfs_table = nullptr;
+    CustomizeGpuDvfsTable* gpu_dvfs_table = nullptr;
+
     if (Clocks::GetIsMariko()) {
-        if (table.marikoCpuBoostClock)
-            Clocks::boostCpuFreq = table.marikoCpuBoostClock * 1000;
         if (table.marikoEmcMaxClock)
             Clocks::maxMemFreq = table.marikoEmcMaxClock * 1000;
-        if (table.marikoEmcVolt && table.marikoEmcVolt >= 600'000 && table.marikoEmcVolt <= 650'000) {
-            u32 mvolt = table.marikoEmcVolt / 1000;
+        if (table.marikoEmcVddqVolt && table.marikoEmcVddqVolt >= 550'000 && table.marikoEmcVddqVolt <= 650'000) {
+            u32 mvolt = table.marikoEmcVddqVolt / 1000;
             Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDDQ, mvolt);
             LogLine("Set EMC Vddq volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
         }
@@ -300,10 +303,36 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
             Result res = I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDD2, mvolt);
             LogLine("Set MEM Vdd2 volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
         }
+
+        cpu_dvfs_table = &table.marikoCpuDvfsTable;
+        gpu_dvfs_table = &table.marikoGpuDvfsTable;
     } else {
         if (table.eristaEmcMaxClock)
             Clocks::maxMemFreq = table.eristaEmcMaxClock * 1000;
+
+        cpu_dvfs_table = &table.eristaCpuDvfsTable;
+        gpu_dvfs_table = &table.eristaGpuDvfsTable;
     }
+
+    // Fill Clocks::freqTable
+    cvb_entry_t* cpu_dvfs_entry = reinterpret_cast<cvb_entry_t *>(cpu_dvfs_table);
+    for (size_t i = 0, j = 0; i < FREQ_TABLE_MAX_ENTRY_COUNT; i++) {
+        // Skip CPU frequencies < 408 MHz that are not usable
+        uint32_t freq = cpu_dvfs_entry[i].freq;
+        if (freq < 408'000)
+            continue;
+        Clocks::freqTable[SysClkModule_CPU].freq[j++] = freq * 1000;
+    }
+
+    cvb_entry_t* gpu_dvfs_entry = reinterpret_cast<cvb_entry_t *>(gpu_dvfs_table);
+    for (size_t i = 0; i < FREQ_TABLE_MAX_ENTRY_COUNT; i++) {
+        Clocks::freqTable[SysClkModule_GPU].freq[i] = gpu_dvfs_entry[i].freq * 1000;
+    }
+
+    // Appending maximum mem freq to freqTable
+    uint32_t* mem_entry = &Clocks::freqTable[SysClkModule_MEM].freq[0];
+    while (*(++mem_entry));
+    *mem_entry = Clocks::maxMemFreq;
 
     return ParseError_Success;
 }

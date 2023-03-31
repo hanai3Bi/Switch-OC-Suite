@@ -66,13 +66,12 @@ typedef struct
     SysClkProfile realProfile;
 } SysClkOcExtra;
 
+#define FREQ_TABLE_MAX_ENTRY_COUNT  31
+
 typedef struct
 {
-    uint32_t values[20];
+    uint32_t freq[FREQ_TABLE_MAX_ENTRY_COUNT];
 } SysClkFrequencyTable;
-
-uint32_t* GetModuleFreqTable(SysClkModule module);
-uint32_t GetModuleMaximumFreq(SysClkModule module);
 
 typedef enum {
     SysClkOcGovernorConfig_AllDisabled  = 0,
