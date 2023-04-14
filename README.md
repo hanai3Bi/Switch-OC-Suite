@@ -4,7 +4,7 @@
 
 Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
 
-[Project Homepage](https://sintez.io/configurator.html)
+[Project Homepage](https://hanai3Bi.github.io/Switch-OC-Suite)
 
 **DISCLAIMER: USE AT YOUR OWN RISK!**
 
@@ -19,7 +19,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     - Unsafe
       - Due to the limit of board power draw or power IC
       - Unlockable frequencies up to 2091 MHz
-      - See [README for sys-clk-OC](https://github.com/Cooler3D/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
+      - See [README for sys-clk-OC](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1862.4 MHz)
 
@@ -28,7 +28,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
     - Unsafe
       - Due to the limit of board power draw or power IC
       - Unlockable frequencies up to 2397 / 1305 MHz or 2295 / 1267 MHz
-      - See [README for sys-clk-OC](https://github.com/KazushiMe/Cooler3D/blob/master/Source/sys-clk-OC/README.md)
+      - See [README for sys-clk-OC](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1996.8 MHz)
 
@@ -42,7 +42,7 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
   - CPU & GPU frequency governor (Experimental)
     - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
 
-  - Set charging current (100 mA - 3000 mA) and charging limit (20% - 100%)
+  - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
     - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
   - Global Profile
@@ -52,18 +52,18 @@ Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
   - Sync ReverseNX Mode
     - No need to change clocks manually after toggling modes in ReverseNX (-RT and -Tool)
 
-- **[System Settings (Optional)](https://github.com/Cooler3D/Switch-OC-Suite/blob/master/system_settings.md)**
+- **[System Settings (Optional)](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/system_settings.md)**
 
 
 ## Installation
 
-1. Download latest [release](https://github.com/Cooler3D/Switch-OC-Suite/releases).
+1. Download latest [release](https://github.com/hanai3Bi/Switch-OC-Suite/releases).
 
 2. Copy all files in `SdOut` to the root of SD card.
 
 3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-4. Customization via [online loader configurator](https://sintez.io/configurator.html):
+4. Customization via [online loader configurator](https://hanai3Bi.github.io/Switch-OC-Suite/#config):
     <details>
 
     | Defaults   | Mariko        | Erista       |
