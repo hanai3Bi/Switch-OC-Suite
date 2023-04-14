@@ -2,7 +2,9 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-Overclocking suite for Horizon OS (HOS) running on Atmosphere CFW.
+This is continuation of Switch-OC-Suite just for my personal usage. This project is very dangerous and I do not recommend using it. USE AT YOUR OWN RISK
+
+Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
 [Project Homepage](https://hanai3Bi.github.io/Switch-OC-Suite)
 
