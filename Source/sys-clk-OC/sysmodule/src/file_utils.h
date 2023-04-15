@@ -18,7 +18,7 @@
 #include <cstdarg>
 #include <sysclk.h>
 
-#define FILE_CONFIG_DIR "/config/sys-clk"
+#define FILE_CONFIG_DIR "/config/sys-clk-oc"
 #define FILE_FLAG_CHECK_INTERVAL_NS 5000000000ULL
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
