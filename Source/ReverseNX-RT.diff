@@ -1,33 +1,26 @@
 diff --git a/Overlay/Makefile b/Overlay/Makefile
-index 5a2c2af..140130b 100644
+index 9656834..3b2ebd5 100644
 --- a/Overlay/Makefile
 +++ b/Overlay/Makefile
 @@ -38,7 +38,7 @@ include $(DEVKITPRO)/libnx/switch_rules
  #   NACP building is skipped as well.
  #---------------------------------------------------------------------------------
  APP_TITLE	:=	ReverseNX-RT
--APP_VERSION	:=	1.0.2
-+APP_VERSION	:=	1.1.0-OC
-
+-APP_VERSION	:=	1.1.1
++APP_VERSION	:=	1.1.1-OC
+ 
  TARGET		:=	ReverseNX-RT-ovl
  BUILD		:=	build
-diff --git a/Overlay/libs/Atmosphere-libs b/Overlay/libs/Atmosphere-libs
-index 2d522dc..af0d008 160000
---- a/Overlay/libs/Atmosphere-libs
-+++ b/Overlay/libs/Atmosphere-libs
-@@ -1 +1 @@
--Subproject commit 2d522dc6a12b2eb5eb3f103a8c5b5126ca301b1a
-+Subproject commit af0d008900128d8679b80569f69fe562ed7d6681
 diff --git a/Overlay/source/main.cpp b/Overlay/source/main.cpp
-index 810295c..87b6685 100644
+index 810295c..6dc7135 100644
 --- a/Overlay/source/main.cpp
 +++ b/Overlay/source/main.cpp
-@@ -1,7 +1,196 @@
+@@ -1,7 +1,198 @@
  #define TESLA_INIT_IMPL // If you have more than one file using the tesla header, only define this in the main one
  #include <tesla.hpp>    // The Tesla Header
 +#include <atomic>
  #include "SaltyNX.h"
-
+ 
 +class ModeSync {
 +public:
 +	enum ReverseNXMode {
@@ -115,12 +108,14 @@ index 810295c..87b6685 100644
 +			Result rc = 0;
 +			refCnt++;
 +
-+			if (serviceIsActive(&service))
-+				return 0;
++			//if (serviceIsActive(&service))
++			//	return 0;
 +
 +			rc = smGetService(&service, SERVICE_NAME);
 +
 +			if (R_FAILED(rc)) {
++				this->ipcStatus = IpcStatus_InitFailed;
++				rc = this->ipcStatus;
 +				this->Exit();
 +				return rc;
 +			}
@@ -163,10 +158,10 @@ index 810295c..87b6685 100644
 +				return this->ipcStatus;
 +			}
 +
-+			if (R_FAILED(this->Init())) {
++			/* if (R_FAILED(this->Init())) {
 +				this->ipcStatus = IpcStatus_InitFailed;
 +				return this->ipcStatus;
-+			}
++			} */
 +
 +			tsl::hlp::ScopeGuard exitSrvGuard([&] { this->Exit(); });
 +
@@ -219,7 +214,7 @@ index 810295c..87b6685 100644
  bool* def = 0;
  bool* isDocked = 0;
  bool* pluginActive = 0;
-@@ -17,6 +206,7 @@ bool plugin = false;
+@@ -17,6 +208,7 @@ bool plugin = false;
  char DockedChar[32];
  char SystemChar[32];
  char PluginChar[36];
@@ -227,16 +222,16 @@ index 810295c..87b6685 100644
  uint64_t PID = 0;
  Handle remoteSharedMemory = 1;
  SharedMemory _sharedmemory = {};
-@@ -73,7 +263,7 @@ bool CheckPort () {
-
+@@ -73,7 +265,7 @@ bool CheckPort () {
+ 
  class GuiTest : public tsl::Gui {
  public:
 -	GuiTest(u8 arg1, u8 arg2, bool arg3) { }
 +	GuiTest(ModeSync* p) : modeSync(p) { }
-
+ 
  	// Called when this Gui gets loaded to create the UI
  	// Allocate all elements on the heap. libtesla will make sure to clean them up when not needed anymore
-@@ -112,6 +302,7 @@ public:
+@@ -112,6 +304,7 @@ public:
  				else {
  					renderer->drawString(SystemChar, false, x, y+40, 20, renderer->a(0xFFFF));
  					renderer->drawString(DockedChar, false, x, y+60, 20, renderer->a(0xFFFF));
@@ -244,41 +239,39 @@ index 810295c..87b6685 100644
  				}
  			}
  	}), 100);
-@@ -190,6 +381,8 @@ public:
-
+@@ -190,6 +383,8 @@ public:
+ 				
  				if (_def) sprintf(SystemChar, "Controlled by system: Yes");
  				else sprintf(SystemChar, "Controlled by system: No");
-+
++			
 +				modeSync->SetMode(_def, _isDocked, SysclkChar, sizeof(SysclkChar));
  			}
  			else i++;
  		}
-@@ -200,6 +393,8 @@ public:
+@@ -200,6 +395,8 @@ public:
  	virtual bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState joyStickPosLeft, HidAnalogStickState joyStickPosRight) override {
  		return false;   // Return true here to singal the inputs have been consumed
  	}
 +
 +	ModeSync* modeSync;
  };
-
+ 
  class OverlayTest : public tsl::Overlay {
-@@ -247,10 +442,12 @@ public:
- 			}
-
+@@ -248,9 +445,11 @@ public:
+ 		
  		});
--
-+
+ 	
 +		modeSync = new ModeSync;
  	}  // Called at the start to initialize all services necessary for this Overlay
-
+ 	
  	virtual void exitServices() override {
 +		delete modeSync;
  		shmemClose(&_sharedmemory);
  		fsdevUnmountDevice("sdmc");
  	}  // Callet at the end to clean up all services previously initialized
-@@ -260,8 +457,10 @@ public:
+@@ -260,8 +459,10 @@ public:
  	virtual void onHide() override {}    // Called before overlay wants to change from visible to invisible state
-
+ 
  	virtual std::unique_ptr<tsl::Gui> loadInitialGui() override {
 -		return initially<GuiTest>(1, 2, true);  // Initial Gui to load. It's possible to pass arguments to it's constructor like this
 +		return initially<GuiTest>(modeSync);  // Initial Gui to load. It's possible to pass arguments to it's constructor like this
@@ -286,5 +279,5 @@ index 810295c..87b6685 100644
 +
 +	ModeSync* modeSync = nullptr;
  };
-
+ 
  int main(int argc, char **argv) {
