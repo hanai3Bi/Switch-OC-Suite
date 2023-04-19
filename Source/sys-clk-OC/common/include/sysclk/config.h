@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-const uint32_t CHARGING_CURRENT_MA_LIMIT = 3000;
+const uint32_t CHARGING_CURRENT_MA_LIMIT = 2000;
 
 typedef enum {
     SysClkConfigValue_PollingIntervalMs = 0,
