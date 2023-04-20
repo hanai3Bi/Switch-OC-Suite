@@ -126,7 +126,7 @@ var CustTable: Array<CustEntry> = [
     "mtcConf",
     "DRAM Timing",
     CustPlatform.Mariko,
-    2,
+    4,
     ["<b>0</b>: AUTO_ADJ_MARIKO_SAFE: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)",
      "<b>1</b>: AUTO_ADJ_MARIKO_4266: Auto adjust timings for LPDDR4X 4266 Mbps specs, 8Gb density.",
      "<b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected."],
@@ -439,7 +439,7 @@ class Cust {
 
   parse() {
     let offset = this.beginOffset + this.magicLen;
-    let revLen = 2;
+    let revLen = 4;
     let rev = this.mapper[revLen].get(offset);
     if (rev != CUST_REV) {
       throw new Error(`Unsupported custRev, expected: ${CUST_REV}, got ${rev}`);
@@ -493,7 +493,7 @@ class ReleaseInfo {
   sdOutZipAsset: ReleaseAsset;
   amsUrl: string;
 
-  readonly ocLatestApi = "https://api.github.com/repos/KazushiMe/Switch-OC-Suite/releases/latest";
+  readonly ocLatestApi = "https://api.github.com/repos/hanai3Bi/Switch-OC-Suite/releases/latest";
 
   async load() {
     try {
