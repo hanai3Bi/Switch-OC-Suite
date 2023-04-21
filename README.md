@@ -2,7 +2,7 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-This is continuation of Switch-OC-Suite just for my personal use. This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to do so, USE AT YOUR OWN RISK
+Continuation of Switch-OC-Suite, originally by KazushiMe, for my personal use. This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to use it, USE AT YOUR OWN RISK
 
 Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
@@ -29,7 +29,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
   - CPU / GPU Overclock (Safe: 1963 / 998 MHz)
     - Unsafe
       - Due to the limit of board power draw or power IC
-      - Unlockable frequencies up to 2397 / 1305 MHz or 2295 / 1267 MHz
+      - Unlockable frequencies up to 2295 / 1267 MHz
       - See [README for sys-clk-OC](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md)
 
   - DRAM Overclock (Safe: 1996.8 MHz)
@@ -70,10 +70,10 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
     | Defaults   | Mariko        | Erista       |
     | ---------- | ------------- | ------------ |
-    | CPU OC     | 2397 MHz Max  | 2091 MHz Max |
+    | CPU OC     | 2295 MHz Max  | 2091 MHz Max |
     | CPU Boost  | 1785 MHz      | N/A          |
     | CPU Volt   | 1235 mV Max   | 1235 mV Max  |
-    | GPU OC     | 1305 MHz Max  | N/A          |
+    | GPU OC     | 1267 MHz Max  | N/A          |
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | Disabled      | Disabled     |
     | RAM Timing | Auto-Adjusted | N/A          |

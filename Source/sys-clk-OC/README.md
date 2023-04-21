@@ -7,8 +7,8 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### CPU clocks
 
-* 2397 → approx. OC max for Mariko
-* 2295
+* 2397 → N/A
+* 2295 → OC max for Mariko
 * 2193
 * 2091 → OC max for Erista
 * 1963 → official and safe max for Mariko
@@ -28,7 +28,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### GPU clocks
 
-* 1305 → OC max for Mariko
+* 1305 → N/A
 * 1267 → official max for Mariko
 * 1228
 * 1152
