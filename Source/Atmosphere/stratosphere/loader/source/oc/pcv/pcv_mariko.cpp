@@ -100,7 +100,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
      * you'd better calculate timings yourself rather than relying on following algorithm.
      */
 
-    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY && C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY)
+    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY && C.mtcConf != AUTO_ADJ_4266_MARIKO_ONLY)
     	return;
 
     #define ADJUST_PROP(TARGET, REF)                                                                        \
