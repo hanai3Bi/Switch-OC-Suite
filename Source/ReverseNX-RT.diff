@@ -12,10 +12,10 @@ index 9656834..3b2ebd5 100644
  TARGET		:=	ReverseNX-RT-ovl
  BUILD		:=	build
 diff --git a/Overlay/source/main.cpp b/Overlay/source/main.cpp
-index 810295c..6dc7135 100644
+index 810295c..2b3aa52 100644
 --- a/Overlay/source/main.cpp
 +++ b/Overlay/source/main.cpp
-@@ -1,7 +1,198 @@
+@@ -1,7 +1,202 @@
  #define TESLA_INIT_IMPL // If you have more than one file using the tesla header, only define this in the main one
  #include <tesla.hpp>    // The Tesla Header
 +#include <atomic>
@@ -106,21 +106,11 @@ index 810295c..6dc7135 100644
 +
 +		Result Init() {
 +			Result rc = 0;
-+			refCnt++;
 +
-+			//if (serviceIsActive(&service))
-+			//	return 0;
-+
-+			rc = smGetService(&service, SERVICE_NAME);
-+
-+			if (R_FAILED(rc)) {
-+				this->ipcStatus = IpcStatus_InitFailed;
-+				rc = this->ipcStatus;
-+				this->Exit();
-+				return rc;
-+			}
++			rc = IpcInitialize();
 +
 +			rc = GetStatus();
++			
 +			return rc;
 +		}
 +
@@ -140,6 +130,25 @@ index 810295c..6dc7135 100644
 +			return false;
 +		}
 +
++		Result IpcInitialize(void) {
++			Result rc = 0;
++			refCnt++;
++
++			if (serviceIsActive(&service))
++				return 0;
++
++			rc = smGetService(&service, SERVICE_NAME);
++
++			if (R_FAILED(rc)) {
++				this->ipcStatus = IpcStatus_InitFailed;
++				rc = this->ipcStatus;
++				this->Exit();
++				return rc;
++			}
++
++			return rc;
++		}
++
 +		Result GetApiVersion(u32* outVer) {
 +			return serviceDispatchOut(&service, SysClkIpcCmd_GetApiVersion, *outVer);
 +		}
@@ -157,11 +166,6 @@ index 810295c..6dc7135 100644
 +				this->ipcStatus = IpcStatus_NotRunning;
 +				return this->ipcStatus;
 +			}
-+
-+			/* if (R_FAILED(this->Init())) {
-+				this->ipcStatus = IpcStatus_InitFailed;
-+				return this->ipcStatus;
-+			} */
 +
 +			tsl::hlp::ScopeGuard exitSrvGuard([&] { this->Exit(); });
 +
@@ -201,10 +205,10 @@ index 810295c..6dc7135 100644
 +			);
 +		}
 +
-+		Service service;
-+		std::atomic<std::size_t> refCnt;
++		Service service = {};
++		std::atomic<std::size_t> refCnt = 0;
 +		IpcStatus ipcStatus = IpcStatus_Unknown;
-+		bool shouldSync;
++		bool shouldSync = false;
 +	};
 +
 +	Ipc* ipc = nullptr;
@@ -214,7 +218,7 @@ index 810295c..6dc7135 100644
  bool* def = 0;
  bool* isDocked = 0;
  bool* pluginActive = 0;
-@@ -17,6 +208,7 @@ bool plugin = false;
+@@ -17,6 +212,7 @@ bool plugin = false;
  char DockedChar[32];
  char SystemChar[32];
  char PluginChar[36];
@@ -222,7 +226,7 @@ index 810295c..6dc7135 100644
  uint64_t PID = 0;
  Handle remoteSharedMemory = 1;
  SharedMemory _sharedmemory = {};
-@@ -73,7 +265,7 @@ bool CheckPort () {
+@@ -73,7 +269,7 @@ bool CheckPort () {
  
  class GuiTest : public tsl::Gui {
  public:
@@ -231,7 +235,7 @@ index 810295c..6dc7135 100644
  
  	// Called when this Gui gets loaded to create the UI
  	// Allocate all elements on the heap. libtesla will make sure to clean them up when not needed anymore
-@@ -112,6 +304,7 @@ public:
+@@ -112,6 +308,7 @@ public:
  				else {
  					renderer->drawString(SystemChar, false, x, y+40, 20, renderer->a(0xFFFF));
  					renderer->drawString(DockedChar, false, x, y+60, 20, renderer->a(0xFFFF));
@@ -239,7 +243,7 @@ index 810295c..6dc7135 100644
  				}
  			}
  	}), 100);
-@@ -190,6 +383,8 @@ public:
+@@ -190,6 +387,8 @@ public:
  				
  				if (_def) sprintf(SystemChar, "Controlled by system: Yes");
  				else sprintf(SystemChar, "Controlled by system: No");
@@ -248,7 +252,7 @@ index 810295c..6dc7135 100644
  			}
  			else i++;
  		}
-@@ -200,6 +395,8 @@ public:
+@@ -200,6 +399,8 @@ public:
  	virtual bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState joyStickPosLeft, HidAnalogStickState joyStickPosRight) override {
  		return false;   // Return true here to singal the inputs have been consumed
  	}
@@ -257,7 +261,7 @@ index 810295c..6dc7135 100644
  };
  
  class OverlayTest : public tsl::Overlay {
-@@ -248,9 +445,11 @@ public:
+@@ -248,9 +449,11 @@ public:
  		
  		});
  	
@@ -269,7 +273,7 @@ index 810295c..6dc7135 100644
  		shmemClose(&_sharedmemory);
  		fsdevUnmountDevice("sdmc");
  	}  // Callet at the end to clean up all services previously initialized
-@@ -260,8 +459,10 @@ public:
+@@ -260,8 +463,10 @@ public:
  	virtual void onHide() override {}    // Called before overlay wants to change from visible to invisible state
  
  	virtual std::unique_ptr<tsl::Gui> loadInitialGui() override {
