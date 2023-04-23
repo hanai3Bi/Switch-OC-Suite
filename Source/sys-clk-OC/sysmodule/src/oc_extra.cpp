@@ -143,6 +143,8 @@ namespace GovernorImpl {
 // Utilization is frequency-invariant (normalized):
 //   target_freq = C * max_freq(ref_freq) * util / max
 void BaseGovernor::ApplyNewFreqFromNormUtil(uint32_t normUtil) {
+    uint32_t curr_hz = m_target_hz;
+
     auto FindHzInTable = [](uint32_t* list, uint32_t hz) -> uint32_t {
         uint32_t* p = list;
         for (; *p != 0; p++) {
@@ -163,7 +165,8 @@ void BaseGovernor::ApplyNewFreqFromNormUtil(uint32_t normUtil) {
     else
         new_hz = FindHzInTable(m_hz_list, next_freq);
 
-    ApplyTargetFreq(new_hz);
+    if (new_hz != curr_hz)
+        ApplyTargetFreq(new_hz);
 }
 
 void CpuGovernor::GovernorWorker::Start() {
