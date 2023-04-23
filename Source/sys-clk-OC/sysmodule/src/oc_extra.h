@@ -97,7 +97,7 @@ namespace GovernorImpl {
         void ApplyNewFreqFromNormUtil(uint32_t norm);
 
         void ApplyTargetFreq(uint32_t hz) {
-            if (!hz || m_target_hz == hz)
+            if (!hz)
                 return;
 
             m_target_hz = hz;
