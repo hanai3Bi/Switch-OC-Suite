@@ -140,8 +140,10 @@ namespace GovernorImpl {
 // Schedutil: https://github.com/torvalds/linux/blob/master/kernel/sched/cpufreq_schedutil.c
 // C = 1.25, tipping-point 80.0% (used in Linux schedutil), 1.25 -> 1 + (1 >> 2)
 // C = 1.5,  tipping-point 66.7%, 1.5 -> 1 + (1 >> 1)
-// Utilization is frequency-invariant (normalized):
-//   target_freq = C * max_freq(ref_freq) * util / max
+// Utilization is frequency-invariant :
+//   target_freq = C * max_freq * util / max
+// Approximate the would-be frequency-invariant utilization (normalized) :
+//   target_freq = C * curr_freq * util_raw / max
 void BaseGovernor::ApplyNewFreqFromNormUtil(uint32_t normUtil) {
     uint32_t curr_hz = m_target_hz;
 
@@ -154,7 +156,8 @@ void BaseGovernor::ApplyNewFreqFromNormUtil(uint32_t normUtil) {
         return *(--p);
     };
 
-    uint32_t next_freq = m_ref_hz / UTIL_MAX * normUtil;
+    //uint32_t next_freq = m_ref_hz / UTIL_MAX * normUtil;
+    uint32_t next_freq = max_hz / UTIL_MAX * normUtil;
     next_freq += next_freq >> 1;
 
     uint32_t new_hz;

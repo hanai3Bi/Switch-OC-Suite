@@ -91,7 +91,8 @@ namespace GovernorImpl {
 
     protected:
         uint32_t CalcNormalizedUtil(uint32_t rawUtil) {
-            return ((uint64_t)rawUtil * m_target_hz / m_ref_hz);
+            //return ((uint64_t)rawUtil * m_target_hz / m_ref_hz);
+            return ((uint64_t)rawUtil * m_target_hz / max_hz);
         };
 
         void ApplyNewFreqFromNormUtil(uint32_t norm);
