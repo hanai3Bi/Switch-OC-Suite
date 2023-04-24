@@ -147,6 +147,14 @@ void ClockManager::Tick()
         for (unsigned int module = 0; module < SysClkModule_EnumMax; module++)
         {
             uint32_t hz = GetHz((SysClkModule)module);
+
+            if (module == SysClkModule_CPU) {
+                this->governor->SetMinHz(*Clocks::freqRange[module].first, SysClkModule_CPU);
+                if (Clocks::GetIsMariko() && hz > (uint32_t)1020'000'000) {
+                    this->governor->SetMinHz(1020'000'000, SysClkModule_CPU);
+                }
+            }      
+            
             this->governor->SetMaxHz(hz, (SysClkModule)module);
 
             if (hz && hz != this->context->freqs[module] && !this->governor->IsHandledByGovernor((SysClkModule)module))

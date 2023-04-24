@@ -294,6 +294,12 @@ void Governor::SetMaxHz(uint32_t maxHz, SysClkModule module) {
     }
 }
 
+void Governor::SetMinHz(uint32_t minHz, SysClkModule module) {
+    if (module == SysClkModule_CPU) {
+        m_cpu_gov->min_hz = minHz;
+    }
+}
+
 void Governor::GovernorManager::Start() {
     if (this->running)
         return;

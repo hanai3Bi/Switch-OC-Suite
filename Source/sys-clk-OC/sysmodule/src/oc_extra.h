@@ -337,6 +337,7 @@ public:
     uint32_t GetPerfConf() { return m_perf_conf_id; };
 
     void SetMaxHz(uint32_t maxHz, SysClkModule module);
+    void SetMinHz(uint32_t minHz, SysClkModule module);
 
     void SetAutoCPUBoost(bool enabled) { m_cpu_gov->auto_boost = enabled; };
     void SetCPUBoostHz(uint32_t boostHz) { m_cpu_gov->boost_hz = boostHz; };
