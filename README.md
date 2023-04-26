@@ -43,6 +43,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
   - CPU & GPU frequency governor (Experimental)
     - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
+    - Minimum CPU scaling frequency will be set to 1020Mhz on Mariko devices if set profile value is greater than 1020Mhz.
 
   - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
     - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
