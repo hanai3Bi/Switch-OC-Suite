@@ -121,6 +121,40 @@ class CustEntry {
   }
 }
 
+class AdvEntry extends CustEntry {
+  createElement() {
+    let input = this.getInputElement();
+    if (!input) {
+      let grid = document.createElement("div");
+      grid.classList.add("grid", "cust-element");
+
+      // Label and input
+      input = document.createElement("input");
+      input.min = String(this.zeroable ? 0 : this.min);
+      input.max = String(this.max);
+      input.id = this.id;
+      input.type = "number";
+      input.step = String(this.step);
+      let label = document.createElement("label");
+      label.setAttribute("for", this.id);
+      label.innerHTML = this.name;
+      label.appendChild(input);
+      grid.appendChild(label);
+
+      // Description in blockquote style
+      let desc = document.createElement("blockquote");
+      desc.innerHTML = "<ul>" + this.desc.map(i => `<li>${i}</li>`).join('') + "</ul>";
+      desc.setAttribute("for", this.id);
+      grid.appendChild(desc);
+
+      document.getElementById("config-list-advanced")!.appendChild(grid);
+
+      new ErrorToolTip(this.id).addChangeListener();
+    }
+    input.value = String(this.value);
+  }
+}
+
 var CustTable: Array<CustEntry> = [
   new CustEntry(
     "mtcConf",
@@ -220,6 +254,21 @@ var CustTable: Array<CustEntry> = [
   ),
 ];
 
+var AdvTable: Array<AdvEntry> = [
+  new AdvEntry(
+    "marikoGpuUV",
+    "Enable Mariko GPU Undervolt",
+    CustPlatform.Mariko,
+    4,
+    ["Undervolt Mariko GPU",
+     "Your GPU might not withstand undervolt",
+     "Can hang your console, or crash games"],
+     0,
+     [0,1],
+     1,
+  ),
+];
+
 class ErrorToolTip {
   element: HTMLElement | null;
 
@@ -273,9 +322,19 @@ class CustStorage {
         throw new Error(`Invalid ${i.name}`);
       }
     });
+    AdvTable.forEach(i => {
+      i.updateValueFromElement();
+      if (!i.validate()) {
+        i.getInputElement()?.focus();
+        throw new Error(`Invalid ${i.name}`);
+      }
+    });
 
     this.storage = {};
     let kv = Object.fromEntries(CustTable.map((i) => [i.id, i.value]));
+    Object.keys(kv)
+          .forEach(k => this.storage[k] = kv[k]);
+    kv = Object.fromEntries(AdvTable.map((i) => [i.id, i.value]));
     Object.keys(kv)
           .forEach(k => this.storage[k] = kv[k]);
   }
@@ -283,12 +342,22 @@ class CustStorage {
   setTable() {
     let keys = Object.keys(this.storage);
     keys.forEach(k => CustTable.filter(i => i.id == k)[0].value = this.storage[k]);
+    keys.forEach(k => AdvTable.filter(i => i.id == k)[0].value = this.storage[k]);
 
     // Set default for missing values
     CustTable.filter(i => !keys.includes(i.id))
              .forEach(i => i.value = i.defval);
+    AdvTable.filter(i => !keys.includes(i.id))
+             .forEach(i => i.value = i.defval);
 
     CustTable.forEach(i => {
+      if (!i.validate()) {
+        i.getInputElement()?.focus();
+        throw new Error(`Invalid ${i.name}`);
+      }
+      i.setElementValue();
+    });
+    AdvTable.forEach(i => {
       if (!i.validate()) {
         i.getInputElement()?.focus();
         throw new Error(`Invalid ${i.name}`);
@@ -309,6 +378,14 @@ class CustStorage {
     let dict = JSON.parse(s);
     let keys = CustTable.map(i => i.id);
     let ignoredKeys: string[] = Object.keys(dict).filter(k => !keys.includes(k));
+    if (ignoredKeys.length) {
+      console.log(`Ignored: ${ignoredKeys}`);
+    }
+    Object.keys(dict)
+          .filter(k => keys.includes(k))
+          .forEach(k => this.storage[k] = dict[k]);
+    keys = AdvTable.map(i => i.id);
+    ignoredKeys = Object.keys(dict).filter(k => !keys.includes(k));
     if (ignoredKeys.length) {
       console.log(`Ignored: ${ignoredKeys}`);
     }
@@ -350,7 +427,7 @@ class Cust {
 
   save() {
     this.storage.updateFromTable();
-    CustTable.forEach(i => {
+    var lambda = (i => {
       if (!i.offset) {
         i.getInputElement()?.focus();
         throw new Error(`Failed to get offset for ${i.name}`);
@@ -362,6 +439,8 @@ class Cust {
       }
       mapper.set(i.offset, i.value!);
     });
+    CustTable.forEach(lambda);
+    AdvTable.forEach(lambda);
     this.storage.save();
 
     let a = document.createElement("a");
@@ -395,8 +474,10 @@ class Cust {
     CustTable.forEach(i => i.createElement());
 
     let advanced = document.createElement("p");
-    advanced.innerHTML = "Advanced configuration: Coming soon...";
+    advanced.innerHTML = "Advanced configuration (Very Dangerous!!!)";
     document.getElementById("config-list-advanced")?.appendChild(advanced);
+
+    AdvTable.forEach(i => i.createElement());
 
     let default_btn = document.getElementById("load_default")!;
     default_btn.removeAttribute("disabled");
@@ -448,6 +529,17 @@ class Cust {
     document.getElementById("cust_rev")!.innerHTML = `Cust v${CUST_REV} is loaded.`;
 
     CustTable.forEach(i => {
+      i.offset = offset;
+      let mapper = this.mapper[i.size];
+      if (!mapper) {
+        i.getInputElement()?.focus();
+        throw new Error(`Unknown size at ${i}`);
+      }
+      i.value = mapper.get(offset);
+      offset += i.size;
+      i.validate();
+    });
+    AdvTable.forEach(i => {
       i.offset = offset;
       let mapper = this.mapper[i.size];
       if (!mapper) {
