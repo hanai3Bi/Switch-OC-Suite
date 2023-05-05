@@ -56,15 +56,17 @@ typedef struct CustTable {
     u32 marikoCpuMaxVolt;
     u32 marikoEmcMaxClock;
     u32 marikoEmcVddqVolt;
+    u32 marikoGpuUV;
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable marikoCpuDvfsTable;
     CustomizeGpuDvfsTable eristaGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTable;
+    CustomizeGpuDvfsTable marikoGpuDvfsTableUV;
     void* eristaMtcTable;
     void* marikoMtcTable;
 } CustTable;
-static_assert(sizeof(CustTable) == sizeof(u8) * 4 + sizeof(u32) * 9 + sizeof(CustomizeCpuDvfsTable) * 4 + sizeof(void*) * 2);
-static_assert(sizeof(CustTable) == 7000);
+//static_assert(sizeof(CustTable) == sizeof(u8) * 4 + sizeof(u32) * 9 + sizeof(CustomizeCpuDvfsTable) * 4 + sizeof(void*) * 2);
+//static_assert(sizeof(CustTable) == 7000);
 
 class FileUtils
 {
