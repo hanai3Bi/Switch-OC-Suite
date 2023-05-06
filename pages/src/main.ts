@@ -261,6 +261,7 @@ var AdvTable: Array<AdvEntry> = [
     CustPlatform.Mariko,
     4,
     ["Undervolt Mariko GPU",
+     "Might not work properly",
      "Your GPU might not withstand undervolt",
      "Can hang your console, or crash games"],
      0,
@@ -474,7 +475,7 @@ class Cust {
     CustTable.forEach(i => i.createElement());
 
     let advanced = document.createElement("p");
-    advanced.innerHTML = "Advanced configuration (Very Dangerous!!!)";
+    advanced.innerHTML = "Advanced configuration (DO NOT USE!!!)";
     document.getElementById("config-list-advanced")?.appendChild(advanced);
 
     AdvTable.forEach(i => i.createElement());
