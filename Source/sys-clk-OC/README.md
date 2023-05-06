@@ -114,19 +114,19 @@ Copy the `atmosphere`, and `switch` folders at the root of your sdcard, overwrit
 
 * Config file allows one to set custom clocks per docked state and title id, described below
 
-	`/config/sys-clk/config.ini`
+	`/config/sys-clk-oc/config.ini`
 
 * Log file where the logs are written if enabled
 
-	`/config/sys-clk/log.txt`
+	`/config/sys-clk-oc/log.txt`
 
 * Log flag file enables log writing if file exists
 
-	`/config/sys-clk/log.flag`
+	`/config/sys-clk-oc/log.flag`
 
 * CSV file where the title id, profile, clocks and temperatures are written if enabled
 
-	`/config/sys-clk/context.csv`
+	`/config/sys-clk-oc/context.csv`
 
 * sys-clk overlay (accessible from anywhere by invoking the [Tesla menu](https://gbatemp.net/threads/tesla-the-nintendo-switch-overlay-menu.557362/))
 

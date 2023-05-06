@@ -53,7 +53,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
     - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
 
   - Sync ReverseNX Mode
-    - No need to change clocks manually after toggling modes in ReverseNX (-RT and -Tool)
+    - No need to change clocks manually after toggling modes in ReverseNX (-RT)
 
 - **[System Settings (Optional)](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/system_settings.md)**
 
@@ -78,6 +78,12 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
     | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
     | RAM Volt   | Disabled      | Disabled     |
     | RAM Timing | Auto-Adjusted | N/A          |
+
+    - Advanced Configuration
+      - Mariko GPU Undervolt
+        - If enabled, undervolt dvfs table will be used
+        - Might not work correctly
+        - If instability is experienced, do not use
 
     </details>
 
@@ -109,3 +115,4 @@ When compilation is done, uncompress the kip to make it work with configurator: 
 - Switchbrew [wiki](http://switchbrew.org/wiki/) for Switch in-depth info
 - Switchroot for their [modified L4T kernel and device tree](https://gitlab.com/switchroot/kernel)
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere
+- KazushiMe for [Switch-OC-Suite](https://github.com/KazushiMe/Switch-OC-Suite)
