@@ -1,4 +1,5 @@
 /* Config: Cust */
+const CUST_REV_UV = 5;
 const CUST_REV = 4;
 
 enum CustPlatform {
@@ -404,6 +405,7 @@ class Cust {
   storage: CustStorage = new CustStorage();
   readonly magic = 0x54535543; // "CUST"
   readonly magicLen = 4;
+  rev: number;
 
   mapper : {[size: number]: { get: any, set: any }} = {
     2: {
@@ -441,7 +443,10 @@ class Cust {
       mapper.set(i.offset, i.value!);
     });
     CustTable.forEach(lambda);
-    AdvTable.forEach(lambda);
+    if (this.rev == CUST_REV_UV) {
+      AdvTable.forEach(lambda);
+    }
+    
     this.storage.save();
 
     let a = document.createElement("a");
@@ -522,9 +527,9 @@ class Cust {
   parse() {
     let offset = this.beginOffset + this.magicLen;
     let revLen = 4;
-    let rev = this.mapper[revLen].get(offset);
-    if (rev != CUST_REV) {
-      throw new Error(`Unsupported custRev, expected: ${CUST_REV}, got ${rev}`);
+    this.rev = this.mapper[revLen].get(offset);
+    if (this.rev != CUST_REV && this.rev != CUST_REV_UV) {
+      throw new Error(`Unsupported custRev, expected: ${CUST_REV} or ${CUST_REV_UV}, got ${this.rev}`);
     }
     offset += revLen;
     document.getElementById("cust_rev")!.innerHTML = `Cust v${CUST_REV} is loaded.`;
@@ -540,17 +545,19 @@ class Cust {
       offset += i.size;
       i.validate();
     });
-    AdvTable.forEach(i => {
-      i.offset = offset;
-      let mapper = this.mapper[i.size];
-      if (!mapper) {
-        i.getInputElement()?.focus();
-        throw new Error(`Unknown size at ${i}`);
-      }
-      i.value = mapper.get(offset);
-      offset += i.size;
-      i.validate();
-    });
+    if (this.rev == CUST_REV_UV) {
+      AdvTable.forEach(i => {
+        i.offset = offset;
+        let mapper = this.mapper[i.size];
+        if (!mapper) {
+          i.getInputElement()?.focus();
+          throw new Error(`Unknown size at ${i}`);
+        }
+        i.value = mapper.get(offset);
+        offset += i.size;
+        i.validate();
+      });
+    }
   }
 
   load(buffer: ArrayBuffer) {
