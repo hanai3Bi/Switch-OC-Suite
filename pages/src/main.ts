@@ -1,6 +1,6 @@
 /* Config: Cust */
-const CUST_REV_UV = 5;
 const CUST_REV = 4;
+const CUST_REV_ADV = 5;
 
 enum CustPlatform {
   Undefined = 0,
@@ -430,7 +430,7 @@ class Cust {
 
   save() {
     this.storage.updateFromTable();
-    var lambda = (i => {
+    let lambda = (i => {
       if (!i.offset) {
         i.getInputElement()?.focus();
         throw new Error(`Failed to get offset for ${i.name}`);
@@ -443,7 +443,7 @@ class Cust {
       mapper.set(i.offset, i.value!);
     });
     CustTable.forEach(lambda);
-    if (this.rev == CUST_REV_UV) {
+    if (this.rev == CUST_REV_ADV) {
       AdvTable.forEach(lambda);
     }
     
@@ -528,13 +528,13 @@ class Cust {
     let offset = this.beginOffset + this.magicLen;
     let revLen = 4;
     this.rev = this.mapper[revLen].get(offset);
-    if (this.rev != CUST_REV && this.rev != CUST_REV_UV) {
-      throw new Error(`Unsupported custRev, expected: ${CUST_REV} or ${CUST_REV_UV}, got ${this.rev}`);
+    if (this.rev != CUST_REV && this.rev != CUST_REV_ADV) {
+      throw new Error(`Unsupported custRev, expected: ${CUST_REV} or ${CUST_REV_ADV}, got ${this.rev}`);
     }
     offset += revLen;
-    document.getElementById("cust_rev")!.innerHTML = `Cust v${CUST_REV} is loaded.`;
+    document.getElementById("cust_rev")!.innerHTML = `Cust v${this.rev} is loaded.`;
 
-    CustTable.forEach(i => {
+    let lambda = (i => {
       i.offset = offset;
       let mapper = this.mapper[i.size];
       if (!mapper) {
@@ -545,18 +545,10 @@ class Cust {
       offset += i.size;
       i.validate();
     });
-    if (this.rev == CUST_REV_UV) {
-      AdvTable.forEach(i => {
-        i.offset = offset;
-        let mapper = this.mapper[i.size];
-        if (!mapper) {
-          i.getInputElement()?.focus();
-          throw new Error(`Unknown size at ${i}`);
-        }
-        i.value = mapper.get(offset);
-        offset += i.size;
-        i.validate();
-      });
+
+    CustTable.forEach(lambda);
+    if (this.rev == CUST_REV_ADV) {
+      AdvTable.forEach(lambda);
     }
   }
 
