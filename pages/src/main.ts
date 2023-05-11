@@ -480,7 +480,7 @@ class Cust {
     CustTable.forEach(i => i.createElement());
 
     let advanced = document.createElement("p");
-    advanced.innerHTML = "Advanced configuration (DO NOT USE!!!)";
+    advanced.innerHTML = "Advanced configuration";
     document.getElementById("config-list-advanced")?.appendChild(advanced);
 
     AdvTable.forEach(i => i.createElement());
