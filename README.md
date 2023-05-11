@@ -90,6 +90,14 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 5. Hekate-ipl bootloader Only
    - Add `kip1=atmosphere/kips/loader.kip` to boot entry section in `bootloader/hekate_ipl.ini`.
 
+## Updating via AIO
+
+1. Download and copy custom_packs.json to /config/aio-switch-updater/custom_packs.json
+
+2. Launch AIO Switch Updater and go to Custom Downloads tab
+
+3. Select Switch-OC-Suite and press Contiune 
+
 
 ## Build
 
