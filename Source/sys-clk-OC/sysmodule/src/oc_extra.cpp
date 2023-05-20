@@ -106,26 +106,31 @@ ReverseNXMode ReverseNXSync::RecheckToolMode() {
 
 
 void PsmExt::ChargingHandler(ClockManager* instance) {
-    u32 current;
-    Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
-    if (R_SUCCEEDED(res)) {
-        current -= current % 100;
-        u32 chargingCurrent = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
-        if (current != chargingCurrent)
-            I2c_Bq24193_SetFastChargeCurrentLimit(chargingCurrent);
-    }
-
     PsmChargeInfo* info = new PsmChargeInfo;
     Service* session = psmGetServiceSession();
     serviceDispatchOut(session, Psm_GetBatteryChargeInfoFields, *info);
 
+    u32 current;
+    Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
+    if (R_SUCCEEDED(res)) {
+        // Round to nearest hundred
+        current -= current % 100;
+        u32 currentLimit = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
+        bool batteryHighTemp = info->BatteryTemperature >= 45'000;
+        if (batteryHighTemp)
+            currentLimit = std::min(currentLimit, 500);
+        if (current != currentLimit)
+            I2c_Bq24193_SetFastChargeCurrentLimit(currentLimit);
+    }
+
     if (PsmIsChargerConnected(info)) {
         u32 chargeNow = 0;
+        u32 chargingLimit = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
         if (R_SUCCEEDED(psmGetBatteryChargePercentage(&chargeNow))) {
             bool isCharging = PsmIsCharging(info);
-            u32 chargingLimit = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
             bool forceDisabled = instance->GetBatteryChargingDisabledOverride();
-            if (isCharging && (forceDisabled || chargingLimit <= chargeNow))
+            bool limitSet = chargingLimit != sysclkDefaultConfigValue(SysClkConfigValue_ChargingLimitPercentage);
+            if (isCharging && (forceDisabled || (limitSet && chargingLimit <= chargeNow)))
                 serviceDispatch(session, Psm_DisableBatteryCharging);
             if (!isCharging && chargingLimit > chargeNow)
                 serviceDispatch(session, Psm_EnableBatteryCharging);
