@@ -174,6 +174,10 @@ class MiscGui : public BaseMenuGui
             "CPU Volt:\n"\
             "GPU Volt:\n"\
             "DRAM Volt:";
+
+        const char* chargingCurrentBarDescFmt = "Charging Current: %lu mA (Now: %+d mA)";
+        const char* chargingLimitBarDescFmt   = "Charging Limit: %lu%% (Now: %u%%)";
+
         char infoVals[300] = "";
         char chargingLimitBarDesc[40] = "";
         char chargingCurrentBarDesc[50] = "";

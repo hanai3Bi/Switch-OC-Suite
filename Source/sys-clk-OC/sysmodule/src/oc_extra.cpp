@@ -106,18 +106,22 @@ ReverseNXMode ReverseNXSync::RecheckToolMode() {
 
 
 void PsmExt::ChargingHandler(ClockManager* instance) {
-    u32 current;
-    Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
-    if (R_SUCCEEDED(res)) {
-        current -= current % 100;
-        u32 chargingCurrent = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
-        if (current != chargingCurrent)
-            I2c_Bq24193_SetFastChargeCurrentLimit(chargingCurrent);
-    }
-
     PsmChargeInfo* info = new PsmChargeInfo;
     Service* session = psmGetServiceSession();
     serviceDispatchOut(session, Psm_GetBatteryChargeInfoFields, *info);
+
+    u32 current;
+    Result res = I2c_Bq24193_GetFastChargeCurrentLimit(&current);
+    if (R_SUCCEEDED(res)) {
+        // Round to hundred
+        current -= current % 100;
+        u32 chargingCurrent = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingCurrentLimit);
+        bool batteryHighTemp = info->BatteryTemperature >= 45'000;
+        if (batteryHighTemp)
+            chargingCurrent = std::min(chargingCurrent, 500u);
+        if (current != chargingCurrent)
+            I2c_Bq24193_SetFastChargeCurrentLimit(chargingCurrent);
+    }
 
     if (PsmIsChargerConnected(info)) {
         u32 chargeNow = 0;
@@ -125,7 +129,8 @@ void PsmExt::ChargingHandler(ClockManager* instance) {
             bool isCharging = PsmIsCharging(info);
             u32 chargingLimit = instance->GetConfig()->GetConfigValue(SysClkConfigValue_ChargingLimitPercentage);
             bool forceDisabled = instance->GetBatteryChargingDisabledOverride();
-            if (isCharging && (forceDisabled || chargingLimit <= chargeNow))
+            bool limitSet = chargingLimit != sysclkDefaultConfigValue(SysClkConfigValue_ChargingLimitPercentage);
+            if (isCharging && (forceDisabled || (limitSet && chargingLimit <= chargeNow)))
                 serviceDispatch(session, Psm_DisableBatteryCharging);
             if (!isCharging && chargingLimit > chargeNow)
                 serviceDispatch(session, Psm_EnableBatteryCharging);
@@ -241,6 +246,9 @@ void CpuGovernor::WorkerContext::Loop(void* args) {
             uint64_t diff = std::abs((int64_t)worker->contexts[id].tick - (int64_t)tick);
             if (diff < SYSTICK_HZ / SAMPLE_RATE * 10)
                 continue;
+
+            // Signal maximum core utility
+            worker->contexts[id].util = UTIL_MAX;
 
             // Stuck on system core and auto boost enabled, apply boost
             if (id == SYS_CORE_ID && self->auto_boost) {
