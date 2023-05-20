@@ -242,6 +242,9 @@ void CpuGovernor::WorkerContext::Loop(void* args) {
             if (diff < SYSTICK_HZ / SAMPLE_RATE * 10)
                 continue;
 
+            // Signal maximum core utility
+            worker->contexts[id].util = UTIL_MAX;
+
             // Stuck on system core and auto boost enabled, apply boost
             if (id == SYS_CORE_ID && self->auto_boost) {
                 self->ApplyBoost();
