@@ -305,7 +305,20 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
         }
 
         cpu_dvfs_table = &table.marikoCpuDvfsTable;
-        gpu_dvfs_table = table.marikoGpuUV ? &table.marikoGpuDvfsTableUV : &table.marikoGpuDvfsTable;
+        switch (table.marikoGpuUV) {
+            case 0:
+                gpu_dvfs_table = &table.marikoGpuDvfsTable;
+                break;
+            case 1:
+                gpu_dvfs_table = &table.marikoGpuDvfsTableSLT;
+                break;
+            case 2:
+                gpu_dvfs_table = &table.marikoGpuDvfsTableHiOPT;
+                break;
+            default:
+                gpu_dvfs_table = &table.marikoGpuDvfsTable;
+                break;
+        }
     } else {
         if (table.eristaEmcMaxClock)
             Clocks::maxMemFreq = table.eristaEmcMaxClock * 1000;
