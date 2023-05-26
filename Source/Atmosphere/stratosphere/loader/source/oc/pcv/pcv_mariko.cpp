@@ -82,6 +82,14 @@ Result GpuFreqPllLimit(u32* ptr) {
     R_SUCCEED();
 }
 
+const std::array<u32, 7> tRCD_values = {19, 18, 17, 16, 15, 14, 13};
+const std::array<u32, 7> tRP_values = {19, 18, 17, 16, 15, 14, 13};
+const std::array<u32, 7> tRAS_values = {44, 42, 39, 36, 35, 34, 33};
+
+const std::array<double, 6> tRRD_values = {12, 10, 7.5, 6, 4, 2};
+const std::array<double, 6> tFAW_values = {48, 40, 30, 24, 16, 8};
+const std::array<double, 6> tRTP_values = {10, 7.5, 7.5, 6, 6, 5};
+
 void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download:
      *     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual
@@ -123,7 +131,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
 
     ADJUST_PARAM_ALL_REG(table, emc_r2w, ref); //0x140
     ADJUST_PARAM_ALL_REG(table, emc_w2r, ref); //0x144
-    ADJUST_PARAM_ALL_REG(table, emc_r2p, ref); //0x148
+    //ADJUST_PARAM_ALL_REG(table, emc_r2p, ref); //0x148
     ADJUST_PARAM_ALL_REG(table, emc_w2p, ref); //0x14c
     ADJUST_PARAM_ALL_REG(table, emc_trtm, ref); //0x158
     ADJUST_PARAM_ALL_REG(table, emc_twtm, ref); //0x15c
@@ -139,16 +147,22 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref);
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
 
+    #define MAX(A, B)   std::max(A, B)
+    #define MIN(A, B)   std::min(A, B)
+
     /* Timings that are available in or can be derived from LPDDR4X datasheet or TRM */
     const bool use_4266_spec = C.mtcConf == AUTO_ADJ_4266_MARIKO_ONLY;
+
+    const u32 TIMING_PRIM_PRESET = C.ramTimingPresetOne;
+    const u32 TIMING_SECOND_PRESET = C.ramTimingPresetTwo;
     // tCK_avg (average clock period) in ns
     const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
     // tRPpb (row precharge time per bank) in ns
-    const u32 tRPpb = 18;
+    const u32 tRPpb = !TIMING_PRIM_PRESET ? 18 : tRP_values[TIMING_PRIM_PRESET-1];
     // tRPab (row precharge time all banks) in ns
-    const u32 tRPab = 21;
+    const u32 tRPab = !TIMING_PRIM_PRESET ? 21 : tRPpb + 3;
     // tRAS (row active time) in ns
-    const u32 tRAS = 42;
+    const u32 tRAS = !TIMING_PRIM_PRESET ? 42 : tRAS_values[TIMING_PRIM_PRESET-1];
     // tRC (ACTIVATE-ACTIVATE command period same bank) in ns
     const u32 tRC = tRPpb + tRAS;
     // tRFCab (refresh cycle time all banks) in ns for 8Gb density
@@ -156,9 +170,9 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // tRFCpb (refresh cycle time per bank) in ns for 8Gb density
     const u32 tRFCpb = 140;
     // tRCD (RAS-CAS delay) in ns
-    const u32 tRCD = 18;
+    const u32 tRCD = !TIMING_PRIM_PRESET ? 18 : tRCD_values[TIMING_PRIM_PRESET-1];
     // tRRD (Active bank-A to Active bank-B) in ns
-    const double tRRD = use_4266_spec ? 7.5 : 10.;
+    const double tRRD = !TIMING_SECOND_PRESET ? (use_4266_spec ? 7.5 : 10.) : tRRD_values[TIMING_SECOND_PRESET-1];
     // tREFpb (average refresh interval per bank) in ns for 8Gb density
     const u32 tREFpb = 488;
     // tREFab (average refresh interval all 8 banks) in ns for 8Gb density
@@ -170,23 +184,43 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
     const u32 REFRESH = u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4;
     // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
-    const u32 tPDEX2 = 10;
+    //const u32 tPDEX2 = 10;
     // [Guessed] tACT2PDEN (timing delay from an activate, MRS or EMRS command to power-down entry) in ns
     const u32 tACT2PDEN = 14;
+    // Additional time after t XP hasexpired until the MRR commandmay be issued
+    const double tMRRI = tRCD + 3 * tCK_avg;
+    // Exit power-down to next valid command delay
+    const double tXP = 7.5;
+    // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
+    //const u32 tPDEX2 = 10;
+    // tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
+    const double tPDEX2MRR = tXP + tMRRI;
     // [Guessed] tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
-    const double tPDEX2MRR = 28.75;
+    //const double tPDEX2MRR = 28.75;
     // [Guessed] tCKE2PDEN (timing delay from turning off CKE to power-down entry) in ns
     const double tCKE2PDEN = 8.5;
     // tXSR (SELF REFRESH exit to next valid command delay) in ns
     const double tXSR = tRFCab + 7.5;
     // tCKE (minimum CKE high pulse width) in ns
-    const u32 tCKE = 8;
+    const double tCKE = 7.5;
+    // Delay from valid command to CKE input LOW in ns
+    const double tCMDCKE = MAX(1.75, 3*tCK_avg);
     // tCKELPD (minimum CKE low pulse width in SELF REFRESH) in ns
     const u32 tCKELPD = 15;
     // [Guessed] tPD (minimum CKE low pulse width in power-down mode) in ns
     const double tPD = 7.5;
     // tFAW (Four-bank Activate Window) in ns
-    const u32 tFAW = use_4266_spec ? 30 : 40;
+    const u32 tFAW = !TIMING_SECOND_PRESET ? (use_4266_spec ? 30 : 40) : tFAW_values[TIMING_SECOND_PRESET-1];
+
+    // Internal READ-to-PRE-CHARGE command delay in ns
+    const double tRTP = !TIMING_SECOND_PRESET ? 7.5 : tRTP_values[TIMING_SECOND_PRESET-1];
+
+    const double tDQSCK_max = 3.5;
+    const u32 RL = 32;
+    const u32 BL = 32;
+    const double RTPDEN = RL + tDQSCK_max / tCK_avg + BL/2 + 2;
+    // Valid Clock requirement before CKE Input HIGH in ns
+    const double tCKCKEH = MAX(1.75, 3*tCK_avg);
 
     #define GET_CYCLE_CEIL(PARAM) u32(std::ceil(double(PARAM) / tCK_avg))
 
@@ -195,37 +229,46 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_rfcpb,   GET_CYCLE_CEIL(tRFCpb)); //0x12c
     WRITE_PARAM_ALL_REG(table, emc_ras,     GET_CYCLE_CEIL(tRAS)); //0x138
     WRITE_PARAM_ALL_REG(table, emc_rp,      GET_CYCLE_CEIL(tRPpb)); //0x13c
+    WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
     WRITE_PARAM_ALL_REG(table, emc_rd_rcd,  GET_CYCLE_CEIL(tRCD)); //0x170
     WRITE_PARAM_ALL_REG(table, emc_wr_rcd,  GET_CYCLE_CEIL(tRCD)); //0x174
     WRITE_PARAM_ALL_REG(table, emc_rrd,     GET_CYCLE_CEIL(tRRD)); //0x178
     WRITE_PARAM_ALL_REG(table, emc_refresh, REFRESH); //0x1dc
     WRITE_PARAM_ALL_REG(table, emc_pre_refresh_req_cnt, REFRESH / 4); //0x1e4
-    WRITE_PARAM_ALL_REG(table, emc_pdex2wr, GET_CYCLE_CEIL(tPDEX2)); //0x1e8
-    WRITE_PARAM_ALL_REG(table, emc_pdex2rd, GET_CYCLE_CEIL(tPDEX2)); //0x1ec
+    WRITE_PARAM_ALL_REG(table, emc_pdex2wr, GET_CYCLE_CEIL(tXP)); //0x1e8
+    WRITE_PARAM_ALL_REG(table, emc_pdex2rd, GET_CYCLE_CEIL(tXP)); //0x1ec
+    WRITE_PARAM_ALL_REG(table, emc_pchg2pden, GET_CYCLE_CEIL(tCMDCKE));
     WRITE_PARAM_ALL_REG(table, emc_act2pden,GET_CYCLE_CEIL(tACT2PDEN)); //0x1f4
-    WRITE_PARAM_ALL_REG(table, emc_cke2pden,GET_CYCLE_CEIL(tCKE2PDEN)); //0x200
-    WRITE_PARAM_ALL_REG(table, emc_pdex2mrr,GET_CYCLE_CEIL(tPDEX2MRR)); //0x208
-    WRITE_PARAM_ALL_REG(table, emc_txsr,    GET_CYCLE_CEIL(tXSR)); //0x20c
-    WRITE_PARAM_ALL_REG(table, emc_txsrdll, GET_CYCLE_CEIL(tXSR)); //0x210
+    WRITE_PARAM_ALL_REG(table, emc_ar2pden, GET_CYCLE_CEIL(tCMDCKE));
+    WRITE_PARAM_ALL_REG(table, emc_rw2pden, RTPDEN);
+    WRITE_PARAM_ALL_REG(table, emc_txsr,    MIN(GET_CYCLE_CEIL(tXSR), (u32)0x3fe)); //0x20c
+    //WRITE_PARAM_ALL_REG(table, emc_txsrdll, GET_CYCLE_CEIL(tXSR)); //0x210
     WRITE_PARAM_ALL_REG(table, emc_tcke,    GET_CYCLE_CEIL(tCKE)); //0x214
-    WRITE_PARAM_ALL_REG(table, emc_tckesr,  GET_CYCLE_CEIL(tCKELPD)); //0x218
-    WRITE_PARAM_ALL_REG(table, emc_tpd,     GET_CYCLE_CEIL(tPD)); //0x21c
     WRITE_PARAM_ALL_REG(table, emc_tfaw,    GET_CYCLE_CEIL(tFAW)); //0x220
     WRITE_PARAM_ALL_REG(table, emc_trpab,   GET_CYCLE_CEIL(tRPab)); //0x224
+    WRITE_PARAM_ALL_REG(table, emc_tclkstable, GET_CYCLE_CEIL(tCKCKEH));
+    WRITE_PARAM_ALL_REG(table, emc_pdex2mrr,GET_CYCLE_CEIL(tPDEX2MRR)); //0x208
+    WRITE_PARAM_ALL_REG(table, emc_cke2pden,GET_CYCLE_CEIL(tCKE2PDEN)); //0x200
+    WRITE_PARAM_ALL_REG(table, emc_tckesr,  GET_CYCLE_CEIL(tCKELPD)); //0x218
+    WRITE_PARAM_ALL_REG(table, emc_tpd,     GET_CYCLE_CEIL(tPD)); //0x21c
     WRITE_PARAM_ALL_REG(table, emc_trefbw,  REFRESH + 64); //0x234
 
-    constexpr u32 MC_ARB_DIV = 4; // ?
-    table->burst_mc_regs.mc_emem_arb_timing_rcd     = std::ceil(GET_CYCLE_CEIL(tRCD) / MC_ARB_DIV - 2); //0xf30
-    table->burst_mc_regs.mc_emem_arb_timing_rp      = std::ceil(GET_CYCLE_CEIL(tRPpb) / MC_ARB_DIV - 1); //0xf34
-    table->burst_mc_regs.mc_emem_arb_timing_rc      = std::ceil(std::max(GET_CYCLE_CEIL(tRC), GET_CYCLE_CEIL(tRAS)+GET_CYCLE_CEIL(tRPpb)) / MC_ARB_DIV); //0xf38
-    table->burst_mc_regs.mc_emem_arb_timing_ras     = std::ceil(GET_CYCLE_CEIL(tRAS) / MC_ARB_DIV - 2); //0xf3c
-    table->burst_mc_regs.mc_emem_arb_timing_faw     = std::ceil(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV - 1); //0xf40
-    table->burst_mc_regs.mc_emem_arb_timing_rrd     = std::ceil(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV - 1); //0xf44
+    constexpr u32 MC_ARB_DIV = 4; // Guessed
+    constexpr u32 SFA = 2; // Guessed
+    table->burst_mc_regs.mc_emem_arb_timing_rcd     = std::ceil(GET_CYCLE_CEIL(tRCD) / MC_ARB_DIV) - 2; //0xf30
+    table->burst_mc_regs.mc_emem_arb_timing_rp      = std::ceil(GET_CYCLE_CEIL(tRPpb) / MC_ARB_DIV) - 1 + SFA; //0xf34
+    table->burst_mc_regs.mc_emem_arb_timing_rc      = std::ceil(std::max(GET_CYCLE_CEIL(tRC), GET_CYCLE_CEIL(tRAS)+GET_CYCLE_CEIL(tRPpb)) / MC_ARB_DIV) - 1; //0xf38
+    table->burst_mc_regs.mc_emem_arb_timing_ras     = std::ceil(GET_CYCLE_CEIL(tRAS) / MC_ARB_DIV) - 2; //0xf3c
+    table->burst_mc_regs.mc_emem_arb_timing_faw     = std::ceil(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV) - 1; //0xf40
+    table->burst_mc_regs.mc_emem_arb_timing_rrd     = std::ceil(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV) - 1; //0xf44
     table->burst_mc_regs.mc_emem_arb_timing_rap2pre = std::ceil(table->burst_regs.emc_r2p / MC_ARB_DIV); //0xf48
     table->burst_mc_regs.mc_emem_arb_timing_wap2pre = std::ceil(table->burst_regs.emc_w2p / MC_ARB_DIV); //0xf4c
-    table->burst_mc_regs.mc_emem_arb_timing_r2w     = std::ceil(table->burst_regs.emc_r2w / MC_ARB_DIV + 1); //0xf58
-    table->burst_mc_regs.mc_emem_arb_timing_w2r     = std::ceil(table->burst_regs.emc_w2r / MC_ARB_DIV + 1); //0xf60
-    table->burst_mc_regs.mc_emem_arb_timing_rfcpb   = std::ceil(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV + 1); //0xf64
+    //table->burst_mc_regs.mc_emem_arb_timing_r2r     = std::ceil(table->burst_regs.emc_rext / MC_ARB_DIV) - 1 + SFA;
+    //table->burst_mc_regs.mc_emem_arb_timing_w2w     = std::ceil(table->burst_regs.emc_wext / MC_ARB_DIV) - 1 + SFA;
+    table->burst_mc_regs.mc_emem_arb_timing_r2w     = std::ceil(table->burst_regs.emc_r2w / MC_ARB_DIV) - 1 + SFA; //0xf58
+    table->burst_mc_regs.mc_emem_arb_timing_w2r     = std::ceil(table->burst_regs.emc_w2r / MC_ARB_DIV) - 1 + SFA; //0xf60
+    table->burst_mc_regs.mc_emem_arb_timing_rfcpb   = std::ceil(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV); //0xf64
+    //table->burst_mc_regs.mc_emem_arb_timing_ccdmw   = std::ceil(tCCDMW / MC_ARB_DIV) -1 + SFA;
 }
 
 void MemMtcPllmbDivisor(MarikoMtcTable* table) {

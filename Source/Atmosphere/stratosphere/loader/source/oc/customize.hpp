@@ -52,6 +52,8 @@ typedef struct CustomizeTable {
     u32 marikoEmcMaxClock;
     u32 marikoEmcVddqVolt;
     u32 marikoGpuUV;
+    u32 ramTimingPresetOne;
+    u32 ramTimingPresetTwo;
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable marikoCpuDvfsTable;
     CustomizeGpuDvfsTable eristaGpuDvfsTable;

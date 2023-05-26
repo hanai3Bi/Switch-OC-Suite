@@ -77,7 +77,7 @@ volatile CustomizeTable C = {
  *   - System instabilities
  *   - NAND corruption
  */
-.marikoEmcMaxClock = 1996800,
+.marikoEmcMaxClock = 2131200,
 /* - EMC Vddq (Mariko Only) Voltage in uV
  *   Range: 550'000 to 650'000 uV
  *   Value should be divided evenly by 5'000
@@ -88,6 +88,10 @@ volatile CustomizeTable C = {
 .marikoEmcVddqVolt = 0,
 
 .marikoGpuUV = 0,
+
+.ramTimingPresetOne = 2,
+
+.ramTimingPresetTwo = 2,
 
 /* Advanced Settings:
  * - Erista CPU DVFS Table:

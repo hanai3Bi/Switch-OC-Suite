@@ -102,7 +102,7 @@ void SafetyCheck() {
         { C.eristaCpuMaxVolt,        1100,     1300 },
         { C.eristaEmcMaxClock,   1600'000, 2400'000 },
         { C.marikoCpuMaxVolt,        1100,     1300 },
-        { C.marikoEmcMaxClock,   1600'000, 2800'000 },
+        { C.marikoEmcMaxClock,   1600'000, 2666'000 },
         { C.marikoEmcVddqVolt,    550'000,  650'000 },
         { eristaCpuDvfsMaxFreq,  1785'000, 3000'000 },
         { marikoCpuDvfsMaxFreq,  1785'000, 3000'000 },
