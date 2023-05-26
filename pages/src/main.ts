@@ -236,7 +236,7 @@ var CustTable: Array<CustEntry> = [
     ["Values should be ≥ 1600000, and divided evenly by 3200.",
      "<b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM."],
     1996_800,
-    [1600_000, 2400_000],
+    [1600_000, 2665_600],
     3200,
   ),
   new CustEntry(
