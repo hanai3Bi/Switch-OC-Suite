@@ -26,10 +26,11 @@ namespace ams::ldr::oc {
 #include "mtc_timing_table.hpp"
 
 enum MtcConfig: u32 {
-    AUTO_ADJ_SAFE_MARIKO_ONLY = 0,
-    AUTO_ADJ_4266_MARIKO_ONLY = 1,
-    NO_ADJ_ALL = 2,
-    CUSTOMIZED_ALL = 3,
+    AUTO_ADJ_SAFE_MARIKO = 0,
+    AUTO_ADJ_PERF_MARIKO = 1,
+    CUSTOM_ADJ_MARIKO = 2,
+    NO_ADJ_ALL = 3,
+    CUSTOMIZED_ALL = 4,
 };
 
 using CustomizeCpuDvfsTable = pcv::cvb_entry_t[pcv::DvfsTableEntryLimit];
@@ -52,6 +53,8 @@ typedef struct CustomizeTable {
     u32 marikoEmcMaxClock;
     u32 marikoEmcVddqVolt;
     u32 marikoGpuUV;
+    u32 ramTimingPresetOne;
+    u32 ramTimingPresetTwo;
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable marikoCpuDvfsTable;
     CustomizeGpuDvfsTable eristaGpuDvfsTable;
