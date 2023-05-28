@@ -90,6 +90,17 @@ const std::array<double, 5> tRRD_values = {10, 7.5, 6, 4, 2};
 const std::array<double, 5> tFAW_values = {40, 30, 24, 16, 8};
 const std::array<double, 5> tRTP_values = {7.5, 7.5, 6, 6, 5};
 
+// tCK_avg (average clock period) in ns
+const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
+
+u32 GET_CYCLE_CEIL(double param) {
+    if (C.mtcConf == AUTO_ADJ_PERF_MARIKO) {
+        return (u32)(param / (1.2 * tCK_avg));
+    } else {
+        return (u32)(param / tCK_avg);
+    }
+}
+
 void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     /* Official Tegra X1 TRM, sign up for nvidia developer program (free) to download:
      *     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual
@@ -111,41 +122,74 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO && C.mtcConf != AUTO_ADJ_PERF_MARIKO)
     	return;
 
+    const bool perf = C.mtcConf == AUTO_ADJ_PERF_MARIKO;
+
     #define ADJUST_PROP(TARGET, REF)                                                                        \
-        (u32)(std::ceil( 0.65 * C.mtcConf * (REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt))))
+        (u32)(std::ceil((REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt))))
+
+    #define ADJUST_PROP_PERF(TARGET, REF) \
+        (u32)(std::ceil( 0.65 * (REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt))))
 
     #define ADJUST_PARAM(TARGET, REF)     \
         TARGET = ADJUST_PROP(TARGET, REF);
 
+    #define ADJUST_PARAM_PERF(TARGET, REF)     \
+        TARGET = ADJUST_PROP_PERF(TARGET, REF);
+
     #define ADJUST_PARAM_TABLE(TABLE, PARAM, REF)    ADJUST_PARAM(TABLE->PARAM, REF->PARAM)
+
+    #define ADJUST_PARAM_TABLE_PERF(TABLE, PARAM, REF)    ADJUST_PARAM_PERF(TABLE->PARAM, REF->PARAM)
 
     #define ADJUST_PARAM_ALL_REG(TABLE, PARAM, REF)                 \
         ADJUST_PARAM_TABLE(TABLE, burst_regs.PARAM, REF)            \
         ADJUST_PARAM_TABLE(TABLE, shadow_regs_ca_train.PARAM, REF)  \
         ADJUST_PARAM_TABLE(TABLE, shadow_regs_rdwr_train.PARAM, REF)
 
+    #define ADJUST_PARAM_ALL_REG_PERF(TABLE, PARAM, REF)                 \
+        ADJUST_PARAM_TABLE_PERF(TABLE, burst_regs.PARAM, REF)            \
+        ADJUST_PARAM_TABLE_PERF(TABLE, shadow_regs_ca_train.PARAM, REF)  \
+        ADJUST_PARAM_TABLE_PERF(TABLE, shadow_regs_rdwr_train.PARAM, REF)
+
     #define WRITE_PARAM_ALL_REG(TABLE, PARAM, VALUE)\
         TABLE->burst_regs.PARAM = VALUE;            \
         TABLE->shadow_regs_ca_train.PARAM = VALUE;  \
         TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
 
-    ADJUST_PARAM_ALL_REG(table, emc_r2w, ref); //0x140 0x4f0 0x880
-    ADJUST_PARAM_ALL_REG(table, emc_w2r, ref); //0x144 0x4f4 0x884
-    //ADJUST_PARAM_ALL_REG(table, emc_r2p, ref); //0x148 0x4f8 0x888
-    //ADJUST_PARAM_ALL_REG(table, emc_w2p, ref); //0x14c 0x4fc 0x88c
-    ADJUST_PARAM_ALL_REG(table, emc_trtm, ref); //0x158 0x508 0x898
-    ADJUST_PARAM_ALL_REG(table, emc_twtm, ref); //0x15c 0x50c 0x89c
-    ADJUST_PARAM_ALL_REG(table, emc_tratm, ref); //0x160 0x510 0x8a0
-    ADJUST_PARAM_ALL_REG(table, emc_twatm, ref); //0x164 0x514 0x8a4
+    if (perf) {
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_r2w, ref); //0x140 0x4f0 0x880
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_w2r, ref); //0x144 0x4f4 0x884
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_trtm, ref); //0x158 0x508 0x898
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_twtm, ref); //0x15c 0x50c 0x89c
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_tratm, ref); //0x160 0x510 0x8a0
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_twatm, ref); //0x164 0x514 0x8a4
 
-    ADJUST_PARAM_ALL_REG(table, emc_rw2pden, ref); //0x1fc 0x5ac 0x93c
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_rw2pden, ref); //0x1fc 0x5ac 0x93c
 
-    ADJUST_PARAM_ALL_REG(table, emc_tclkstop, ref); //0x22c 0x5dc 0x96c
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_tclkstop, ref); //0x22c 0x5dc 0x96c
 
-    ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA? //0x380 0x730 0xac0
+        ADJUST_PARAM_ALL_REG_PERF(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA? //0x380 0x730 0xac0
 
-    ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref); //0xfa4
-    ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref); //0xfac
+        ADJUST_PARAM_TABLE_PERF(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref); //0xfa4
+        ADJUST_PARAM_TABLE_PERF(table, la_scale_regs.mc_ptsa_grant_decrement, ref); //0xfac
+    } else {
+        ADJUST_PARAM_ALL_REG(table, emc_r2w, ref); //0x140 0x4f0 0x880
+        ADJUST_PARAM_ALL_REG(table, emc_w2r, ref); //0x144 0x4f4 0x884
+        //ADJUST_PARAM_ALL_REG(table, emc_r2p, ref); //0x148 0x4f8 0x888
+        //ADJUST_PARAM_ALL_REG(table, emc_w2p, ref); //0x14c 0x4fc 0x88c
+        ADJUST_PARAM_ALL_REG(table, emc_trtm, ref); //0x158 0x508 0x898
+        ADJUST_PARAM_ALL_REG(table, emc_twtm, ref); //0x15c 0x50c 0x89c
+        ADJUST_PARAM_ALL_REG(table, emc_tratm, ref); //0x160 0x510 0x8a0
+        ADJUST_PARAM_ALL_REG(table, emc_twatm, ref); //0x164 0x514 0x8a4
+
+        ADJUST_PARAM_ALL_REG(table, emc_rw2pden, ref); //0x1fc 0x5ac 0x93c
+
+        ADJUST_PARAM_ALL_REG(table, emc_tclkstop, ref); //0x22c 0x5dc 0x96c
+
+        ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA? //0x380 0x730 0xac0
+
+        ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref); //0xfa4
+        ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref); //0xfac
+    }
 
     #define MAX(A, B)   std::max(A, B)
     #define MIN(A, B)   std::min(A, B)
@@ -154,8 +198,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     
     const u32 TIMING_PRIM_PRESET = C.ramTimingPresetOne;
     const u32 TIMING_SECOND_PRESET = C.ramTimingPresetTwo;
-    // tCK_avg (average clock period) in ns
-    const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
+    
     // tRPpb (row precharge time per bank) in ns
     const u32 tRPpb = !TIMING_PRIM_PRESET ? 18 : tRP_values[TIMING_PRIM_PRESET-1];
     // tRPab (row precharge time all banks) in ns
@@ -221,7 +264,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // Valid Clock requirement before CKE Input HIGH in ns
     const double tCKCKEH = MAX(1.75, 3*tCK_avg);
 
-    #define GET_CYCLE_CEIL(PARAM) C.mtcConf ? u32(std::ceil(double(PARAM) / 1.2* tCK_avg)) : u32(std::ceil(double(PARAM) / tCK_avg))
+    //#define GET_CYCLE_CEIL(PARAM) u32(std::ceil(double(PARAM) / tCK_avg))
 
     WRITE_PARAM_ALL_REG(table, emc_rc,      GET_CYCLE_CEIL(tRC)); //0x124
     WRITE_PARAM_ALL_REG(table, emc_rfc,     GET_CYCLE_CEIL(tRFCab)); //0x128
