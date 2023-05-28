@@ -108,7 +108,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
      * you'd better calculate timings yourself rather than relying on following algorithm.
      */
 
-    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY && C.mtcConf != AUTO_ADJ_4266_MARIKO_ONLY)
+    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY)
     	return;
 
     #define ADJUST_PROP(TARGET, REF)                                                                        \
@@ -151,8 +151,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     #define MIN(A, B)   std::min(A, B)
 
     /* Timings that are available in or can be derived from LPDDR4X datasheet or TRM */
-    const bool use_4266_spec = C.mtcConf == AUTO_ADJ_4266_MARIKO_ONLY;
-
+    
     const u32 TIMING_PRIM_PRESET = C.ramTimingPresetOne;
     const u32 TIMING_SECOND_PRESET = C.ramTimingPresetTwo;
     // tCK_avg (average clock period) in ns
@@ -172,7 +171,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // tRCD (RAS-CAS delay) in ns
     const u32 tRCD = !TIMING_PRIM_PRESET ? 18 : tRCD_values[TIMING_PRIM_PRESET-1];
     // tRRD (Active bank-A to Active bank-B) in ns
-    const double tRRD = !TIMING_SECOND_PRESET ? (use_4266_spec ? 7.5 : 10.) : tRRD_values[TIMING_SECOND_PRESET-1];
+    const double tRRD = !TIMING_SECOND_PRESET ? 10. : tRRD_values[TIMING_SECOND_PRESET-1];
     // tREFpb (average refresh interval per bank) in ns for 8Gb density
     const u32 tREFpb = 488;
     // tREFab (average refresh interval all 8 banks) in ns for 8Gb density
@@ -210,7 +209,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // [Guessed] tPD (minimum CKE low pulse width in power-down mode) in ns
     const double tPD = 7.5;
     // tFAW (Four-bank Activate Window) in ns
-    const u32 tFAW = !TIMING_SECOND_PRESET ? (use_4266_spec ? 30 : 40) : tFAW_values[TIMING_SECOND_PRESET-1];
+    const u32 tFAW = !TIMING_SECOND_PRESET ? 40 : tFAW_values[TIMING_SECOND_PRESET-1];
 
     // Internal READ-to-PRE-CHARGE command delay in ns
     const double tRTP = !TIMING_SECOND_PRESET ? 7.5 : tRTP_values[TIMING_SECOND_PRESET-1];
@@ -218,8 +217,6 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     const u32 BL = 16;
     // write-to-precharge time for commands to the same bank in cycles
     const double WTP = WL + BL/2 + 1 + std::ceil(18/tCK_avg);
-
-    const double tWDV = 8.75;
 
     // Valid Clock requirement before CKE Input HIGH in ns
     const double tCKCKEH = MAX(1.75, 3*tCK_avg);
@@ -232,11 +229,10 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_ras,     GET_CYCLE_CEIL(tRAS)); //0x138
     WRITE_PARAM_ALL_REG(table, emc_rp,      GET_CYCLE_CEIL(tRPpb)); //0x13c
     WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
-    WRITE_PARAM_ALL_REG(table, emc_w2p,     GET_CYCLE_CEIL(WTP));
+    WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
     WRITE_PARAM_ALL_REG(table, emc_rd_rcd,  GET_CYCLE_CEIL(tRCD)); //0x170
     WRITE_PARAM_ALL_REG(table, emc_wr_rcd,  GET_CYCLE_CEIL(tRCD)); //0x174
     WRITE_PARAM_ALL_REG(table, emc_rrd,     GET_CYCLE_CEIL(tRRD)); //0x178
-    WRITE_PARAM_ALL_REG(table, emc_wdv,     GET_CYCLE_CEIL(tWDV));
     WRITE_PARAM_ALL_REG(table, emc_refresh, REFRESH); //0x1dc
     WRITE_PARAM_ALL_REG(table, emc_pre_refresh_req_cnt, REFRESH / 4); //0x1e4
     WRITE_PARAM_ALL_REG(table, emc_pdex2wr, GET_CYCLE_CEIL(tXP)); //0x1e8

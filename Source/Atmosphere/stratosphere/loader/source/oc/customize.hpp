@@ -27,7 +27,7 @@ namespace ams::ldr::oc {
 
 enum MtcConfig: u32 {
     AUTO_ADJ_SAFE_MARIKO_ONLY = 0,
-    AUTO_ADJ_4266_MARIKO_ONLY = 1,
+    CUSTOM_ADJ_MARIKO_ONLY = 1,
     NO_ADJ_ALL = 2,
     CUSTOMIZED_ALL = 3,
 };
