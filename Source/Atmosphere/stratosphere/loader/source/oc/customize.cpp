@@ -28,7 +28,7 @@ volatile CustomizeTable C = {
  * NO_ADJ_ALL: No timing adjustment for both Erista and Mariko.
  * CUSTOMIZED_ALL: Replace with values in customized table for both Erista and Mariko.
  */
-.mtcConf = AUTO_ADJ_SAFE_MARIKO_ONLY,
+.mtcConf = AUTO_ADJ_SAFE_MARIKO,
 
 /* Common:
  * - Boost Clock in kHz:
@@ -77,7 +77,7 @@ volatile CustomizeTable C = {
  *   - System instabilities
  *   - NAND corruption
  */
-.marikoEmcMaxClock = 2131200,
+.marikoEmcMaxClock = 1996800,
 /* - EMC Vddq (Mariko Only) Voltage in uV
  *   Range: 550'000 to 650'000 uV
  *   Value should be divided evenly by 5'000
@@ -89,9 +89,9 @@ volatile CustomizeTable C = {
 
 .marikoGpuUV = 0,
 
-.ramTimingPresetOne = 2,
+.ramTimingPresetOne = 1,
 
-.ramTimingPresetTwo = 2,
+.ramTimingPresetTwo = 1,
 
 /* Advanced Settings:
  * - Erista CPU DVFS Table:
