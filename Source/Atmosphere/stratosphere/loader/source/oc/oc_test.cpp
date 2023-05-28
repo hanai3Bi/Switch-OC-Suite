@@ -84,7 +84,7 @@ Result Test_PcvDvfsTable() {
 
     constexpr size_t limit = ams::ldr::oc::pcv::DvfsTableEntryLimit;
     cvb_entry_t customized_table[limit] = {};
-    for (int i = 0; i < limit; i++) {
+    for (size_t i = 0; i < limit; i++) {
         assert(GetDvfsTableEntryCount(customized_table) == i);
         auto p = GetDvfsTableLastEntry(customized_table);
         if (p)
@@ -160,8 +160,8 @@ int main(int argc, char** argv) {
             ams::ldr::oc::pcv::erista::Patch(reinterpret_cast<uintptr_t>(erista_buf), file_size);
             if (save_patched) {
                 char* exec_path_erista = reinterpret_cast<char *>(malloc(exec_path_patched_len));
-                strlcpy(exec_path_erista, exec_path, exec_path_patched_len);
-                strlcat(exec_path_erista, erista_ext, exec_path_patched_len);
+                strncpy(exec_path_erista, exec_path, exec_path_patched_len);
+                strncat(exec_path_erista, erista_ext, exec_path_patched_len);
                 saveExec(exec_path_erista, erista_buf, file_size);
                 free(exec_path_erista);
             }
@@ -176,8 +176,8 @@ int main(int argc, char** argv) {
             ams::ldr::oc::pcv::mariko::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
             if (save_patched) {
                 char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));
-                strlcpy(exec_path_mariko, exec_path, exec_path_patched_len);
-                strlcat(exec_path_mariko, mariko_ext, exec_path_patched_len);
+                strncpy(exec_path_mariko, exec_path, exec_path_patched_len);
+                strncat(exec_path_mariko, mariko_ext, exec_path_patched_len);
                 saveExec(exec_path_mariko, mariko_buf, file_size);
                 free(exec_path_mariko);
             }
@@ -193,8 +193,8 @@ int main(int argc, char** argv) {
         ams::ldr::oc::ptm::Patch(reinterpret_cast<uintptr_t>(mariko_buf), file_size);
         if (save_patched) {
             char* exec_path_mariko = reinterpret_cast<char *>(malloc(exec_path_patched_len));
-            strlcpy(exec_path_mariko, exec_path, exec_path_patched_len);
-            strlcat(exec_path_mariko, mariko_ext, exec_path_patched_len);
+            strncpy(exec_path_mariko, exec_path, exec_path_patched_len);
+            strncat(exec_path_mariko, mariko_ext, exec_path_patched_len);
             saveExec(exec_path_mariko, mariko_buf, file_size);
             free(exec_path_mariko);
         }

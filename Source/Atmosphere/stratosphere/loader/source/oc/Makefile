@@ -22,7 +22,7 @@ INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 # Add a prefix to INC_DIRS. So moduleA would become -ImoduleA. GCC understands this -I flag
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CPPFLAGS := $(INC_FLAGS) -Wall -Werror -std=c++20 -Og -g
+CPPFLAGS := $(INC_FLAGS) -Wall -Werror -Wno-unused-result -std=c++20 -Og -g
 
 # The final build step.
 $(TARGET_EXEC): $(OBJS)
