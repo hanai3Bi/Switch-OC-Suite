@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define CUST_REV 5
+#define CUST_REV 6
 
 #include "oc_common.hpp"
 #include "pcv/pcv_common.hpp"
@@ -28,8 +28,8 @@ namespace ams::ldr::oc {
 enum MtcConfig: u32 {
     AUTO_ADJ_SAFE_MARIKO = 0,
     AUTO_ADJ_PERF_MARIKO = 1,
-    CUSTOM_ADJ_MARIKO = 2,
-    NO_ADJ_ALL = 3,
+    NO_ADJ_ALL = 2,
+    CUSTOM_ADJ_MARIKO = 3,
     CUSTOMIZED_ALL = 4,
 };
 
