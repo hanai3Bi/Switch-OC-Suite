@@ -108,11 +108,11 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
      * you'd better calculate timings yourself rather than relying on following algorithm.
      */
 
-    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO_ONLY)
+    if (C.mtcConf != AUTO_ADJ_SAFE_MARIKO && C.mtcConf != AUTO_ADJ_PERF_MARIKO)
     	return;
 
     #define ADJUST_PROP(TARGET, REF)                                                                        \
-        (u32)(std::ceil(REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt)))
+        (u32)(std::ceil( 0.65 * C.mtcConf * (REF + ((C.marikoEmcMaxClock-EmcClkOSAlt)*(TARGET-REF))/(EmcClkOSLimit-EmcClkOSAlt))))
 
     #define ADJUST_PARAM(TARGET, REF)     \
         TARGET = ADJUST_PROP(TARGET, REF);
@@ -221,7 +221,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     // Valid Clock requirement before CKE Input HIGH in ns
     const double tCKCKEH = MAX(1.75, 3*tCK_avg);
 
-    #define GET_CYCLE_CEIL(PARAM) u32(std::ceil(double(PARAM) / tCK_avg))
+    #define GET_CYCLE_CEIL(PARAM) C.mtcConf ? u32(std::ceil(double(PARAM) / 1.2* tCK_avg)) : u32(std::ceil(double(PARAM) / tCK_avg))
 
     WRITE_PARAM_ALL_REG(table, emc_rc,      GET_CYCLE_CEIL(tRC)); //0x124
     WRITE_PARAM_ALL_REG(table, emc_rfc,     GET_CYCLE_CEIL(tRFCab)); //0x128
