@@ -17,6 +17,7 @@
 #pragma once
 
 #ifndef ATMOSPHERE_IS_STRATOSPHERE
+#include <cassert>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
