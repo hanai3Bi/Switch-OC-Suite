@@ -163,9 +163,9 @@ var CustTable: Array<CustEntry> = [
     CustPlatform.Mariko,
     4,
     ["<b>0</b>: AUTO_ADJ_SAFE_MARIKO: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)",
-     "<b>1</b>: AUTO_ADJ_PERF_MARIKO: Auto adjust with tightened timings for best performance (AUTO_ADJ_4266 for old version)",
-     "<b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.", 
-     "<b>3</b>: CUSTOM_ADJ_MARIKO: Basically same as NO_ADJ_ALL, with only core timing adjustments (Use advanced config)"],
+     "<b>1</b>: AUTO_ADJ_PERF_MARIKO_UNSAFE: Auto adjust with tightened timings for best performance (AUTO_ADJ_4266 for old version)",
+     "<b>2</b>: NO_ADJ_ALL_UNSAFE: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.", 
+     "<b>3</b>: CUSTOM_ADJ_MARIKO_UNSAFE: Basically same as NO_ADJ_ALL, with only core timing adjustments (Use advanced config)"],
     0,
     [0, 3],
     1
