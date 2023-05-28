@@ -314,6 +314,52 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     //table->burst_mc_regs.mc_emem_arb_timing_ccdmw   = std::ceil(tCCDMW / MC_ARB_DIV) -1 + SFA;
 }
 
+void MemMtcTableCustomAdjust(MarikoMtcTable* table) {
+    if (C.mtcConf != CUSTOM_ADJ_MARIKO)
+    	return;
+    
+    const u32 TIMING_PRIM_PRESET = C.ramTimingPresetOne;
+    const u32 TIMING_SECOND_PRESET = C.ramTimingPresetTwo;
+    
+    const u32 ip = TIMING_PRIM_PRESET == 0 ? 0 : TIMING_PRIM_PRESET -1;
+    const u32 tRCD = tRCD_values[ip];
+    const u32 tRPpb = tRP_values[ip];
+    const u32 tRPab = tRPpb + 3;
+    const u32 tRAS = tRAS_values[ip];
+    const u32 tRC = tRAS + tRPpb;
+   
+    
+    const u32 is = TIMING_SECOND_PRESET == 0 ? 0 : TIMING_SECOND_PRESET - 1;
+    const double tRRD = tRRD_values[is];
+    const u32 tFAW = tFAW_values[is];
+    const double tRTP = tRTP_values[is];
+  
+    constexpr u32 MC_ARB_DIV = 4;
+
+    if (TIMING_PRIM_PRESET) {
+        WRITE_PARAM_ALL_REG(table, emc_rc,      GET_CYCLE_CEIL(tRC));
+        WRITE_PARAM_ALL_REG(table, emc_ras,     GET_CYCLE_CEIL(tRAS));
+        WRITE_PARAM_ALL_REG(table, emc_rp,      GET_CYCLE_CEIL(tRPpb));
+        WRITE_PARAM_ALL_REG(table, emc_trpab,   GET_CYCLE_CEIL(tRPab));
+        WRITE_PARAM_ALL_REG(table, emc_rd_rcd,  GET_CYCLE_CEIL(tRCD));
+        WRITE_PARAM_ALL_REG(table, emc_wr_rcd,  GET_CYCLE_CEIL(tRCD));
+
+        table->burst_mc_regs.mc_emem_arb_timing_rcd     = std::ceil(GET_CYCLE_CEIL(tRCD) / MC_ARB_DIV - 2);
+        table->burst_mc_regs.mc_emem_arb_timing_rc      = std::ceil(GET_CYCLE_CEIL(tRC) / MC_ARB_DIV - 1);
+        table->burst_mc_regs.mc_emem_arb_timing_rp      = std::ceil(GET_CYCLE_CEIL(tRPpb) / MC_ARB_DIV + 1);
+        table->burst_mc_regs.mc_emem_arb_timing_ras     = std::ceil(GET_CYCLE_CEIL(tRAS) / MC_ARB_DIV - 2);
+        
+    }
+    if (TIMING_SECOND_PRESET) {
+        WRITE_PARAM_ALL_REG(table, emc_tfaw,    GET_CYCLE_CEIL(tFAW));
+        WRITE_PARAM_ALL_REG(table, emc_rrd,     GET_CYCLE_CEIL(tRRD));
+        WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
+
+        table->burst_mc_regs.mc_emem_arb_timing_faw     = std::ceil(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV) - 1;
+        table->burst_mc_regs.mc_emem_arb_timing_rrd     = std::ceil(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV) - 1;
+    }
+}
+
 void MemMtcPllmbDivisor(MarikoMtcTable* table) {
     // Calculate DIVM and DIVN (clock divisors)
     // Common PLL oscillator is 38.4 MHz
@@ -366,6 +412,7 @@ Result MemFreqMtcTable(u32* ptr) {
     std::memcpy(reinterpret_cast<void *>(tmp), reinterpret_cast<void *>(table_max), sizeof(MarikoMtcTable));
     // Adjust max freq mtc timing parameters with reference to 1331200 table
     MemMtcTableAutoAdjust(table_max, table_alt);
+    MemMtcTableCustomAdjust(table_max);
     MemMtcPllmbDivisor(table_max);
     // Overwrite 13312000 table with unmodified 1600000 table copied back
     std::memcpy(reinterpret_cast<void *>(table_alt), reinterpret_cast<void *>(tmp), sizeof(MarikoMtcTable));

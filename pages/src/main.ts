@@ -167,7 +167,7 @@ var CustTable: Array<CustEntry> = [
      "<b>2</b>: CUSTOM_ADJ_MARIKO: Basically same as NO_ADJ_ALL, with only core timing adjustments (Use advanced config)",
      "<b>3</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected."],
     0,
-    [0, 2],
+    [0, 3],
     1
   ),
   new CustEntry(
