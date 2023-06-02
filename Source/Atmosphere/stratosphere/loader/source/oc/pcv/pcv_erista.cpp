@@ -57,9 +57,9 @@ Result MemFreqMtcTable(u32* ptr) {
     PATCH_OFFSET(ptr, C.eristaEmcMaxClock);
 
     // Handle customize table replacement
-    if (C.mtcConf == CUSTOMIZED_ALL) {
-        MemMtcCustomizeTable(table_list[0], const_cast<EristaMtcTable *>(C.eristaMtcTable));
-    }
+    //if (C.mtcConf == CUSTOMIZED_ALL) {
+    //    MemMtcCustomizeTable(table_list[0], const_cast<EristaMtcTable *>(C.eristaMtcTable));
+    //}
 
     R_SUCCEED();
 }

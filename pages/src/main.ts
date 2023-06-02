@@ -1,6 +1,6 @@
 /* Config: Cust */
 const CUST_REV = 4;
-const CUST_REV_ADV = 6;
+const CUST_REV_ADV = 7;
 
 enum CustPlatform {
   Undefined = 0,
@@ -163,8 +163,8 @@ var CustTable: Array<CustEntry> = [
     CustPlatform.Mariko,
     4,
     ["<b>0</b>: AUTO_ADJ_SAFE_MARIKO: Auto adjust timings for LPDDR4 ≤3733 Mbps specs, 8Gb density. (Default)",
-     "<b>1</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected.", 
-     "<b>2</b>: CUSTOM_ADJ_MARIKO: Basically same as NO_ADJ_ALL, with only core timing adjustments (Use advanced config)"],
+     "<b>1</b>: CUSTOM_ADJ_MARIKO: Basically same as NO_ADJ_ALL, with core timing adjustments (Use advanced config)",
+     "<b>2</b>: NO_ADJ_ALL: No timing adjustment for both Erista and Mariko. Might achieve better performance on Mariko but lower maximum frequency is expected."],
     0,
     [0, 2],
     1
