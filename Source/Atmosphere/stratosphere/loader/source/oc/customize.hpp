@@ -27,9 +27,8 @@ namespace ams::ldr::oc {
 
 enum MtcConfig: u32 {
     AUTO_ADJ_SAFE_MARIKO = 0,
-    AUTO_ADJ_PERF_MARIKO = 1,
-    NO_ADJ_ALL = 2,
-    CUSTOM_ADJ_MARIKO = 3,
+    NO_ADJ_ALL = 1,
+    CUSTOM_ADJ_MARIKO = 2,
     CUSTOMIZED_ALL = 4,
 };
 
@@ -52,24 +51,30 @@ typedef struct CustomizeTable {
     u32 marikoCpuMaxVolt;
     u32 marikoEmcMaxClock;
     u32 marikoEmcVddqVolt;
+    //advanced config
     u32 marikoGpuUV;
     u32 ramTimingPresetOne;
     u32 ramTimingPresetTwo;
+    u32 ramTimingPresetThree;
+    u32 ramTimingPresetFour;
+    u32 ramTimingPresetFive;
+    u32 ramTimingPresetSix;
+    u32 ramTimingPresetSeven;
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable marikoCpuDvfsTable;
     CustomizeGpuDvfsTable eristaGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTableSLT;
     CustomizeGpuDvfsTable marikoGpuDvfsTableHiOPT;
-    EristaMtcTable* eristaMtcTable;
-    MarikoMtcTable* marikoMtcTable;
+    //EristaMtcTable* eristaMtcTable;
+    //MarikoMtcTable* marikoMtcTable;
 } CustomizeTable;
 //static_assert(sizeof(CustomizeTable) == sizeof(u8) * 4 + sizeof(u32) * 10 + sizeof(CustomizeCpuDvfsTable) * 5 + sizeof(void*) * 2);
 //static_assert(sizeof(CustomizeTable) == 7000);
 
 extern volatile CustomizeTable C;
 
-extern volatile EristaMtcTable EristaMtcTablePlaceholder;
-extern volatile MarikoMtcTable MarikoMtcTablePlaceholder;
+//extern volatile EristaMtcTable EristaMtcTablePlaceholder;
+//extern volatile MarikoMtcTable MarikoMtcTablePlaceholder;
 
 }

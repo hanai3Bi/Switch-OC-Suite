@@ -18,8 +18,8 @@
 
 namespace ams::ldr::oc {
 
-volatile EristaMtcTable EristaMtcTablePlaceholder = { .rev = ERISTA_MTC_MAGIC, };
-volatile MarikoMtcTable MarikoMtcTablePlaceholder = { .rev = MARIKO_MTC_MAGIC, };
+//volatile EristaMtcTable EristaMtcTablePlaceholder = { .rev = ERISTA_MTC_MAGIC, };
+//volatile MarikoMtcTable MarikoMtcTablePlaceholder = { .rev = MARIKO_MTC_MAGIC, };
 
 volatile CustomizeTable C = {
 /* DRAM Timing:
@@ -89,9 +89,19 @@ volatile CustomizeTable C = {
 
 .marikoGpuUV = 0,
 
-.ramTimingPresetOne = 1,
+.ramTimingPresetOne = 0,
 
-.ramTimingPresetTwo = 1,
+.ramTimingPresetTwo = 0,
+
+.ramTimingPresetThree = 0,
+
+.ramTimingPresetFour = 0,
+
+.ramTimingPresetFive = 0,
+
+.ramTimingPresetSix = 0,
+
+.ramTimingPresetSeven = 0,
 
 /* Advanced Settings:
  * - Erista CPU DVFS Table:
@@ -229,8 +239,8 @@ volatile CustomizeTable C = {
 	{ 1228800, {}, { 1248293, -16383, -859,     0,  55830,  70425 } },
 },
 
-.eristaMtcTable = const_cast<EristaMtcTable *>(&EristaMtcTablePlaceholder),
-.marikoMtcTable = const_cast<MarikoMtcTable *>(&MarikoMtcTablePlaceholder),
+//.eristaMtcTable = const_cast<EristaMtcTable *>(&EristaMtcTablePlaceholder),
+//.marikoMtcTable = const_cast<MarikoMtcTable *>(&MarikoMtcTablePlaceholder),
 
 };
 
