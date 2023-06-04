@@ -82,7 +82,7 @@ namespace ams::ldr::oc {
     // tXSR (SELF REFRESH exit to next valid command delay) in ns
     const double tXSR = tRFCab + 7.5;
     // tCKE (minimum CKE high pulse width) in ns
-    const double tCKE = 7;
+    const double tCKE = 7.5;
     // Delay from valid command to CKE input LOW in ns
     const double tCMDCKE = MAX(1.75, 3*tCK_avg);
     // Minimum self refresh time (entry to exit)
