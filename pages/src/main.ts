@@ -385,7 +385,7 @@ var AdvTable: Array<AdvEntry> = [
      CustPlatform.Mariko,
      4,
      ["WARNING: Unstable timings can corrupt your nand",
-     "Tertiary Timing Preset for both AUTO_ADJ and CUSTOM_ADJ",
+     "Secondary Timing Preset for both AUTO_ADJ and CUSTOM_ADJ",
      "Values are : tWL - tRL",
      "<b>0</b> : Do Not Adjust (2400Mhz: ??) (CUST_ADJ only)",
      "<b>1</b> : 14 - 28", 

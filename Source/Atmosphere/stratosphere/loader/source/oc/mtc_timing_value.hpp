@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../oc_common.hpp"
+#include "oc_common.hpp"
 
 namespace ams::ldr::oc {
 
