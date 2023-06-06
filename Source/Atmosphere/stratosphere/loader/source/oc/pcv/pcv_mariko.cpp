@@ -164,9 +164,11 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_tclkstable, GET_CYCLE_CEIL(tCKCKEH));
     WRITE_PARAM_ALL_REG(table, emc_trefbw,  REFRESH + 64); //0x234
     WRITE_PARAM_ALL_REG(table, emc_pdex2mrr,GET_CYCLE_CEIL(tPDEX2MRR)); //0x208
-    WRITE_PARAM_ALL_REG(table, emc_cke2pden,GET_CYCLE_CEIL(tCKE2PDEN)); //0x200
+    //WRITE_PARAM_ALL_REG(table, emc_cke2pden,GET_CYCLE_CEIL(tCKE2PDEN)); //0x200
     WRITE_PARAM_ALL_REG(table, emc_tckesr,  GET_CYCLE_CEIL(tSR)); //0x218
-    WRITE_PARAM_ALL_REG(table, emc_tpd,     GET_CYCLE_CEIL(tPD)); //0x21c
+    WRITE_PARAM_ALL_REG(table, emc_tpd,     GET_CYCLE_CEIL(tCKE)); //0x21c
+    WRITE_PARAM_ALL_REG(table, emc_pdex2cke, GET_CYCLE_CEIL(tCSCKEH));
+    WRITE_PARAM_ALL_REG(table, emc_cke2pden, GET_CYCLE_CEIL(tCKELCS));
     
     constexpr u32 MC_ARB_DIV = 4; // Guessed
     constexpr u32 SFA = 2; // Guessed

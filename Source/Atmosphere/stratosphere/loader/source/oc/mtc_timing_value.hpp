@@ -77,18 +77,16 @@ namespace ams::ldr::oc {
     const double tPDEX2MRR = tXP + tMRRI;
     // [Guessed] tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
     //const double tPDEX2MRR = 28.75;
-    // [Guessed] tCKE2PDEN (timing delay from turning off CKE to power-down entry) in ns
-    const double tCKE2PDEN = 8.5;
     // tXSR (SELF REFRESH exit to next valid command delay) in ns
     const double tXSR = tRFCab + 7.5;
-    // tCKE (minimum CKE high pulse width) in ns
+    // tCKE (minimum pulse width(HIGH and LOW pulse width)) in ns
     const double tCKE = 7.5;
     // Delay from valid command to CKE input LOW in ns
     const double tCMDCKE = MAX(1.75, 3*tCK_avg);
     // Minimum self refresh time (entry to exit)
     const u32 tSR = 15;
     // [Guessed] tPD (minimum CKE low pulse width in power-down mode) in ns
-    const double tPD = 7.5;
+    //const double tPD = 7.5;
     // tFAW (Four-bank Activate Window) in ns
     const u32 tFAW = !TIMING_PRESET_TWO ? 40 : tFAW_values[TIMING_PRESET_TWO-1];
     // Internal READ-to-PRE-CHARGE command delay in ns
@@ -115,5 +113,12 @@ namespace ams::ldr::oc {
     // Read postamble (tck)
     const double tRPST = 0.4;
     const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
+    // [Guessed] tCKE2PDEN (timing delay from turning off CKE to power-down entry) in ns
+    const double tCKE2PDEN = 8.5;
+    // Valid CS requirement after CKE input LOW
+    const double tCKELCS = 5;
+    // Valid CS requirement before CKE input HIGH
+    const double tCSCKEH = 1.75;
+
 }
 
