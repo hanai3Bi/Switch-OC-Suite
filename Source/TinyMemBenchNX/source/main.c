@@ -749,7 +749,7 @@ static uint32_t rand32()
     return (hi << 16) + lo;
 }
 
-int latency_bench(int size, int count, int use_hugepage)
+int latency_bench(int size, int count, int use_hugepage, int quick)
 {
     double t, t2, t_before, t_after, t_noaccess, t_noaccess2 = 0;
     double xs, xs1, xs2;
@@ -802,7 +802,8 @@ int latency_bench(int size, int count, int use_hugepage)
 
     consoleUpdate(NULL);
 
-    for (nbits = 10; (1 << nbits) <= size; nbits++)
+    int start = quick ? 20 : 10;
+    for (nbits = start; (1 << nbits) <= size; nbits++)
     {
         int testsize = 1 << nbits;
         xs1 = xs2 = ys = ys1 = ys2 = 0;
@@ -900,8 +901,11 @@ int main(int argc, char* argv[])
 {
     consoleInit(NULL);
 
-    printf("TinyMemBenchNX v0.4.10\n\
-(based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n");
+    printf("TinyMemBenchNX v0.4.11\n\
+(based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n\n");
+    printf("Copyright (c) 2021-2022 KazushiMe\n");
+    printf("Copyright (c) 2023 hanai3Bi\n");
+
     printf("\n");
     consoleUpdate(NULL);
 
@@ -913,6 +917,76 @@ int main(int argc, char* argv[])
     void *poolbuf;
     size_t bufsize = SIZE;
     int threads = 0;
+
+loop:
+    printf("!!! Memory bandwidth heavily depends on CPU clock. !!!\n\n");
+    printf("\
+Press A to start quick test.\n\
+Press X to start bandwidth test.\n\
+Press Y to start latency test.\n\
+Press any other key to exit.\n\n");
+    consoleUpdate(NULL);
+
+    while (appletMainLoop())
+    {
+        padUpdate(&pad);
+
+        u64 kDown = padGetButtonsDown(&pad);
+
+        if (kDown & HidNpadButton_A)
+        {
+            threads = 3;
+            goto quick;
+            break;
+        }
+        else if (kDown & HidNpadButton_X)
+        {
+            threads = 3;
+            goto bandwidth;
+            break;
+        }
+        else if (kDown & HidNpadButton_Y)
+        {
+            threads = 3;
+            goto latency;
+            break;
+        }
+        else if (kDown)
+        {
+            consoleExit(NULL);
+            exit(0);
+        }
+    }
+
+quick:
+
+    poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize * threads,
+                                            (void **)&dstbuf, bufsize * threads,
+                                            (void **)&tmpbuf, BLOCKSIZE * threads,
+                                            NULL, 0);
+
+    printClock();
+    printf("== Thread: %d ==\n", threads);
+    consoleUpdate(NULL);
+
+    bandwidth_bench(threads, dstbuf, srcbuf, tmpbuf, bufsize, BLOCKSIZE/2, " ", libc_benchmarks);
+    
+    free(poolbuf);
+
+    int latbench_size = SIZE * 2, latbench_count = LATBENCH_COUNT;
+
+    if (!latency_bench(latbench_size, latbench_count, -1, 1) ||
+        !latency_bench(latbench_size, latbench_count, 1, 1))
+    {
+        latency_bench(latbench_size, latbench_count, 0, 1);
+    }
+
+    printf("\nPress A to continue, any other key to exit.\n\n");
+    waitForKeyA();
+    consoleClear();
+    goto loop;
+
+bandwidth:
 
     printf("==========================================================================\n");
     printf("== Memory bandwidth tests                                               ==\n");
@@ -927,42 +1001,6 @@ int main(int argc, char* argv[])
     printf("== Note 4: If sample standard deviation exceeds 0.1%%, it is shown in    ==\n");
     printf("==         brackets                                                     ==\n");
     printf("==========================================================================\n\n");
-
-    printf("!!! Memory bandwidth heavily depends on CPU clock. !!!\n\n");
-    printf("\
-Press A to start bandwidth test w/ 1 thread.\n\
-Press X to start bandwidth test w/ 2 threads.\n\
-Press Y to start bandwidth test w/ 3 threads.\n\
-Press any other key to exit.\n\n");
-    consoleUpdate(NULL);
-
-    while (appletMainLoop())
-    {
-        padUpdate(&pad);
-
-        u64 kDown = padGetButtonsDown(&pad);
-
-        if (kDown & HidNpadButton_A)
-        {
-            threads = 1;
-            break;
-        }
-        else if (kDown & HidNpadButton_X)
-        {
-            threads = 2;
-            break;
-        }
-        else if (kDown & HidNpadButton_Y)
-        {
-            threads = 3;
-            break;
-        }
-        else if (kDown)
-        {
-            consoleExit(NULL);
-            exit(0);
-        }
-    }
 
     poolbuf = alloc_four_nonaliased_buffers((void **)&srcbuf, bufsize * threads,
                                             (void **)&dstbuf, bufsize * threads,
@@ -988,8 +1026,11 @@ Press any other key to exit.\n\n");
     printf("\nPress A to continue, any other key to exit.\n\n");
     waitForKeyA();
     consoleClear();
+    goto loop;
 
-    int latbench_size = SIZE * 2, latbench_count = LATBENCH_COUNT;
+latency:
+
+    latbench_size = SIZE * 2, latbench_count = LATBENCH_COUNT;
 
     printf("\n");
     printf("==========================================================================\n");
@@ -1015,17 +1056,17 @@ Press any other key to exit.\n\n");
 
     consoleUpdate(NULL);
     printClock();
-    printf("Press A to start latency test, any other key to exit.\n\n");
-    waitForKeyA();
     
-    if (!latency_bench(latbench_size, latbench_count, -1) ||
-        !latency_bench(latbench_size, latbench_count, 1))
+    if (!latency_bench(latbench_size, latbench_count, -1, 0) ||
+        !latency_bench(latbench_size, latbench_count, 1, 0))
     {
-        latency_bench(latbench_size, latbench_count, 0);
+        latency_bench(latbench_size, latbench_count, 0, 0);
     }
 
-    printf("\nPress any key to exit.\n");
+    printf("\nPress A to continue, any other key to exit.\n\n");
     waitForKeyA();
+    consoleClear();
+    goto loop;
 
     // Deinitialize and clean up resources used by the console (important!)
     consoleExit(NULL);
