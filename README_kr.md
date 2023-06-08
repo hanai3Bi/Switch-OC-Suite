@@ -1,6 +1,8 @@
 # Switch OC Suite
 
-[![라이센스: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+[![Downloads](https://img.shields.io/github/downloads/hanai3Bi/Switch-OC-Suite/total)](https://github.com/hanai3Bi/Switch-OC-Suite/releases)
+[![ko-fi](https://img.shields.io/badge/support-ko--fi-ff69b4)](https://ko-fi.com/hanai3Bi)
 
 This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to use it, USE AT YOUR OWN RISK
 
