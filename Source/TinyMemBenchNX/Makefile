@@ -43,8 +43,9 @@ SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 #ROMFS	:=	romfs
+APP_AUTHOR	:=  hanai3Bi
 
-TARGET_VERSION	:= 0.4.9
+TARGET_VERSION	:= 0.4.11
 
 #---------------------------------------------------------------------------------
 # options for code generation
