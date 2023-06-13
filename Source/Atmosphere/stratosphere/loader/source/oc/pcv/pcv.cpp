@@ -98,12 +98,12 @@ void SafetyCheck() {
 
     sValidator validators[] = {
         { C.commonCpuBoostClock, 1020'000, 3000'000, true },
-        { C.commonEmcMemVolt,    1100'000, 1250'000 },
+        { C.commonEmcMemVolt,    1100'000, 1175'000 },
         { C.eristaCpuMaxVolt,        1100,     1300 },
         { C.eristaEmcMaxClock,   1600'000, 2400'000 },
         { C.marikoCpuMaxVolt,        1100,     1300 },
         { C.marikoEmcMaxClock,   1600'000, 2400'000 },
-        { C.marikoEmcVddqVolt,    550'000,  650'000 },
+        { C.marikoEmcVddqVolt,    570'000,  650'000 },
         { eristaCpuDvfsMaxFreq,  1785'000, 3000'000 },
         { marikoCpuDvfsMaxFreq,  1785'000, 3000'000 },
         { eristaGpuDvfsMaxFreq,   768'000, 1536'000 },
