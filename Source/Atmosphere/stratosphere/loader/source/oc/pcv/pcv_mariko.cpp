@@ -121,9 +121,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     TABLE->burst_regs.PARAM = VALUE;            \
     TABLE->shadow_regs_ca_train.PARAM = VALUE;  \
     TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
-
-    ADJUST_PARAM_ALL_REG(table, emc_pmacro_dll_cfg_2, ref); // EMC_DLL_CFG_2_0: level select for VDDA?
-
+ 
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref);
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
 
@@ -138,10 +136,11 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_w2r,     W2R);
     WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
     WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
-    ADJUST_PARAM_ALL_REG(table, emc_trtm, ref);
-    ADJUST_PARAM_ALL_REG(table, emc_twtm, ref);
-    ADJUST_PARAM_ALL_REG(table, emc_tratm, ref);
-    ADJUST_PARAM_ALL_REG(table, emc_twatm, ref);
+    WRITE_PARAM_ALL_REG(table, emc_trtm,    RTM);
+    WRITE_PARAM_ALL_REG(table, emc_twtm,    WTM);
+    WRITE_PARAM_ALL_REG(table, emc_tratm,   RATM);
+    WRITE_PARAM_ALL_REG(table, emc_twatm,   WATM);
+    WRITE_PARAM_ALL_REG(table, emc_tr2ref,  GET_CYCLE_CEIL(tR2REF));
     WRITE_PARAM_ALL_REG(table, emc_rd_rcd,  GET_CYCLE_CEIL(tRCD));
     WRITE_PARAM_ALL_REG(table, emc_wr_rcd,  GET_CYCLE_CEIL(tRCD));
     WRITE_PARAM_ALL_REG(table, emc_rrd,     GET_CYCLE_CEIL(tRRD));
@@ -218,6 +217,8 @@ void MemMtcTableCustomAdjust(MarikoMtcTable* table) {
     if (TIMING_PRESET_THREE) {
         WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
         WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
+        WRITE_PARAM_ALL_REG(table, emc_tratm,   RATM);
+        WRITE_PARAM_ALL_REG(table, emc_twatm,   WATM);
         WRITE_PARAM_ALL_REG(table, emc_rw2pden, WTPDEN);
 
         table->burst_mc_regs.mc_emem_arb_timing_rap2pre = CEIL(GET_CYCLE_CEIL(tRTP) / MC_ARB_DIV);
@@ -249,6 +250,10 @@ void MemMtcTableCustomAdjust(MarikoMtcTable* table) {
         WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
         WRITE_PARAM_ALL_REG(table, emc_rw2pden, WTPDEN);
         WRITE_PARAM_ALL_REG(table, emc_r2w,     R2W);
+        WRITE_PARAM_ALL_REG(table, emc_trtm,    RTM);
+        WRITE_PARAM_ALL_REG(table, emc_twtm,    WTM);
+        WRITE_PARAM_ALL_REG(table, emc_tratm,   RATM);
+        WRITE_PARAM_ALL_REG(table, emc_twatm,   WATM);
 
         table->burst_mc_regs.mc_emem_arb_timing_wap2pre = CEIL(WTP / MC_ARB_DIV);
         table->burst_mc_regs.mc_emem_arb_timing_r2w     = CEIL(R2W / MC_ARB_DIV) - 1 + SFA;

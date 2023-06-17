@@ -74,6 +74,16 @@ namespace ams::ldr::oc {
     const u32 tWR = !TIMING_PRESET_THREE ? 18 : tWR_values[TIMING_PRESET_THREE-1];
     // write-to-precharge time for commands to the same bank in cycles
     const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg);
+    // Read-To-MRW delay
+    const u32 RTM = RL + BL/2 + CEIL(tDQSCK_max/tCK_avg) + FLOOR(tRPST) + CEIL(7.5/tCK_avg);
+    // Write-To-MRW/MRR delay
+    const u32 WTM = WL + 1 + BL/2 + CEIL(7.5/tCK_avg);
+    // Read With AP-To-MRW/MRR delay
+    const u32 RATM = RTM + CEIL(tRTP/tCK_avg) - 8;
+    // Write With AP-To-MRW/MRR delay
+    const u32 WATM = WTM + CEIL(tWR/tCK_avg);
+    // Read to refresh delay
+    const u32 tR2REF = tRTP + tRPpb;
     // tRCD (RAS-CAS delay) in ns
     const u32 tRCD = !TIMING_PRESET_ONE ? 18 : tRCD_values[TIMING_PRESET_ONE-1];
     // tRRD (Active bank-A to Active bank-B) in ns
