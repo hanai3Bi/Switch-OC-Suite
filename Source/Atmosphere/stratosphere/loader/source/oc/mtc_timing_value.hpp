@@ -23,7 +23,7 @@ namespace ams::ldr::oc {
 
     const std::array<u32, 5> tWTR_values = {10, 9, 8, 7, 6};
 
-    const std::array<u32, 4> tREFpb_values = {488, 976, 1952, 3400};
+    const std::array<u32, 5> tREFpb_values = {488, 976, 1952, 3256, 9999};
 
     const std::array<u32, 6> tWL_values = {14, 12, 10, 8, 6, 4};
 
@@ -87,7 +87,8 @@ namespace ams::ldr::oc {
     // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
     // emc_clk_period = dram_clk / 2;
     // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
-    const u32 REFRESH = u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4;
+    const u32 REFRESH = MIN((u32)65472, u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4);
+    const u32 REFBW = MIN((u32)65536, REFRESH+64);
     // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
     // const u32 tPDEX2 = 10;
     // Exit power-down to next valid command delay

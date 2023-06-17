@@ -375,9 +375,10 @@ var AdvTable: Array<AdvEntry> = [
      "<b>1</b> : 488 (Default timing)", 
      "<b>2</b> : 976",
      "<b>3</b> : 1952",
-     "<b>4</b> : 3256",],
+     "<b>4</b> : 3256",
+     "<b>4</b> : MAX",],
      1,
-     [0,4],
+     [0,5],
      1,
   ),
   new AdvEntry(

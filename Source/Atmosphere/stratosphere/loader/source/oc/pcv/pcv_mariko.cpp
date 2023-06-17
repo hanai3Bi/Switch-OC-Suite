@@ -165,7 +165,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_trpab,   GET_CYCLE_CEIL(tRPab));
     WRITE_PARAM_ALL_REG(table, emc_tclkstable, GET_CYCLE_CEIL(tCKCKEH));
     WRITE_PARAM_ALL_REG(table, emc_tclkstop, GET_CYCLE_CEIL(tCKE)+8);
-    WRITE_PARAM_ALL_REG(table, emc_trefbw,  REFRESH + 64);
+    WRITE_PARAM_ALL_REG(table, emc_trefbw,  REFBW);
     
     constexpr u32 MC_ARB_DIV = 4;
     constexpr u32 MC_ARB_SFA = 2;
