@@ -16,12 +16,12 @@ namespace ams::ldr::oc {
     const std::array<double, 5> tRRD_values = {10, 7.5, 6, 4, 2};
     const std::array<double, 5> tFAW_values = {40, 30, 24, 16, 8};
 
-    const std::array<u32, 5> tWR_values = {18, 15, 15, 12, 8};
-    const std::array<double, 5> tRTP_values = {7.5, 7.5, 6, 6, 4};
+    const std::array<u32, 6> tWR_values =     {18, 15, 15, 12, 12, 8};
+    const std::array<double, 6> tRTP_values = {7.5, 7.5, 6, 6, 4, 4};
 
     const std::array<u32, 5> tRFC_values = {140, 120, 100, 80, 60};
 
-    const std::array<u32, 5> tWTR_values = {10, 9, 8, 7, 6};
+    const std::array<u32, 5> tWTR_values = {10, 8, 6, 4, 2};
 
     const std::array<u32, 5> tREFpb_values = {488, 976, 1952, 3256, 9999};
 
