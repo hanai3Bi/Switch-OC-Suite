@@ -23,12 +23,12 @@ namespace ams::ldr::oc {
 
 volatile CustomizeTable C = {
 /* DRAM Timing:
- * AUTO_ADJ_SAFE_MARIKO_ONLY: Auto adjust timings for Mariko LPDDR4X ≤3733 Mbps specs, 8Gb density. (Default)
- * AUTO_ADJ_4266_MARIKO_ONLY: Auto adjust timings for Mariko LPDDR4X 4266 Mbps specs, 8Gb density.
+ * AUTO_ADJ_ALL: Auto adjust timings for Mariko LPDDR4X ≤3733 Mbps specs, 8Gb density. (Default)
+ * CUSTOM_ADJ_ALL: Basically same as NO_ADJ_ALL, with core timing adjustments
  * NO_ADJ_ALL: No timing adjustment for both Erista and Mariko.
  * CUSTOMIZED_ALL: Replace with values in customized table for both Erista and Mariko.
  */
-.mtcConf = AUTO_ADJ_SAFE_MARIKO,
+.mtcConf = AUTO_ADJ_ALL,
 
 /* Common:
  * - Boost Clock in kHz:

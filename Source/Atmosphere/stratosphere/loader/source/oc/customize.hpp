@@ -26,8 +26,8 @@ namespace ams::ldr::oc {
 #include "mtc_timing_table.hpp"
 
 enum MtcConfig: u32 {
-    AUTO_ADJ_SAFE_MARIKO = 0,
-    CUSTOM_ADJ_MARIKO = 1,
+    AUTO_ADJ_ALL = 0,
+    CUSTOM_ADJ_ALL = 1,
     NO_ADJ_ALL = 2,
     
     CUSTOMIZED_ALL = 4,
