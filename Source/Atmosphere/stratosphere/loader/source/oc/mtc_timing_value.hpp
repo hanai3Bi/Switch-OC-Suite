@@ -3,7 +3,6 @@
 #include "oc_common.hpp"
 
 namespace ams::ldr::oc {
-
     #define MAX(A, B)   std::max(A, B)
     #define MIN(A, B)   std::min(A, B)
     #define CEIL(A)     std::ceil(A)
@@ -35,11 +34,6 @@ namespace ams::ldr::oc {
     const u32 TIMING_PRESET_SIX = C.ramTimingPresetSix;
     const u32 TIMING_PRESET_SEVEN = C.ramTimingPresetSeven;
 
-    // tCK_avg (average clock period) in ns
-    const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
-
-    const u32 WL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
-    const u32 RL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
     const u32 BL = 16;
 
     // tRFCpb (refresh cycle time per bank) in ns for 8Gb density
@@ -62,26 +56,12 @@ namespace ams::ldr::oc {
     const double tWPRE = 1.8;
     // Read postamble (tCK)
     const double tRPST = 0.4;
-    // minimum number of cycles from any read command to any write command, irrespective of bank
-    const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
      // Write-to-Read delay
     const u32 tWTR = !TIMING_PRESET_FIVE ? 10 : tWTR_values[TIMING_PRESET_FIVE-1];
-    // Delay Time From WRITE-to-READ
-    const u32 W2R = WL + BL/2 + 1 + CEIL(tWTR/tCK_avg);
     // Internal READ-to-PRE-CHARGE command delay in ns
     const double tRTP = !TIMING_PRESET_THREE ? 7.5 : tRTP_values[TIMING_PRESET_THREE-1];
     // write recovery time
     const u32 tWR = !TIMING_PRESET_THREE ? 18 : tWR_values[TIMING_PRESET_THREE-1];
-    // write-to-precharge time for commands to the same bank in cycles
-    const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg);
-    // Read-To-MRW delay
-    const u32 RTM = RL + BL/2 + CEIL(tDQSCK_max/tCK_avg) + FLOOR(tRPST) + CEIL(7.5/tCK_avg);
-    // Write-To-MRW/MRR delay
-    const u32 WTM = WL + 1 + BL/2 + CEIL(7.5/tCK_avg);
-    // Read With AP-To-MRW/MRR delay
-    const u32 RATM = RTM + CEIL(tRTP/tCK_avg) - 8;
-    // Write With AP-To-MRW/MRR delay
-    const u32 WATM = WTM + CEIL(tWR/tCK_avg);
     // Read to refresh delay
     const u32 tR2REF = tRTP + tRPpb;
     // tRCD (RAS-CAS delay) in ns
@@ -92,35 +72,20 @@ namespace ams::ldr::oc {
     const u32 tREFpb = !TIMING_PRESET_SIX ? 488 : tREFpb_values[TIMING_PRESET_SIX-1];
     // tREFab (average refresh interval all 8 banks) in ns for 8Gb density
     // const u32 tREFab = tREFpb * 8;
-    // #_of_rows per die for 8Gb density
-    const u32 numOfRows = 65536;
-    // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
-    // emc_clk_period = dram_clk / 2;
-    // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
-    const u32 REFRESH = MIN((u32)65472, u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4);
-    const u32 REFBW = MIN((u32)65536, REFRESH+64);
     // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
     // const u32 tPDEX2 = 10;
     // Exit power-down to next valid command delay
     const double tXP = 7.5;
     // Delay from valid command to CKE input LOW in ns
-    const double tCMDCKE = MAX(1.75, 3*tCK_avg);
+    const double tCMDCKE = 1.75;
     // Valid clock and CS requirement after CKE input LOW after MRW command
     const u32 tMRWCKEL = 14;
     const double tDQSS_max = 1.25;
     const double tDQS2DQ_max = 0.8;
-    // Write With Auto Precharge to to Power-Down Entry
-    const u32 WTPDEN = WTP + 1 + CEIL(tDQSS_max/tCK_avg) + CEIL(tDQS2DQ_max/tCK_avg) + 6;
     // Valid CS requirement after CKE input LOW
     const double tCKELCS = 5;
     // Valid CS requirement before CKE input HIGH
     const double tCSCKEH = 1.75;
-    // Additional time after t XP hasexpired until the MRR commandmay be issued
-    const double tMRRI = tRCD + 3 * tCK_avg;
-    // tACT2PDEN (timing delay from an activate, MRS or EMRS command to power-down entry) in ns
-    // tMRWCKEL : Valid clock and CS requirement after CKE input LOW after MRW command
-     // tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
-    const double tPDEX2MRR = tXP + tMRRI;
     // tXSR (SELF REFRESH exit to next valid command delay) in ns
     const double tXSR = tRFCab + 7.5;
     // tCKE (minimum pulse width(HIGH and LOW pulse width)) in ns
@@ -130,8 +95,73 @@ namespace ams::ldr::oc {
     // tFAW (Four-bank Activate Window) in ns
     const u32 tFAW = !TIMING_PRESET_TWO ? 40 : tFAW_values[TIMING_PRESET_TWO-1];
     // Valid Clock requirement before CKE Input HIGH in ns
-    const double tCKCKEH = MAX(1.75, 3*tCK_avg);
-    const double tDQSQ = 0.18;
+    const double tCKCKEH = 1.75;
+    //const double tDQSQ = 0.18;
     // p78 The first valid data is available RL × t CK + t DQSCK + t DQSQ
-    const u32 QUSE = RL + CEIL(tDQSCK_min/tCK_avg + tDQSQ);
+    //const u32 QUSE = RL + CEIL(tDQSCK_min/tCK_avg + tDQSQ);
+
+    namespace pcv::erista {
+        // tCK_avg (average clock period) in ns
+        const double tCK_avg = 1000'000. / C.eristaEmcMaxClock;
+        const u32 WL = !TIMING_PRESET_SEVEN ? (C.eristaEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
+        const u32 RL = !TIMING_PRESET_SEVEN ? (C.eristaEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
+
+        // minimum number of cycles from any read command to any write command, irrespective of bank
+        const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
+        // Delay Time From WRITE-to-READ
+        const u32 W2R = WL + BL/2 + 1 + CEIL(tWTR/tCK_avg);
+        // write-to-precharge time for commands to the same bank in cycles
+        const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg);
+        // #_of_rows per die for 8Gb density
+        const u32 numOfRows = 65536;
+        // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
+        // emc_clk_period = dram_clk / 2;
+        // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
+        const u32 REFRESH = MIN((u32)65472, u32(std::ceil((double(tREFpb) * C.eristaEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4);
+        const u32 REFBW = MIN((u32)65536, REFRESH+64);
+        // Write With Auto Precharge to to Power-Down Entry
+        const u32 WTPDEN = WTP + 1 + CEIL(tDQSS_max/tCK_avg) + CEIL(tDQS2DQ_max/tCK_avg) + 6;
+        // Additional time after t XP hasexpired until the MRR commandmay be issued
+        const double tMRRI = tRCD + 3 * tCK_avg;
+        // tACT2PDEN (timing delay from an activate, MRS or EMRS command to power-down entry) in ns
+        // tMRWCKEL : Valid clock and CS requirement after CKE input LOW after MRW command
+        // tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
+        const double tPDEX2MRR = tXP + tMRRI;
+    }
+    namespace pcv::mariko {
+        // tCK_avg (average clock period) in ns
+        const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
+        const u32 WL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
+        const u32 RL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
+
+        // minimum number of cycles from any read command to any write command, irrespective of bank
+        const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
+        // Delay Time From WRITE-to-READ
+        const u32 W2R = WL + BL/2 + 1 + CEIL(tWTR/tCK_avg);
+        // write-to-precharge time for commands to the same bank in cycles
+        const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg);
+        // Read-To-MRW delay
+        const u32 RTM = RL + BL/2 + CEIL(tDQSCK_max/tCK_avg) + FLOOR(tRPST) + CEIL(7.5/tCK_avg);
+        // Write-To-MRW/MRR delay
+        const u32 WTM = WL + 1 + BL/2 + CEIL(7.5/tCK_avg);
+        // Read With AP-To-MRW/MRR delay
+        const u32 RATM = RTM + CEIL(tRTP/tCK_avg) - 8;
+        // Write With AP-To-MRW/MRR delay
+        const u32 WATM = WTM + CEIL(tWR/tCK_avg);
+        // #_of_rows per die for 8Gb density
+        const u32 numOfRows = 65536;
+        // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
+        // emc_clk_period = dram_clk / 2;
+        // 1600 MHz: 5894, but N' set to 6176 (~4.8% margin)
+        const u32 REFRESH = MIN((u32)65472, u32(std::ceil((double(tREFpb) * C.marikoEmcMaxClock / numOfRows * 1.048 / 2 - 64))) / 4 * 4);
+        const u32 REFBW = MIN((u32)65536, REFRESH+64);
+        // Write With Auto Precharge to to Power-Down Entry
+        const u32 WTPDEN = WTP + 1 + CEIL(tDQSS_max/tCK_avg) + CEIL(tDQS2DQ_max/tCK_avg) + 6;
+        // Additional time after t XP hasexpired until the MRR commandmay be issued
+        const double tMRRI = tRCD + 3 * tCK_avg;
+        // tACT2PDEN (timing delay from an activate, MRS or EMRS command to power-down entry) in ns
+        // tMRWCKEL : Valid clock and CS requirement after CKE input LOW after MRW command
+        // tPDEX2MRR (timing delay from exiting powerdown mode to MRR command) in ns
+        const double tPDEX2MRR = tXP + tMRRI;
+    }
 }
