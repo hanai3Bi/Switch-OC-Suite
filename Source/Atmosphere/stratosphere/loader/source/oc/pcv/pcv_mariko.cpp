@@ -123,6 +123,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
  
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_mll_mpcorer_ptsa_rate, ref);
+    ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ftop_ptsa_rate, ref);
     ADJUST_PARAM_TABLE(table, la_scale_regs.mc_ptsa_grant_decrement, ref);
 
     #define GET_CYCLE_CEIL(PARAM) u32(CEIL(double(PARAM) / tCK_avg))
