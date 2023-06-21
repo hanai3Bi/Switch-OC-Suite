@@ -130,8 +130,6 @@ void MemMtcTableCustomAdjust(EristaMtcTable* table) {
     if (TIMING_PRESET_THREE) {
         WRITE_PARAM_ALL_REG(table, emc_r2p,     GET_CYCLE_CEIL(tRTP));
         WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
-        WRITE_PARAM_ALL_REG(table, emc_tratm,   RATM);
-        WRITE_PARAM_ALL_REG(table, emc_twatm,   WATM);
         WRITE_PARAM_ALL_REG(table, emc_rw2pden, WTPDEN);
 
         table->burst_mc_regs.mc_emem_arb_timing_rap2pre = CEIL(GET_CYCLE_CEIL(tRTP) / MC_ARB_DIV);
@@ -163,10 +161,6 @@ void MemMtcTableCustomAdjust(EristaMtcTable* table) {
         WRITE_PARAM_ALL_REG(table, emc_w2p,     WTP);
         WRITE_PARAM_ALL_REG(table, emc_rw2pden, WTPDEN);
         WRITE_PARAM_ALL_REG(table, emc_r2w,     R2W);
-        WRITE_PARAM_ALL_REG(table, emc_trtm,    RTM);
-        WRITE_PARAM_ALL_REG(table, emc_twtm,    WTM);
-        WRITE_PARAM_ALL_REG(table, emc_tratm,   RATM);
-        WRITE_PARAM_ALL_REG(table, emc_twatm,   WATM);
 
         table->burst_mc_regs.mc_emem_arb_timing_wap2pre = CEIL(WTP / MC_ARB_DIV);
         table->burst_mc_regs.mc_emem_arb_timing_r2w     = CEIL(R2W / MC_ARB_DIV) - 1 + SFA;

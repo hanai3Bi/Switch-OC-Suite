@@ -13,15 +13,15 @@ namespace ams::ldr::oc {
     const std::array<u32, 6> tRP_values = {18, 17, 16, 15, 14, 13};
     const std::array<u32, 6> tRAS_values = {42, 39, 36, 34, 32, 30};
 
-    const std::array<double, 5> tRRD_values = {10, 7.5, 6, 4, 2};
-    const std::array<double, 5> tFAW_values = {40, 30, 24, 16, 8};
+    const std::array<double, 5> tRRD_values = {10, 7.5, 6, 4, 3};
+    const std::array<double, 5> tFAW_values = {40, 30, 24, 16, 12};
 
     const std::array<u32, 6> tWR_values =     {18, 15, 15, 12, 12, 8};
     const std::array<double, 6> tRTP_values = {7.5, 7.5, 6, 6, 4, 4};
 
     const std::array<u32, 5> tRFC_values = {140, 120, 100, 80, 60};
 
-    const std::array<u32, 5> tWTR_values = {10, 8, 6, 4, 2};
+    const std::array<u32, 6> tWTR_values = {10, 8, 6, 4, 2, 1};
 
     const std::array<u32, 5> tREFpb_values = {488, 976, 1952, 3256, 9999};
 
@@ -38,8 +38,8 @@ namespace ams::ldr::oc {
     // tCK_avg (average clock period) in ns
     const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
 
-    const u32 WL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 10 : 12) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
-    const u32 RL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 20 : 24) : WL*2; //?
+    const u32 WL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
+    const u32 RL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
     const u32 BL = 16;
 
     // tRFCpb (refresh cycle time per bank) in ns for 8Gb density
@@ -131,4 +131,7 @@ namespace ams::ldr::oc {
     const u32 tFAW = !TIMING_PRESET_TWO ? 40 : tFAW_values[TIMING_PRESET_TWO-1];
     // Valid Clock requirement before CKE Input HIGH in ns
     const double tCKCKEH = MAX(1.75, 3*tCK_avg);
+    const double tDQSQ = 0.18;
+    // p78 The first valid data is available RL × t CK + t DQSCK + t DQSQ
+    const u32 QUSE = RL + CEIL(tDQSCK_min/tCK_avg + tDQSQ);
 }
