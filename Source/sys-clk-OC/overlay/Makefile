@@ -26,13 +26,13 @@ DATA		:=	data
 INCLUDES	:=	../common/include
 EXEFS_SRC	:=	exefs_src
 
-APP_TITLE	:=	sys-clk-OC
+APP_TITLE	:=	Switch-OC-Suite
 NO_ICON		:=	1
 
 #---------------------------------------------------------------------------------
 # version control constants
 #---------------------------------------------------------------------------------
-TARGET_VERSION	:= $$(date +%Y/%m/%d)
+TARGET_VERSION	:= 1.6.0
 APP_VERSION		:= $(TARGET_VERSION)
 
 #---------------------------------------------------------------------------------
