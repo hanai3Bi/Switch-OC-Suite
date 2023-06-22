@@ -103,15 +103,15 @@ namespace ams::ldr::oc {
     namespace pcv::erista {
         // tCK_avg (average clock period) in ns
         const double tCK_avg = 1000'000. / C.eristaEmcMaxClock;
-        const u32 WL = !TIMING_PRESET_SEVEN ? (C.eristaEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
-        const u32 RL = !TIMING_PRESET_SEVEN ? (C.eristaEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
+        const u32 WL = 16 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 36 - 4*TIMING_PRESET_SEVEN; //?
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
-        const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
+        const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST)) + 6;
         // Delay Time From WRITE-to-READ
-        const u32 W2R = WL + BL/2 + 1 + CEIL(tWTR/tCK_avg);
+        const u32 W2R = WL + BL/2 + 1 + CEIL(tWTR/tCK_avg) - 6;
         // write-to-precharge time for commands to the same bank in cycles
-        const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg);
+        const u32 WTP = WL + BL/2 + 1 + CEIL(tWR/tCK_avg) - 8;
         // #_of_rows per die for 8Gb density
         const u32 numOfRows = 65536;
         // {REFRESH, REFRESH_LO} = max[(tREF/#_of_rows) / (emc_clk_period) - 64, (tREF/#_of_rows) / (emc_clk_period) * 97%]
@@ -131,8 +131,8 @@ namespace ams::ldr::oc {
     namespace pcv::mariko {
         // tCK_avg (average clock period) in ns
         const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
-        const u32 WL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 12 : 14) : tWL_values[TIMING_PRESET_SEVEN-1]; //?
-        const u32 RL = !TIMING_PRESET_SEVEN ? (C.marikoEmcMaxClock <= 2131200 ? 24 : 28) : WL*2; //?
+        const u32 WL = 14 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 28 - 4*TIMING_PRESET_SEVEN; //?
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
         const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
