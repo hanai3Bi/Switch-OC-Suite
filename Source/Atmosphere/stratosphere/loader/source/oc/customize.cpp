@@ -44,7 +44,7 @@ volatile CustomizeTable C = {
  *   Value should be divided evenly by 12'500.
  *   Not enabled by default.
  */
-.commonEmcMemVolt  = 1175000,
+.commonEmcMemVolt  = 0,
 
 /* Erista CPU:
  * - Max Voltage in mV
@@ -60,7 +60,7 @@ volatile CustomizeTable C = {
  *   - System instabilities
  *   - NAND corruption
  */
-.eristaEmcMaxClock = 2131200,
+.eristaEmcMaxClock = 1862400,
 
 /* Mariko CPU:
  * - Max Voltage in mV:
