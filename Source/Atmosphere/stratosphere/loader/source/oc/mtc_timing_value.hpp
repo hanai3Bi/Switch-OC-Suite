@@ -103,8 +103,8 @@ namespace ams::ldr::oc {
     namespace pcv::erista {
         // tCK_avg (average clock period) in ns
         const double tCK_avg = 1000'000. / C.eristaEmcMaxClock;
-        const u32 WL = 16 - 2*TIMING_PRESET_SEVEN; //?
-        const u32 RL = 36 - 4*TIMING_PRESET_SEVEN; //?
+        const u32 WL = 18 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 40 - 4*TIMING_PRESET_SEVEN; //?
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
         const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST)) + 6;
