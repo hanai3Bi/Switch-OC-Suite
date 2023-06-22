@@ -304,7 +304,7 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
             LogLine("Set MEM Vdd2 volt to %u mV: %s", mvolt, R_FAILED(res) ? "Failed" : "OK");
         }
 
-        cpu_dvfs_table = &table.marikoCpuDvfsTable;
+        cpu_dvfs_table = table.marikoCpuUV ? &table.marikoCpuDvfsTable : &table.marikoCpuDvfsTableSLT;
         switch (table.marikoGpuUV) {
             case 0:
                 gpu_dvfs_table = &table.marikoGpuDvfsTable;

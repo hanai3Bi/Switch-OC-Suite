@@ -56,6 +56,7 @@ typedef struct CustTable {
     u32 marikoCpuMaxVolt;
     u32 marikoEmcMaxClock;
     u32 marikoEmcVddqVolt;
+    u32 marikoCpuUV;
     u32 marikoGpuUV;
     u32 ramTimingPresetOne;
     u32 ramTimingPresetTwo;
@@ -66,6 +67,7 @@ typedef struct CustTable {
     u32 ramTimingPresetSeven;
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable marikoCpuDvfsTable;
+    CustomizeCpuDvfsTable marikoCpuDvfsTableSLT;
     CustomizeGpuDvfsTable eristaGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTableSLT;
