@@ -178,7 +178,7 @@ Result CpuFreqCvbTable(u32* ptr) {
     cvb_entry_t* customize_table = const_cast<cvb_entry_t *>(isMariko ? C.marikoCpuDvfsTable : C.eristaCpuDvfsTable);
 
     u32 cpu_max_volt = isMariko ? C.marikoCpuMaxVolt : C.eristaCpuMaxVolt;
-    u32 cpu_freq_threshold = isMariko ? 1020'000 : 1785'000;
+    u32 cpu_freq_threshold = isMariko ? (C.marikoCpuUV ? 2193'000 : 2091'000) : 1887'000;
 
     size_t default_entry_count = GetDvfsTableEntryCount(default_table);
     size_t default_table_size = default_entry_count * sizeof(cvb_entry_t);
