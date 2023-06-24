@@ -175,7 +175,7 @@ namespace erista {
 template<bool isMariko>
 Result CpuFreqCvbTable(u32* ptr) {
     cvb_entry_t* default_table = isMariko ? (cvb_entry_t *)(&mariko::CpuCvbTableDefault) : (cvb_entry_t *)(&erista::CpuCvbTableDefault);
-    cvb_entry_t* customize_table = const_cast<cvb_entry_t *>(isMariko ? C.marikoCpuDvfsTable : C.eristaCpuDvfsTable);
+    cvb_entry_t* customize_table = const_cast<cvb_entry_t *>(isMariko ? (C.marikoCpuUV ? C.marikoCpuDvfsTableSLT : C.marikoCpuDvfsTable) : C.eristaCpuDvfsTable);
 
     u32 cpu_max_volt = isMariko ? C.marikoCpuMaxVolt : C.eristaCpuMaxVolt;
     u32 cpu_freq_threshold = isMariko ? (C.marikoCpuUV ? 2193'000 : 2091'000) : 1887'000;

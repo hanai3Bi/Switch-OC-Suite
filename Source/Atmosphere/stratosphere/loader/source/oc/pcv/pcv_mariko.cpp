@@ -27,8 +27,12 @@ Result CpuFreqVdd(u32* ptr) {
     R_UNLESS(entry->step_mv == 5000,    ldr::ResultInvalidCpuFreqVddEntry());
     R_UNLESS(entry->max_mv == 1525'000, ldr::ResultInvalidCpuFreqVddEntry());
 
-    PATCH_OFFSET(ptr, GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
-
+    if (C.marikoCpuUV) {
+        PATCH_OFFSET(ptr, GetDvfsTableLastEntry(C.marikoCpuDvfsTableSLT)->freq);
+    } else {
+        PATCH_OFFSET(ptr, GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
+    }
+    
     R_SUCCEED();
 }
 
@@ -58,7 +62,19 @@ Result GpuFreqMaxAsm(u32* ptr32) {
     if (rd != asm_get_rd(ins2))
         R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
 
-    u32 max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+    u32 max_clock;
+    switch(C.marikoGpuUV) {
+        case 0: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+            break;
+        case 1: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTableSLT)->freq;
+            break;
+        case 2: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTableHiOPT)->freq;
+            break;
+        default: max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+    }
     u32 asm_patch[2] = {
         asm_set_rd(asm_set_imm16(asm_pattern[0], max_clock), rd),
         asm_set_rd(asm_set_imm16(asm_pattern[1], max_clock >> 16), rd)

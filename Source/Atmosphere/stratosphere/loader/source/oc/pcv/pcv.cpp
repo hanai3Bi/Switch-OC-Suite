@@ -92,10 +92,23 @@ void SafetyCheck() {
     };
 
     u32 eristaCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.eristaCpuDvfsTable)->freq);
-    u32 marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
+    u32 marikoCpuDvfsMaxFreq = static_cast<u32>(C.marikoCpuUV ? GetDvfsTableLastEntry(C.marikoCpuDvfsTableSLT)->freq : GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
     u32 eristaGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.eristaGpuDvfsTable)->freq);
-    u32 marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq);
-
+    u32 marikoGpuDvfsMaxFreq;
+    switch (C.marikoGpuUV) {
+        case 0: 
+            marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq);
+            break;
+        case 1: 
+            marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTableSLT)->freq);
+            break;
+        case 2: 
+            marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTableHiOPT)->freq);
+            break;
+        default: 
+            marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq);
+    }
+    
     sValidator validators[] = {
         { C.commonCpuBoostClock, 1020'000, 3000'000, true },
         { C.commonEmcMemVolt,    1100'000, 1250'000 },
