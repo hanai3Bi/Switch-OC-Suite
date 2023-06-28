@@ -41,6 +41,7 @@ void MemMtcTableAutoAdjust(EristaMtcTable* table) {
     #define WRITE_PARAM_ALL_REG(TABLE, PARAM, VALUE)\
     TABLE->burst_regs.PARAM = VALUE;            \
     TABLE->shadow_regs_ca_train.PARAM = VALUE;  \
+    TABLE->shadow_regs_quse_train.PARAM = VALUE;  \
     TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
  
     #define GET_CYCLE_CEIL(PARAM) u32(CEIL(double(PARAM) / tCK_avg))
