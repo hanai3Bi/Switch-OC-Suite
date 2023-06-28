@@ -22,7 +22,7 @@ namespace ams::ldr::oc {
     const std::array<double, 6> tRTP_values = {7.5, 7.5, 6, 6, 4, 4};
 
     // Preset Four
-    const std::array<u32, 5> tRFC_values = {140, 120, 100, 80, 60};
+    const std::array<u32, 6> tRFC_values = {140, 120, 100, 80, 70, 60};
 
     // Preset Five
     const std::array<u32, 6> tWTR_values = {10, 8, 6, 4, 2, 1};
