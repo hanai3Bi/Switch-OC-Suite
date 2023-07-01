@@ -259,10 +259,14 @@ bool ClockManager::RefreshContext()
 
     SysClkOcGovernorConfig governorConfig = SysClkOcGovernorConfig_AllDisabled;
     if (this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorExperimental)) {
+        auto governorHandheldOnly = this->GetConfig()->GetConfigValue(SysClkConfigValue_GovernorHandheldOnly);
         governorConfig = SysClkOcGovernorConfig_Default;
         SysClkOcGovernorConfig governorConfigTitle = this->GetConfig()->GetTitleGovernorConfig(applicationId);
         if (governorConfig != governorConfigTitle)
             governorConfig = governorConfigTitle;
+        // Set governor config to disabled if Handheld Only is true
+        if (governorHandheldOnly && (realProfile != SysClkProfile_Handheld))
+            governorConfig = SysClkOcGovernorConfig_AllDisabled;
     }
     this->governor->SetConfig(governorConfig);
 

@@ -25,6 +25,7 @@ typedef enum {
     SysClkConfigValue_ChargingCurrentLimit,
     SysClkConfigValue_ChargingLimitPercentage,
     SysClkConfigValue_GovernorExperimental,
+    SysClkConfigValue_GovernorHandheldOnly,
     SysClkConfigValue_EnumMax,
 } SysClkConfigValue;
 
@@ -54,6 +55,8 @@ static inline const char* sysclkFormatConfigValue(SysClkConfigValue val, bool pr
             return pretty ? "Charging Limit (%%)" : "charging_limit_perc";
         case SysClkConfigValue_GovernorExperimental:
             return pretty ? "Frequency Governor (Experimental)" : "governor_experimental";
+        case SysClkConfigValue_GovernorHandheldOnly:
+            return pretty ? "Frequency Governor Handheld Only" : "governor_handheld_only";
         default:
             return NULL;
     }
@@ -69,6 +72,7 @@ static inline uint64_t sysclkDefaultConfigValue(SysClkConfigValue val)
         case SysClkConfigValue_CsvWriteIntervalMs:
         case SysClkConfigValue_AllowUnsafeFrequencies:
         case SysClkConfigValue_GovernorExperimental:
+        case SysClkConfigValue_GovernorHandheldOnly:
         case SysClkConfigValue_AutoCPUBoost:
             return 0ULL;
         case SysClkConfigValue_SyncReverseNXMode:
@@ -95,6 +99,7 @@ static inline uint64_t sysclkValidConfigValue(SysClkConfigValue val, uint64_t in
         case SysClkConfigValue_SyncReverseNXMode:
         case SysClkConfigValue_AllowUnsafeFrequencies:
         case SysClkConfigValue_GovernorExperimental:
+        case SysClkConfigValue_GovernorHandheldOnly:
             return (input & 0x1) == input;
         case SysClkConfigValue_ChargingCurrentLimit:
             return (input >= 100 && input <= CHARGING_CURRENT_MA_LIMIT && input % 100 == 0);

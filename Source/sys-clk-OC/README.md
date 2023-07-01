@@ -205,6 +205,7 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 |**charging_current**      | Charging current limit (100 mA - 2000 mA)                                     | 2000 mA   |
 |**charging_limit_perc**   | Charging limit (20% - 100%)                                                   | 100%(OFF) |
 |**governor_experimental** | CPU & GPU frequency governor (Experimental)                                   | OFF       |
+|**governor_handheld_only**| Use governor only on Handheld Profile		                                   | OFF       |
 |**temp_log_interval_ms**  | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms      |
 |**csv_write_interval_ms** | Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms      |
 |**poll_interval_ms**      | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms    |
