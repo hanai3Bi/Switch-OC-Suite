@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/github/downloads/hanai3Bi/Switch-OC-Suite/total)](https://github.com/hanai3Bi/Switch-OC-Suite/releases)
 [![ko-fi](https://img.shields.io/badge/support-ko--fi-ff69b4)](https://ko-fi.com/hanai3Bi)
 
-This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to use it, USE AT YOUR OWN RISK
+이 프로젝트는 매우 위험하며 콘솔을 손상시킬 수 있습니다. 따라서 이 프로젝트를 사용하는걸 권장하지 않습니다. 사용할 경우 모든 책임은 본인에게 있습니다.
 
 닌텐도 스위치 Atmosphere 커스텀 펌웨어 용 오버클럭 스위트
 
@@ -70,21 +70,17 @@ This project is very dangerous and can possibly damage your console. Therefore I
 4. 맞춤 설정 [온라인 loader configurator](https://hanai3Bi.github.io/Switch-OC-Suite/#config):
     <details>
 
-    | Defaults   | Mariko        | Erista       |
-    | ---------- | ------------- | ------------ |
-    | CPU OC     | 2295 MHz Max  | 2091 MHz Max |
-    | CPU Boost  | 1785 MHz      | N/A          |
-    | CPU Volt   | 1235 mV Max   | 1235 mV Max  |
-    | GPU OC     | 1267 MHz Max  | N/A          |
-    | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
-    | RAM Volt   | Disabled      | Disabled     |
-    | RAM Timing | Auto-Adjusted | N/A          |
-
-    - Advanced Configuration
-      - 신형 스위치 GPU 언더볼팅
-        -활성화시 언더볼팅된 dvfs 테이블 사용
-        - 제대로 동작하지 않을 수 있음
-        - 불안정한 경우, 사용하지 말 것
+    | Defaults   | Mariko        | Erista        |
+    | ---------- | ------------- | ------------- |
+    | CPU OC     | 2295 MHz Max  | 2091 MHz Max  |
+    | CPU Boost  | 1785 MHz      | N/A           |
+    | CPU Volt   | 1235 mV Max   | 1235 mV Max   |
+    | GPU OC     | 1267 MHz Max  | N/A           |
+    | RAM OC     | 1996 MHz Max  | 1862 MHz Max  |
+    | RAM Volt   | Disabled      | Disabled      |
+    | RAM Timing | Auto-Adjusted | Auto-Adjusted |
+    | CPU UV     | Disabled      | N/A           |
+    | GPU UV     | Disabled      | N/A           |
 
     </details>
 

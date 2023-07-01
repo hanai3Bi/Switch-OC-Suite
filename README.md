@@ -76,21 +76,17 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 4. Customization via [online loader configurator](https://hanai3Bi.github.io/Switch-OC-Suite/#config):
     <details>
 
-    | Defaults   | Mariko        | Erista       |
-    | ---------- | ------------- | ------------ |
-    | CPU OC     | 2295 MHz Max  | 2091 MHz Max |
-    | CPU Boost  | 1785 MHz      | N/A          |
-    | CPU Volt   | 1235 mV Max   | 1235 mV Max  |
-    | GPU OC     | 1267 MHz Max  | N/A          |
-    | RAM OC     | 1996 MHz Max  | 1862 MHz Max |
-    | RAM Volt   | Disabled      | Disabled     |
-    | RAM Timing | Auto-Adjusted | N/A          |
-
-    - Advanced Configuration
-      - Mariko GPU Undervolt
-        - If enabled, undervolt dvfs table will be used
-        - Might not work correctly
-        - If instability is experienced, do not use
+    | Defaults   | Mariko        | Erista        |
+    | ---------- | ------------- | ------------- |
+    | CPU OC     | 2295 MHz Max  | 2091 MHz Max  |
+    | CPU Boost  | 1785 MHz      | N/A           |
+    | CPU Volt   | 1235 mV Max   | 1235 mV Max   |
+    | GPU OC     | 1267 MHz Max  | N/A           |
+    | RAM OC     | 1996 MHz Max  | 1862 MHz Max  |
+    | RAM Volt   | Disabled      | Disabled      |
+    | RAM Timing | Auto-Adjusted | Auto-Adjusted |
+    | CPU UV     | Disabled      | N/A           |
+    | GPU UV     | Disabled      | N/A           |
 
     </details>
 
