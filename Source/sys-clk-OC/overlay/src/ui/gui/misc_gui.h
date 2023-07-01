@@ -67,8 +67,8 @@ class MiscGui : public BaseMenuGui
                 i2cInfo->emcVddq = I2c_BuckConverter_GetMvOut(&I2c_Mariko_DRAM_VDDQ);
                 i2cInfo->memVdd2 = I2c_BuckConverter_GetMvOut(&I2c_Mariko_DRAM_VDD2);
             } else {
-                i2cInfo->cpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_CPU);
-                i2cInfo->gpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Mariko_GPU);
+                i2cInfo->cpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Erista_CPU);
+                i2cInfo->gpuVolt = I2c_BuckConverter_GetMvOut(&I2c_Erista_GPU);
                 i2cInfo->emcVddq = I2c_BuckConverter_GetMvOut(&I2c_Erista_DRAM);
                 i2cInfo->memVdd2 = i2cInfo->emcVddq;
             }
