@@ -160,7 +160,7 @@ var CustTable: Array<CustEntry> = [
   new CustEntry(
     "mtcConf",
     "DRAM Timing",
-    CustPlatform.Mariko,
+    CustPlatform.All,
     4,
     ["<b>0</b>: AUTO_ADJ_ALL: Auto adjust timings with LPDDR4 3733 Mbps specs, 8Gb density. Change timing with Advanced Config (Default)",
      "<b>1</b>: CUSTOM_ADJ_ALL: Adjust only non-zero preset timings in Advanced Config",
@@ -257,10 +257,7 @@ var CustTable: Array<CustEntry> = [
     [550_000, 650_000],
     5000,
   ),
-];
-
-var AdvTable: Array<AdvEntry> = [
-  new AdvEntry(
+  new CustEntry(
     "marikoCpuUV",
     "Enable Mariko CPU Undervolt",
     CustPlatform.Mariko,
@@ -273,7 +270,7 @@ var AdvTable: Array<AdvEntry> = [
      [0,1],
      1,
   ),
-  new AdvEntry(
+  new CustEntry(
     "marikoGpuUV",
     "Enable Mariko GPU Undervolt",
     CustPlatform.Mariko,
@@ -288,6 +285,9 @@ var AdvTable: Array<AdvEntry> = [
      [0,2],
      1,
   ),
+];
+
+var AdvTable: Array<AdvEntry> = [
   new AdvEntry(
     "ramTimingPresetOne",
     "Primary RAM Timing Preset",
