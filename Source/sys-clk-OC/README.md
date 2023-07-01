@@ -7,13 +7,13 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### CPU clocks
 
-* 2397 → N/A
+* 2397 → OC max for Mariko (with CPU UV)
 * 2295 → OC max for Mariko
 * 2193
 * 2091 → OC max for Erista
 * 1963 → official and safe max for Mariko
 * 1887
-* 1785 → official boost mode, OC max for Erista
+* 1785 → official boost mode, safe max for Erista
 * 1683
 * 1581
 * 1428
@@ -52,13 +52,14 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
 
 - ????
+- 2400 → max for Mariko
 - 2131 → max for Erista and official max for Mariko
 - 2099
 - 2064
-- 1996 → stable for Mariko
+- 1996 → mariko default
 - 1932
 - 1894
-- 1862 → official max for Erista; Mariko without timing adjustment
+- 1862 → official max for Erista; erista default
 - 1795
 - 1728
 - 1600 → official docked & official boost mode
