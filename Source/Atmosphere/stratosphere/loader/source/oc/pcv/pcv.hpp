@@ -237,7 +237,7 @@ Result GpuFreqCvbTable(u32* ptr) {
     } else {
         customize_table = const_cast<cvb_entry_t *>(C.eristaGpuDvfsTable);
     }
-    
+
     size_t default_entry_count = GetDvfsTableEntryCount(default_table);
     size_t default_table_size = default_entry_count * sizeof(cvb_entry_t);
     size_t customize_entry_count = GetDvfsTableEntryCount(customize_table);
@@ -250,6 +250,15 @@ Result GpuFreqCvbTable(u32* ptr) {
     R_UNLESS(validated, ldr::ResultInvalidGpuDvfs());
 
     std::memcpy(gpu_cvb_table_head, (void*)customize_table, customize_table_size);
+
+    // Patch GPU volt
+    if (C.marikoGpuUV == 3) {
+        cvb_entry_t* entry = static_cast<cvb_entry_t *>(gpu_cvb_table_head);
+        for (size_t i = 0; i < customize_entry_count; i++) {
+            PATCH_OFFSET(&(entry->cvb_pll_param.c0), C.marikoGpuVoltArray[i] * 1000);
+            entry++;
+        }
+    }
 
     R_SUCCEED();
 };
