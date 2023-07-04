@@ -215,8 +215,29 @@ Result CpuFreqCvbTable(u32* ptr) {
 template<bool isMariko>
 Result GpuFreqCvbTable(u32* ptr) {
     cvb_entry_t* default_table = isMariko ? (cvb_entry_t *)(&mariko::GpuCvbTableDefault) : (cvb_entry_t *)(&erista::GpuCvbTableDefault);
-    cvb_entry_t* customize_table = const_cast<cvb_entry_t *>(isMariko ? (C.marikoGpuUV ? (C.marikoGpuUV == 2 ? C.marikoGpuDvfsTableHiOPT : C.marikoGpuDvfsTableSLT) : C.marikoGpuDvfsTable) : C.eristaGpuDvfsTable);
-
+    cvb_entry_t* customize_table;
+    if (isMariko) {
+        switch (C.marikoGpuUV) {
+            case 0: 
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTable);
+                break;
+            case 1:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableSLT);
+                break;
+            case 2:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableHiOPT);
+                break;
+            case 3:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuStaticTable);
+                break;
+            default:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTable);
+                break;
+        }
+    } else {
+        customize_table = const_cast<cvb_entry_t *>(C.eristaGpuDvfsTable);
+    }
+    
     size_t default_entry_count = GetDvfsTableEntryCount(default_table);
     size_t default_table_size = default_entry_count * sizeof(cvb_entry_t);
     size_t customize_entry_count = GetDvfsTableEntryCount(customize_table);

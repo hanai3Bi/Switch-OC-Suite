@@ -315,6 +315,9 @@ Result FileUtils::CustParser(const char* filepath, size_t filesize) {
             case 2:
                 gpu_dvfs_table = &table.marikoGpuDvfsTableHiOPT;
                 break;
+            case 3:
+                gpu_dvfs_table = &table.marikoGpuStaticTable;
+                break;
             default:
                 gpu_dvfs_table = &table.marikoGpuDvfsTable;
                 break;

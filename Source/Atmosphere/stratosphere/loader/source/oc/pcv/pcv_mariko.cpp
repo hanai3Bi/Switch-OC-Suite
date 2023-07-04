@@ -73,7 +73,12 @@ Result GpuFreqMaxAsm(u32* ptr32) {
         case 2: 
             max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTableHiOPT)->freq;
             break;
-        default: max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+        case 3: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuStaticTable)->freq;
+            break;
+        default: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+            break;
     }
     u32 asm_patch[2] = {
         asm_set_rd(asm_set_imm16(asm_pattern[0], max_clock), rd),
