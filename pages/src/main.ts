@@ -156,6 +156,53 @@ class AdvEntry extends CustEntry {
   }
 }
 
+class GpuEntry extends CustEntry {
+  constructor(
+    public id: string,
+    public name: string,
+    public platform: CustPlatform = CustPlatform.Mariko,
+    public size: number = 4,
+    public desc: string[] = ["range: 610 ≤ x ≤ 1000"],
+    public defval: number = 610,
+    minmax: [number, number] = [610, 1000],
+    public step: number = 5,
+    public zeroable: boolean = false) {
+      super(id, name, platform, size, desc, defval, minmax, step, zeroable);
+  };
+  
+  createElement() {
+    let input = this.getInputElement();
+    if (!input) {
+      let grid = document.createElement("div");
+      grid.classList.add("grid", "cust-element");
+
+      // Label and input
+      input = document.createElement("input");
+      input.min = String(this.zeroable ? 0 : this.min);
+      input.max = String(this.max);
+      input.id = this.id;
+      input.type = "number";
+      input.step = String(this.step);
+      let label = document.createElement("label");
+      label.setAttribute("for", this.id);
+      label.innerHTML = this.name;
+      label.appendChild(input);
+      grid.appendChild(label);
+
+      // Description in blockquote style
+      let desc = document.createElement("blockquote");
+      desc.innerHTML = "<ul>" + this.desc.map(i => `<li>${i}</li>`).join('') + "</ul>";
+      desc.setAttribute("for", this.id);
+      grid.appendChild(desc);
+
+      document.getElementById("config-list-gpu")!.appendChild(grid);
+
+      new ErrorToolTip(this.id).addChangeListener();
+    }
+    input.value = String(this.value);
+  }
+}
+
 var CustTable: Array<CustEntry> = [
   new CustEntry(
     "mtcConf",
@@ -280,9 +327,10 @@ var CustTable: Array<CustEntry> = [
      "Can hang your console, or crash games",
      "<b>0</b> : Default Table",
      "<b>1</b> : Undervolt Level 1 (SLT: Aggressive)",
-     "<b>2</b> : Undervolt Level 2 (HiOPT: Drastic)"],
+     "<b>2</b> : Undervolt Level 2 (HiOPT: Drastic)",
+     "<b>3</b> : Custom static GPU Table (Use Gpu Configuation below)"],
      0,
-     [0,2],
+     [0,3],
      1,
   ),
 ];
@@ -421,6 +469,26 @@ var AdvTable: Array<AdvEntry> = [
   )
 ];
 
+var GpuTable: Array<GpuEntry> = [
+  new GpuEntry("0", "76.8",),
+  new GpuEntry("1", "153.6",),
+  new GpuEntry("2", "230.4",),
+  new GpuEntry("3", "307.2",),
+  new GpuEntry("4", "384.0",),
+  new GpuEntry("5", "460.8",),
+  new GpuEntry("6", "537.6",),
+  new GpuEntry("7", "614.4",),
+  new GpuEntry("8", "691.2",),
+  new GpuEntry("9", "768.0",),
+  new GpuEntry("10", "844.8",),
+  new GpuEntry("11", "921.6",),
+  new GpuEntry("12", "998.4",),
+  new GpuEntry("13", "1075.2",),
+  new GpuEntry("14", "1152.0",),
+  new GpuEntry("15", "1228.8",),
+  new GpuEntry("16", "1267.2",),
+];
+
 class ErrorToolTip {
   element: HTMLElement | null;
 
@@ -467,21 +535,17 @@ class CustStorage {
   readonly key = "last_saved";
 
   updateFromTable() {
-    CustTable.forEach(i => {
+    let update = (i => {
       i.updateValueFromElement();
       if (!i.validate()) {
         i.getInputElement()?.focus();
         throw new Error(`Invalid ${i.name}`);
       }
     });
-    AdvTable.forEach(i => {
-      i.updateValueFromElement();
-      if (!i.validate()) {
-        i.getInputElement()?.focus();
-        throw new Error(`Invalid ${i.name}`);
-      }
-    });
-
+    CustTable.forEach(update);
+    AdvTable.forEach(update);
+    GpuTable.forEach(update);
+    
     this.storage = {};
     let kv = Object.fromEntries(CustTable.map((i) => [i.id, i.value]));
     Object.keys(kv)
@@ -510,6 +574,13 @@ class CustStorage {
       i.setElementValue();
     });
     AdvTable.forEach(i => {
+      if (!i.validate()) {
+        i.getInputElement()?.focus();
+        throw new Error(`Invalid ${i.name}`);
+      }
+      i.setElementValue();
+    });
+    GpuTable.forEach(i => {
       if (!i.validate()) {
         i.getInputElement()?.focus();
         throw new Error(`Invalid ${i.name}`);
@@ -580,7 +651,7 @@ class Cust {
 
   save() {
     this.storage.updateFromTable();
-    let lambda = (i => {
+    let saveValue = (i => {
       if (!i.offset) {
         i.getInputElement()?.focus();
         throw new Error(`Failed to get offset for ${i.name}`);
@@ -592,10 +663,11 @@ class Cust {
       }
       mapper.set(i.offset, i.value!);
     });
-    CustTable.forEach(lambda);
+    CustTable.forEach(saveValue);
     if (this.rev == CUST_REV_ADV) {
-      AdvTable.forEach(lambda);
+      AdvTable.forEach(saveValue);
     }
+    GpuTable.forEach(saveValue);
     
     this.storage.save();
 
@@ -633,7 +705,12 @@ class Cust {
     advanced.innerHTML = "Advanced configuration";
     document.getElementById("config-list-advanced")?.appendChild(advanced);
 
+    let gpu = document.createElement("p");
+    gpu.innerHTML = "Gpu Volt configuration";
+    document.getElementById("config-list-gpu")?.appendChild(gpu);
+
     AdvTable.forEach(i => i.createElement());
+    GpuTable.forEach(i => i.createElement());
 
     let default_btn = document.getElementById("load_default")!;
     default_btn.removeAttribute("disabled");
@@ -684,7 +761,7 @@ class Cust {
     offset += revLen;
     document.getElementById("cust_rev")!.innerHTML = `Cust v${this.rev} is loaded.`;
 
-    let lambda = (i => {
+    let loadValue = (i => {
       i.offset = offset;
       let mapper = this.mapper[i.size];
       if (!mapper) {
@@ -696,10 +773,11 @@ class Cust {
       i.validate();
     });
 
-    CustTable.forEach(lambda);
+    CustTable.forEach(loadValue);
     if (this.rev == CUST_REV_ADV) {
-      AdvTable.forEach(lambda);
+      AdvTable.forEach(loadValue);
     }
+    GpuTable.forEach(loadValue);
   }
 
   load(buffer: ArrayBuffer) {
