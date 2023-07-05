@@ -337,6 +337,19 @@ var CustTable: Array<CustEntry> = [
 
 var AdvTable: Array<AdvEntry> = [
   new AdvEntry(
+    "marikoEmcDvbShift",
+    "Step up Mariko EMC DVB Table",
+    CustPlatform.Mariko,
+    4,
+    ["Might help with stability at higher memory clock",
+     "<b>0</b> : Don't Adjust",
+     "<b>1</b> : Shift one step",
+     "<b>2</b> : Shift two step"],
+     0,
+     [0,2],
+     1,
+  ),
+  new AdvEntry(
     "ramTimingPresetOne",
     "Primary RAM Timing Preset",
     CustPlatform.Mariko,
