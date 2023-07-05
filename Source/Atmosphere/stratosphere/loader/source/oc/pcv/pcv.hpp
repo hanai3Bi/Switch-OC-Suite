@@ -203,7 +203,11 @@ Result CpuFreqCvbTable(u32* ptr) {
         cvb_entry_t* entry = static_cast<cvb_entry_t *>(cpu_cvb_table_head);
         for (size_t i = 0; i < customize_entry_count; i++) {
             if (entry->freq >= cpu_freq_threshold) {
-                PATCH_OFFSET(&(entry->cvb_pll_param.c0), cpu_max_volt * 1000);
+                if (isMariko) {
+                    PATCH_OFFSET(&(entry->cvb_pll_param.c0), cpu_max_volt * 1000);
+                } else {
+                    PATCH_OFFSET(&(entry->cvb_dfll_param.c0), cpu_max_volt * 1000);
+                }
             }
             entry++;
         }
@@ -215,7 +219,25 @@ Result CpuFreqCvbTable(u32* ptr) {
 template<bool isMariko>
 Result GpuFreqCvbTable(u32* ptr) {
     cvb_entry_t* default_table = isMariko ? (cvb_entry_t *)(&mariko::GpuCvbTableDefault) : (cvb_entry_t *)(&erista::GpuCvbTableDefault);
-    cvb_entry_t* customize_table = const_cast<cvb_entry_t *>(isMariko ? (C.marikoGpuUV ? (C.marikoGpuUV == 2 ? C.marikoGpuDvfsTableHiOPT : C.marikoGpuDvfsTableSLT) : C.marikoGpuDvfsTable) : C.eristaGpuDvfsTable);
+    cvb_entry_t* customize_table;
+    if (isMariko) {
+        switch (C.marikoGpuUV) {
+            case 0: 
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTable);
+                break;
+            case 1:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableSLT);
+                break;
+            case 2:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableHiOPT);
+                break;
+            default:
+                customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTable);
+                break;
+        }
+    } else {
+        customize_table = const_cast<cvb_entry_t *>(C.eristaGpuDvfsTable);
+    }
 
     size_t default_entry_count = GetDvfsTableEntryCount(default_table);
     size_t default_table_size = default_entry_count * sizeof(cvb_entry_t);
@@ -229,6 +251,20 @@ Result GpuFreqCvbTable(u32* ptr) {
     R_UNLESS(validated, ldr::ResultInvalidGpuDvfs());
 
     std::memcpy(gpu_cvb_table_head, (void*)customize_table, customize_table_size);
+
+    // Patch GPU volt
+    if (isMariko && C.marikoGpuUV == 3) {
+        cvb_entry_t* entry = static_cast<cvb_entry_t *>(gpu_cvb_table_head);
+        for (size_t i = 0; i < customize_entry_count; i++) {
+            PATCH_OFFSET(&(entry->cvb_pll_param.c0), C.marikoGpuVoltArray[i] * 1000);
+            PATCH_OFFSET(&(entry->cvb_pll_param.c1), 0);
+            PATCH_OFFSET(&(entry->cvb_pll_param.c2), 0);
+            PATCH_OFFSET(&(entry->cvb_pll_param.c3), 0);
+            PATCH_OFFSET(&(entry->cvb_pll_param.c4), 0);
+            PATCH_OFFSET(&(entry->cvb_pll_param.c5), 0);
+            entry++;
+        }
+    }
 
     R_SUCCEED();
 };

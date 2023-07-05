@@ -91,6 +91,8 @@ volatile CustomizeTable C = {
 
 .marikoGpuUV = 0,
 
+.marikoEmcDvbShift = 0,
+
 .ramTimingPresetOne = 0,
 
 .ramTimingPresetTwo = 0,
@@ -104,6 +106,8 @@ volatile CustomizeTable C = {
 .ramTimingPresetSix = 0,
 
 .ramTimingPresetSeven = 0,
+
+.marikoGpuVoltArray = {610, 610, 610, 610, 610, 610, 610, 610, 610, 610, 620, 640, 675, 710, 735, 785, 815},
 
 /* Advanced Settings:
  * - Erista CPU DVFS Table:

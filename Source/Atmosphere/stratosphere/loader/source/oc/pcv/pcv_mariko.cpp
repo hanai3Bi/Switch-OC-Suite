@@ -73,7 +73,9 @@ Result GpuFreqMaxAsm(u32* ptr32) {
         case 2: 
             max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTableHiOPT)->freq;
             break;
-        default: max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+        default: 
+            max_clock = GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq;
+            break;
     }
     u32 asm_patch[2] = {
         asm_set_rd(asm_set_imm16(asm_pattern[0], max_clock), rd),
@@ -369,10 +371,10 @@ Result MemFreqDvbTable(u32* ptr) {
         emc_dvb_dvfs_table_t oc_table = { 2131200, { 725, 700, 675, } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     } else if (C.marikoEmcMaxClock < 2665600){
-        emc_dvb_dvfs_table_t oc_table = { 2400000, { 750, 725, 700, } };
+        emc_dvb_dvfs_table_t oc_table = { 2400000, { 750+25*C.marikoEmcDvbShift, 725+25*C.marikoEmcDvbShift, 700+25*C.marikoEmcDvbShift, } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     } else {
-        emc_dvb_dvfs_table_t oc_table = { 2665600, { 775, 750, 725, } };
+        emc_dvb_dvfs_table_t oc_table = { 2665600, { 775+25*C.marikoEmcDvbShift, 750+25*C.marikoEmcDvbShift, 725+25*C.marikoEmcDvbShift, } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     }
     new_start->freq = C.marikoEmcMaxClock;
