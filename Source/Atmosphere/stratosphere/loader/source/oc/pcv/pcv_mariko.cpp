@@ -371,10 +371,10 @@ Result MemFreqDvbTable(u32* ptr) {
         emc_dvb_dvfs_table_t oc_table = { 2131200, { 725, 700, 675, } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     } else if (C.marikoEmcMaxClock < 2665600){
-        emc_dvb_dvfs_table_t oc_table = { 2400000, { 750+25*C.marikoEmcDvbShift, 725+25*C.marikoEmcDvbShift, 700+25*C.marikoEmcDvbShift, } };
+        emc_dvb_dvfs_table_t oc_table = { 2400000, { s32(750+25*C.marikoEmcDvbShift), s32(725+25*C.marikoEmcDvbShift), s32(700+25*C.marikoEmcDvbShift), } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     } else {
-        emc_dvb_dvfs_table_t oc_table = { 2665600, { 775+25*C.marikoEmcDvbShift, 750+25*C.marikoEmcDvbShift, 725+25*C.marikoEmcDvbShift, } };
+        emc_dvb_dvfs_table_t oc_table = { 2665600, { s32(775+25*C.marikoEmcDvbShift), s32(750+25*C.marikoEmcDvbShift), s32(725+25*C.marikoEmcDvbShift), } };
         std::memcpy(new_start, &oc_table, sizeof(emc_dvb_dvfs_table_t));
     }
     new_start->freq = C.marikoEmcMaxClock;
