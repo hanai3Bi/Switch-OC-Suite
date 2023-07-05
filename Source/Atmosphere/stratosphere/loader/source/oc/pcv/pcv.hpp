@@ -203,7 +203,11 @@ Result CpuFreqCvbTable(u32* ptr) {
         cvb_entry_t* entry = static_cast<cvb_entry_t *>(cpu_cvb_table_head);
         for (size_t i = 0; i < customize_entry_count; i++) {
             if (entry->freq >= cpu_freq_threshold) {
-                PATCH_OFFSET(&(entry->cvb_pll_param.c0), cpu_max_volt * 1000);
+                if (isMariko) {
+                    PATCH_OFFSET(&(entry->cvb_pll_param.c0), cpu_max_volt * 1000);
+                } else {
+                    PATCH_OFFSET(&(entry->cvb_dfll_param.c0), cpu_max_volt * 1000);
+                }
             }
             entry++;
         }
