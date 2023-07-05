@@ -1,5 +1,4 @@
 /* Config: Cust */
-const CUST_REV = 4;
 const CUST_REV_ADV = 8;
 
 enum CustPlatform {
@@ -284,9 +283,10 @@ var CustTable: Array<CustEntry> = [
     4,
     ["Values should be ≥ 1600000, and divided evenly by 3200.",
      "Recommended Clocks: 1862400, 2131200, 2400000 (JEDEC)",
+     "Clocks above 2400Mhz might not boot, or work correctly",
      "<b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM."],
     1996_800,
-    [1600_000, 2400_000],
+    [1600_000, 2502_400],
     3200,
   ),
   new CustEntry(
@@ -664,9 +664,7 @@ class Cust {
       mapper.set(i.offset, i.value!);
     });
     CustTable.forEach(saveValue);
-    if (this.rev == CUST_REV_ADV) {
-      AdvTable.forEach(saveValue);
-    }
+    AdvTable.forEach(saveValue);
     GpuTable.forEach(saveValue);
     
     this.storage.save();
@@ -755,8 +753,8 @@ class Cust {
     let offset = this.beginOffset + this.magicLen;
     let revLen = 4;
     this.rev = this.mapper[revLen].get(offset);
-    if (this.rev != CUST_REV && this.rev != CUST_REV_ADV) {
-      throw new Error(`Unsupported custRev, expected: ${CUST_REV} or ${CUST_REV_ADV}, got ${this.rev}`);
+    if (this.rev != CUST_REV_ADV) {
+      throw new Error(`Unsupported custRev, expected: ${CUST_REV_ADV}, got ${this.rev}`);
     }
     offset += revLen;
     document.getElementById("cust_rev")!.innerHTML = `Cust v${this.rev} is loaded.`;
@@ -774,9 +772,7 @@ class Cust {
     });
 
     CustTable.forEach(loadValue);
-    if (this.rev == CUST_REV_ADV) {
-      AdvTable.forEach(loadValue);
-    }
+    AdvTable.forEach(loadValue);
     GpuTable.forEach(loadValue);
   }
 
