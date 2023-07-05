@@ -105,9 +105,6 @@ void SafetyCheck() {
         case 2: 
             marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTableHiOPT)->freq);
             break;
-        case 3: 
-            marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuStaticTable)->freq);
-            break;
         default: 
             marikoGpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoGpuDvfsTable)->freq);
             break;

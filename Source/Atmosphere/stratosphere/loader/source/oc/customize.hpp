@@ -70,7 +70,6 @@ typedef struct CustomizeTable {
     CustomizeGpuDvfsTable marikoGpuDvfsTable;
     CustomizeGpuDvfsTable marikoGpuDvfsTableSLT;
     CustomizeGpuDvfsTable marikoGpuDvfsTableHiOPT;
-    CustomizeGpuDvfsTable marikoGpuStaticTable;
     //EristaMtcTable* eristaMtcTable;
     //MarikoMtcTable* marikoMtcTable;
 } CustomizeTable;
