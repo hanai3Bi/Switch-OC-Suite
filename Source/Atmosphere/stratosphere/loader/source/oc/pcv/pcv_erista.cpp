@@ -34,6 +34,43 @@ Result CpuVoltRange(u32* ptr) {
     R_THROW(ldr::ResultInvalidCpuMinVolt());
 }
 
+Result GpuFreqMaxAsm(u32* ptr32) {
+    // Check if both two instructions match the pattern
+    u32 ins1 = *ptr32, ins2 = *(ptr32 + 1);
+    if (!(asm_compare_no_rd(ins1, asm_pattern[0]) && asm_compare_no_rd(ins2, asm_pattern[1])))
+        R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
+
+    // Both instructions should operate on the same register
+    u8 rd = asm_get_rd(ins1);
+    if (rd != asm_get_rd(ins2))
+        R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
+
+    u32 max_clock = GetDvfsTableLastEntry(C.eristaGpuDvfsTable)->freq;
+           
+    u32 asm_patch[2] = {
+        asm_set_rd(asm_set_imm16(asm_pattern[0], max_clock), rd),
+        asm_set_rd(asm_set_imm16(asm_pattern[1], max_clock >> 16), rd)
+    };
+    PATCH_OFFSET(ptr32, asm_patch[0]);
+    PATCH_OFFSET(ptr32 + 1, asm_patch[1]);
+
+    R_SUCCEED();
+}
+
+Result GpuFreqPllLimit(u32* ptr) {
+    clk_pll_param* entry = reinterpret_cast<clk_pll_param *>(ptr);
+
+    // All zero except for freq
+    for (size_t i = 1; i < sizeof(clk_pll_param) / sizeof(u32); i++) {
+        R_UNLESS(*(ptr + i) == 0, ldr::ResultInvalidGpuPllEntry());
+    }
+
+    // Double the max clk simply
+    u32 max_clk = entry->freq * 2;
+    entry->freq = max_clk;
+    R_SUCCEED();
+}
+
 void MemMtcTableAutoAdjust(EristaMtcTable* table) {
     if (C.mtcConf != AUTO_ADJ_ALL)
     	return;
@@ -219,6 +256,8 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         { "CPU Freq Table", CpuFreqCvbTable<false>, 1, nullptr, CpuCvbDefaultMaxFreq },
         { "CPU Volt Limit", &CpuVoltRange,          0, &CpuMaxVoltPatternFn },
         { "GPU Freq Table", GpuFreqCvbTable<false>, 1, nullptr, GpuCvbDefaultMaxFreq },
+        { "GPU Freq Asm",   &GpuFreqMaxAsm,         2, &GpuMaxClockPatternFn },
+        { "GPU Freq PLL",   &GpuFreqPllLimit,       1, nullptr, GpuClkPllLimit },
         { "MEM Freq Mtc",   &MemFreqMtcTable,       0, nullptr, EmcClkOSLimit },
         { "MEM Freq Max",   &MemFreqMax,            0, nullptr, EmcClkOSLimit },
         { "MEM Freq PLLM",  &MemFreqPllmLimit,      2, nullptr, EmcClkPllmLimit },

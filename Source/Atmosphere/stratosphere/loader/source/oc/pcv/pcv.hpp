@@ -147,6 +147,30 @@ namespace erista {
         return (val == 1132 || val == 1170 || val == 1227);
     }
 
+    constexpr u32 GpuClkPllLimit  = 921'600'000;
+
+    /* GPU Max Clock asm Pattern:
+    *
+    * MOV W11, #0x1000 MOV (wide immediate)                0x1000                              0xB (11)
+    *  sf | opc |                 | hw  |                   imm16                        |      Rd
+    * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
+    *   0 | 1 0 | 1  0  0  1  0  1| 0  0| 0  0  0  1  0  0  0  0  0  0  0  0  0  0  0  0 |0  1  0  1  1
+    *
+    * MOVK W11, #0xE, LSL#16     <shift>16                    0xE                              0xB (11)
+    *  sf | opc |                 | hw  |                   imm16                        |      Rd
+    * #31 |30 29|28 27 26 25 24 23|22 21|20 19 18 17 16 15 14 13 12 11 10  9  8  7  6  5 |4  3  2  1  0
+    *   0 | 1 1 | 1  0  0  1  0  1| 0  1| 0  0  0  0  0  0  0  0  0  0  0  0  1  1  1  0 |0  1  0  1  1
+    */
+    inline constexpr u32 asm_pattern[] = { 0x52820000, 0x72A001C0 };
+    inline auto asm_compare_no_rd = [](u32 ins1, u32 ins2) { return ((ins1 ^ ins2) >> 5) == 0; };
+    inline auto asm_get_rd = [](u32 ins) { return ins & ((1 << 5) - 1); };
+    inline auto asm_set_rd = [](u32 ins, u8 rd) { return (ins & 0xFFFFFFE0) | (rd & 0x1F); };
+    inline auto asm_set_imm16 = [](u32 ins, u16 imm) { return (ins & 0xFFE0001F) | ((imm & 0xFFFF) << 5); };
+
+    inline bool GpuMaxClockPatternFn(u32* ptr32) {
+        return asm_compare_no_rd(*ptr32, asm_pattern[0]);
+    }
+
     constexpr cvb_entry_t GpuCvbTableDefault[] = {
         // NA_FREQ_CVB_TABLE
         {   76800, { }, {  814294, 8144, -940, 808, -21583, 226 } },
