@@ -103,7 +103,7 @@ namespace ams::ldr::oc {
     // tPDEX2WR, tPDEX2RD (timing delay from exiting powerdown mode to a write/read command) in ns
     // const u32 tPDEX2 = 10;
     // Exit power-down to next valid command delay
-    const double tXP = 7.5;
+    const double tXP = 10;
     
     // Delay from valid command to CKE input LOW in ns
     const double tCMDCKE = 1.75;
@@ -175,9 +175,9 @@ namespace ams::ldr::oc {
         // tCK_avg (average clock period) in ns
         const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
         // Write Latency
-        const u32 WL = 14 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 WL = 18 - 2*TIMING_PRESET_SEVEN; //?
         // Read Latency
-        const u32 RL = 28 - 4*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 40 - 4*TIMING_PRESET_SEVEN; //?
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
         const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));
