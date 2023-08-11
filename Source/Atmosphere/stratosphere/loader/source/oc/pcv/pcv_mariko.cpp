@@ -220,10 +220,10 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_faw,     CEIL(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV) - 1)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rrd,     CEIL(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV) - 1)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rap2pre, CEIL(GET_CYCLE_CEIL(tRTP) / MC_ARB_DIV))
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_wap2pre, CEIL(WTP / MC_ARB_DIV))
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_wap2pre, CEIL((WTP-7) / MC_ARB_DIV))
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2r,     CEIL(table->burst_regs.emc_rext / MC_ARB_DIV) - 1 + MC_ARB_SFA)
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2w,     CEIL(R2W / MC_ARB_DIV) - 1 + MC_ARB_SFA)
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_w2r,     CEIL(W2R / MC_ARB_DIV) - 1 + MC_ARB_SFA)
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2w,     CEIL((R2W+8) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_w2r,     CEIL((W2R-6) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rfcpb,   CEIL(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV))
 
     u32 DA_TURNS = 0;
