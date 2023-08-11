@@ -43,7 +43,7 @@ static_assert(sizeof(cvb_entry_t) == 0x38);
 using CustomizeCpuDvfsTable = cvb_entry_t[FREQ_TABLE_MAX_ENTRY_COUNT];
 using CustomizeGpuDvfsTable = cvb_entry_t[FREQ_TABLE_MAX_ENTRY_COUNT];
 
-constexpr uint32_t CUST_REV = 9;
+constexpr uint32_t CUST_REV = 10;
 
 typedef struct CustTable {
     u8  cust[4] = {'C', 'U', 'S', 'T'};
