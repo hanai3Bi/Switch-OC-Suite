@@ -72,8 +72,8 @@ void Clocks::UpdateFreqRange() {
         GPU_UNSAFE_MAX[SysClkProfile_Handheld] = 998'400'000;
     } else {
         memcpy(GPU_UNSAFE_MAX, GPU_SAFE_MAX, sizeof(GPU_UNSAFE_MAX));
-        GPU_SAFE_MAX[SysClkProfile_HandheldChargingOfficial] = \
-        GPU_SAFE_MAX[SysClkProfile_Docked] = 998'400'000;
+        GPU_UNSAFE_MAX[SysClkProfile_HandheldChargingOfficial] = \
+        GPU_UNSAFE_MAX[SysClkProfile_Docked] = *gpu_max_freq;
     }
 
     const bool use_unsafe = allowUnsafe;
