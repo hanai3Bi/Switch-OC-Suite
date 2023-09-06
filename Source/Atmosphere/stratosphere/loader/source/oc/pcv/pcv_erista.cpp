@@ -116,6 +116,8 @@ void MemMtcTableAutoAdjust(EristaMtcTable* table) {
     WRITE_PARAM_ALL_REG(table, emc_tclkstable,          GET_CYCLE_CEIL(tCKCKEH));
     WRITE_PARAM_ALL_REG(table, emc_tclkstop,            GET_CYCLE_CEIL(tCKE)+8);
     WRITE_PARAM_ALL_REG(table, emc_trefbw,              REFBW);
+
+    #define WRITE_PARAM_BURST_MC_REG(TABLE, PARAM, VALUE)   TABLE->burst_mc_regs.PARAM = VALUE;
     
     constexpr u32 MC_ARB_DIV = 4;
     constexpr u32 MC_ARB_SFA = 2;
@@ -205,6 +207,18 @@ void MemMtcTableCustomAdjust(EristaMtcTable* table) {
         table->burst_mc_regs.mc_emem_arb_timing_r2w     = CEIL(R2W / MC_ARB_DIV) - 1 + MC_ARB_SFA;
         table->burst_mc_regs.mc_emem_arb_timing_w2r     = CEIL(W2R / MC_ARB_DIV) - 1 + MC_ARB_SFA;
     }
+
+    u32 DA_TURNS = 0;
+    DA_TURNS |= u8(table->burst_mc_regs.mc_emem_arb_timing_r2w / 2) << 16; //R2W TURN
+    DA_TURNS |= u8(table->burst_mc_regs.mc_emem_arb_timing_w2r / 2) << 24; //W2R TURN
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_da_turns,       DA_TURNS);
+    u32 DA_COVERS = 0;
+    u8 R_COVER = (table->burst_mc_regs.mc_emem_arb_timing_rap2pre + table->burst_mc_regs.mc_emem_arb_timing_rp + table->burst_mc_regs.mc_emem_arb_timing_rcd) / 2;
+    u8 W_COVER = (table->burst_mc_regs.mc_emem_arb_timing_wap2pre + table->burst_mc_regs.mc_emem_arb_timing_rp + table->burst_mc_regs.mc_emem_arb_timing_rcd) / 2;
+    DA_COVERS |= (u8)(table->burst_mc_regs.mc_emem_arb_timing_rc / 2); //RC COVER
+    DA_COVERS |= (R_COVER << 8); //RCD_R COVER
+    DA_COVERS |= (W_COVER << 16); //RCD_W COVER
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_da_covers,       DA_COVERS);
 }
 
 Result MemFreqMtcTable(u32* ptr) {

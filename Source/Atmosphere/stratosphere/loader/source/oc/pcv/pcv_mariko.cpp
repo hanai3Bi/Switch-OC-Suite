@@ -368,6 +368,18 @@ void MemMtcTableCustomAdjust(MarikoMtcTable* table) {
         table->burst_mc_regs.mc_emem_arb_timing_r2w     = CEIL(R2W / MC_ARB_DIV) - 1 + MC_ARB_SFA;
         table->burst_mc_regs.mc_emem_arb_timing_w2r     = CEIL(W2R / MC_ARB_DIV) - 1 + MC_ARB_SFA;
     }
+
+    u32 DA_TURNS = 0;
+    DA_TURNS |= u8(table->burst_mc_regs.mc_emem_arb_timing_r2w / 2) << 16; //R2W TURN
+    DA_TURNS |= u8(table->burst_mc_regs.mc_emem_arb_timing_w2r / 2) << 24; //W2R TURN
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_da_turns,       DA_TURNS);
+    u32 DA_COVERS = 0;
+    u8 R_COVER = (table->burst_mc_regs.mc_emem_arb_timing_rap2pre + table->burst_mc_regs.mc_emem_arb_timing_rp + table->burst_mc_regs.mc_emem_arb_timing_rcd) / 2;
+    u8 W_COVER = (table->burst_mc_regs.mc_emem_arb_timing_wap2pre + table->burst_mc_regs.mc_emem_arb_timing_rp + table->burst_mc_regs.mc_emem_arb_timing_rcd) / 2;
+    DA_COVERS |= (u8)(table->burst_mc_regs.mc_emem_arb_timing_rc / 2); //RC COVER
+    DA_COVERS |= (R_COVER << 8); //RCD_R COVER
+    DA_COVERS |= (W_COVER << 16); //RCD_W COVER
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_da_covers,       DA_COVERS);
 }
 
 void MemMtcPllmbDivisor(MarikoMtcTable* table) {
