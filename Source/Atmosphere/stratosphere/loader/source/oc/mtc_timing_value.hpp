@@ -30,9 +30,6 @@ namespace ams::ldr::oc {
     // Preset Six
     const std::array<u32, 5> tREFpb_values = {488, 976, 1952, 3256, 9999};
 
-    // Preset Seven
-    const std::array<u32, 6> tWL_values = {14, 12, 10, 8, 6, 4};
-
     const u32 TIMING_PRESET_ONE = C.ramTimingPresetOne;
     const u32 TIMING_PRESET_TWO = C.ramTimingPresetTwo;
     const u32 TIMING_PRESET_THREE = C.ramTimingPresetThree;
@@ -141,9 +138,9 @@ namespace ams::ldr::oc {
         const double tCK_avg = 1000'000. / C.eristaEmcMaxClock;
 
         // Write Latency
-        const u32 WL = 18 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 WL = 14 - 2*TIMING_PRESET_SEVEN;
         // Read Latency
-        const u32 RL = 40 - 4*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 32 - 4*TIMING_PRESET_SEVEN;
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
         const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST)) + 6;
@@ -175,9 +172,9 @@ namespace ams::ldr::oc {
         // tCK_avg (average clock period) in ns
         const double tCK_avg = 1000'000. / C.marikoEmcMaxClock;
         // Write Latency
-        const u32 WL = 18 - 2*TIMING_PRESET_SEVEN; //?
+        const u32 WL = 14 - 2*TIMING_PRESET_SEVEN;
         // Read Latency
-        const u32 RL = 40 - 4*TIMING_PRESET_SEVEN; //?
+        const u32 RL = 32 - 4*TIMING_PRESET_SEVEN;
 
         // minimum number of cycles from any read command to any write command, irrespective of bank
         const u32 R2W = CEIL (RL + CEIL(tDQSCK_max/tCK_avg) + BL/2 - WL + tWPRE + FLOOR(tRPST));

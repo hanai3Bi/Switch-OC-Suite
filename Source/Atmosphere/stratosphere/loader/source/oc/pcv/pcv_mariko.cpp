@@ -153,10 +153,10 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_ALL_REG(table, emc_rfcpb,               GET_CYCLE_CEIL(tRFCpb));
     WRITE_PARAM_ALL_REG(table, emc_ras,                 GET_CYCLE_CEIL(tRAS));
     WRITE_PARAM_ALL_REG(table, emc_rp,                  GET_CYCLE_CEIL(tRPpb));
-    WRITE_PARAM_ALL_REG(table, emc_r2w,                 R2W + 8);
-    WRITE_PARAM_ALL_REG(table, emc_w2r,                 W2R - 6);
+    WRITE_PARAM_ALL_REG(table, emc_r2w,                 R2W);
+    WRITE_PARAM_ALL_REG(table, emc_w2r,                 W2R);
     WRITE_PARAM_ALL_REG(table, emc_r2p,                 GET_CYCLE_CEIL(tRTP));
-    WRITE_PARAM_ALL_REG(table, emc_w2p,                 WTP - 7);
+    WRITE_PARAM_ALL_REG(table, emc_w2p,                 WTP);
     WRITE_PARAM_ALL_REG(table, emc_trtm,                RTM);
     WRITE_PARAM_ALL_REG(table, emc_twtm,                WTM);
     WRITE_PARAM_ALL_REG(table, emc_tratm,               RATM);
@@ -211,10 +211,10 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_faw,     CEIL(GET_CYCLE_CEIL(tFAW) / MC_ARB_DIV) - 1)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rrd,     CEIL(GET_CYCLE_CEIL(tRRD) / MC_ARB_DIV) - 1)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rap2pre, CEIL(GET_CYCLE_CEIL(tRTP) / MC_ARB_DIV))
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_wap2pre, CEIL((WTP-7) / MC_ARB_DIV))
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_wap2pre, CEIL((WTP) / MC_ARB_DIV))
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2r,     CEIL(table->burst_regs.emc_rext / MC_ARB_DIV) - 1 + MC_ARB_SFA)
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2w,     CEIL((R2W+8) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
-    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_w2r,     CEIL((W2R-6) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_r2w,     CEIL((R2W) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
+    WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_w2r,     CEIL((W2R) / MC_ARB_DIV) - 1 + MC_ARB_SFA)
     WRITE_PARAM_BURST_MC_REG(table, mc_emem_arb_timing_rfcpb,   CEIL(GET_CYCLE_CEIL(tRFCpb) / MC_ARB_DIV))
 
     u32 DA_TURNS = 0;
@@ -286,7 +286,7 @@ void MemMtcTableAutoAdjust(MarikoMtcTable* table, const MarikoMtcTable* ref) {
 
     table->dram_timings.t_rp = tRPpb;
     table->dram_timings.t_rfc = tRFCab;
-    table->dram_timings.rl = RL;
+    //table->dram_timings.rl = 32;
 
     table->emc_cfg_2 = 0x0011083d;
 }
