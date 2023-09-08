@@ -5,6 +5,8 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ## Clock table (MHz)
 
+official means HOS official, unless specified
+
 ### CPU clocks
 
 * 2397 → OC max for Mariko (with CPU UV)
@@ -18,7 +20,7 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 * 1581
 * 1428
 * 1326
-* 1224 → sdev oc
+* 1224 → sdev OC
 * 1122
 * 1020 → official docked & handheld
 * 918
@@ -49,21 +51,25 @@ Switch sysmodule allowing you to set cpu/gpu clocks according to the running app
 
 ### MEM clocks
 
-From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/197ed8c319bd4132e4d7571ce037d4a27f806bba/modules/hekate_libsys_minerva/sys_sdrammtc.c#L67)
+From Hekate Minerva module [sys_sdrammtc.c](https://github.com/CTCaer/hekate/blob/master/modules/hekate_libsys_minerva/sys_sdrammtc.c#L65)
 
-- ????
+- 3200 → l4t and closed version max for Mariko
+- 2931
+- 2665
 - 2502 → max for Mariko
-- 2131 → max for Erista and official max for Mariko
+- 2400
+- 2361 → l4t and closed version max for Erista
+- 2131 → JEDEC. max for Erista and official max for Mariko. lpddr4(x) official max
 - 2099
 - 2064
-- 1996 → mariko default
+- 1996 → OCS mariko default
 - 1932
 - 1894
-- 1862 → official max for Erista; erista default
+- 1862 → JEDEC. official max for Erista; OCS erista default
 - 1795
 - 1728
 - 1600 → official docked & official boost mode
-- 1331 → official handheld
+- 1331 → JEDEC. official handheld
 - 1065
 - 800
 - 665

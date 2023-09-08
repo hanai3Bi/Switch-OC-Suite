@@ -19,10 +19,10 @@
 ## 기능
 
 - 구형 스위치 (HAC-001)
-  - CPU 오버클럭 (안전한 클럭: 1785 MHz)
+  - CPU / GPU 오버클럭 (안전한 클럭: 1785 / 921 MHz)
     - 안전하지 않은 클럭
       - 보드 전력 소모 한계나 전원부 IC 때문
-      - 2091 MHz 까지 클럭 해제 가능
+      - 2091 / 998 MHz 까지 클럭 해제 가능
       - [README for sys-clk-OC](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md) 참조
 
   - 메모리 오버클럭 (안전한 클럭: 1862.4 MHz)

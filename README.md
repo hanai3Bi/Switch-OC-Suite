@@ -24,7 +24,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 ## Features
 
 - Erista variant (HAC-001)
-  - CPU Overclock (Safe: 1785 / 921 MHz)
+  - CPU / GPU Overclock (Safe: 1785 / 921 MHz)
     - Unsafe
       - Due to the limit of board power draw or power IC
       - Unlockable frequencies up to 2091 / 998 MHz
