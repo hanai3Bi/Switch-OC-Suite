@@ -38,15 +38,16 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidMtcTable,          1003);
     R_DEFINE_ERROR_RESULT(InvalidDvbTable,          1004);
     R_DEFINE_ERROR_RESULT(InvalidCpuFreqVddEntry,   1005);
-    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,           1006);
-    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,        1007);
-    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1008);
-    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern, 1009);
-    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1010);
-    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1011);
-    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1012);
-    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1013);
-    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,       1014);
+    R_DEFINE_ERROR_RESULT(InvalidCpuVoltDfllEntry,  1006);
+    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,           1007);
+    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,        1008);
+    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1009);
+    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern, 1010);
+    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1011);
+    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1012);
+    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1013);
+    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1014);
+    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,       1015);
 }
 
 namespace ams::ldr::oc {

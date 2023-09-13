@@ -313,9 +313,10 @@ var CustTable: Array<CustEntry> = [
     ["Reduce CPU power draw",
      "Your CPU might not withstand undervolt and performance might drop",
      "<b>0</b> : Default Table",
-     "<b>1</b> : Undervolt Level 1 (SLT)",],
+     "<b>1</b> : Undervolt Level 1 (SLT - CPU process_id: 0)",
+     "<b>2</b> : Undervolt Level 1 (SLT - CPU process_id: 1)",],
      0,
-     [0,1],
+     [0,2],
      1,
   ),
   new CustEntry(

@@ -51,6 +51,28 @@ Result CpuVoltRange(u32* ptr) {
     R_THROW(ldr::ResultInvalidCpuMinVolt());
 }
 
+Result CpuVoltDfll(u32* ptr) {
+    cvb_cpu_dfll_data *entry = reinterpret_cast<cvb_cpu_dfll_data *>(ptr);
+
+    R_UNLESS(entry->tune0_low == 0x0000FFCF,   ldr::ResultInvalidCpuVoltDfllEntry());
+    R_UNLESS(entry->tune0_high == 0x00000000,    ldr::ResultInvalidCpuVoltDfllEntry());
+    R_UNLESS(entry->tune1_low == 0x012207FF,   ldr::ResultInvalidCpuVoltDfllEntry());
+    R_UNLESS(entry->tune1_high == 0x03FFF7FF,    ldr::ResultInvalidCpuVoltDfllEntry());
+
+    if (C.marikoCpuUV) {
+        if (C.marikoCpuUV == 1) {
+            PATCH_OFFSET(&(entry->tune0_low), 0x0000FF90); //process_id 0
+        } else if (C.marikoCpuUV == 2) {
+            PATCH_OFFSET(&(entry->tune0_low), 0x0000FFA0); //process_id 1
+        }
+        PATCH_OFFSET(&(entry->tune0_high), 0x0000FFFF);
+        PATCH_OFFSET(&(entry->tune1_low), 0x021107FF);
+        PATCH_OFFSET(&(entry->tune1_high), 0x00000000);
+    }
+
+    R_SUCCEED();
+}
+
 Result GpuFreqMaxAsm(u32* ptr32) {
     // Check if both two instructions match the pattern
     u32 ins1 = *ptr32, ins2 = *(ptr32 + 1);
@@ -537,6 +559,7 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         { "CPU Freq Vdd",   &CpuFreqVdd,            1, nullptr, CpuClkOSLimit },
         { "CPU Freq Table", CpuFreqCvbTable<true>,  1, nullptr, CpuCvbDefaultMaxFreq },
         { "CPU Volt Limit", &CpuVoltRange,         13, nullptr, CpuVoltOfficial },
+        { "CPU Volt Dfll",  &CpuVoltDfll,           1, nullptr, 0x0000FFCF },
         { "GPU Freq Table", GpuFreqCvbTable<true>,  1, nullptr, GpuCvbDefaultMaxFreq },
         { "GPU Freq Asm",   &GpuFreqMaxAsm,         2, &GpuMaxClockPatternFn },
         //{ "GPU Freq PLL",   &GpuFreqPllLimit,       1, nullptr, GpuClkPllLimit },

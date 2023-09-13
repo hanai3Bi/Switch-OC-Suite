@@ -34,6 +34,16 @@ typedef struct cvb_entry_t {
 } cvb_entry_t;
 static_assert(sizeof(cvb_entry_t) == 0x38);
 
+typedef struct cvb_cpu_dfll_data {
+	u32 tune0_low;
+	u32 tune0_high;
+	u32 tune1_low;
+	u32 tune1_high;
+	unsigned int tune_high_min_millivolts;
+	unsigned int tune_high_margin_millivolts;
+	unsigned long dvco_calibration_max;
+} cvb_cpu_dfll_data;
+
 typedef struct emc_dvb_dvfs_table_t {
     u64 freq;
     s32 volt[4] = {0};
