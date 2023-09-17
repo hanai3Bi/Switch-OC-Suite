@@ -46,6 +46,16 @@ Result CpuVoltRange(u32* ptr) {
             R_SKIP();
 
         PATCH_OFFSET(ptr, C.marikoCpuMaxVolt);
+        // Patch vmin for slt
+        if (C.marikoCpuUV) {
+            if (*(ptr-5) == 620) {
+                PATCH_OFFSET((ptr-5), 600);
+            }
+            if (*(ptr-1) == 620) {
+                PATCH_OFFSET((ptr-1), 600);
+            }
+            
+        }
         R_SUCCEED();
     }
     R_THROW(ldr::ResultInvalidCpuMinVolt());
