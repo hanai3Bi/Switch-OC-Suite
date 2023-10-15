@@ -533,6 +533,24 @@ Result MemFreqMax(u32* ptr) {
     R_SUCCEED();
 }
 
+Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
+    struct {
+        u8 reg;
+        u8 val;
+    } __attribute__((packed)) cmd;
+
+    I2cSession _session;
+    Result res = i2cOpenSession(&_session, dev);
+    if (R_FAILED(res))
+        return res;
+
+    cmd.reg = reg;
+    cmd.val = val;
+    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    i2csessionClose(&_session);
+    return res;
+}
+
 Result EmcVddqVolt(u32* ptr) {
     regulator* entry = reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_2_3.default_uv));
 
@@ -554,9 +572,13 @@ Result EmcVddqVolt(u32* ptr) {
         R_SKIP();
 
     if (emc_uv % uv_step)
-        emc_uv = emc_uv / uv_step * uv_step; // rounding
+        emc_uv = (emc_uv + uv_step - 1) / uv_step * uv_step; // rounding
 
     PATCH_OFFSET(ptr, emc_uv);
+
+    i2cInitialize();
+    I2cSet_U8(I2cDevice_Max77812_2, 0x25, (emc_uv - uv_min) / uv_step);
+    i2cExit();
 
     R_SUCCEED();
 }
