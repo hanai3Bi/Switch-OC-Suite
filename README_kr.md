@@ -2,7 +2,6 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![Downloads](https://img.shields.io/github/downloads/hanai3Bi/Switch-OC-Suite/total)](https://github.com/hanai3Bi/Switch-OC-Suite/releases)
-[![ko-fi](https://img.shields.io/badge/support-ko--fi-ff69b4)](https://ko-fi.com/hanai3Bi)
 
 이 프로젝트는 매우 위험하며 콘솔을 손상시킬 수 있습니다. 따라서 이 프로젝트를 사용하는걸 권장하지 않습니다. 사용할 경우 모든 책임은 본인에게 있습니다.
 

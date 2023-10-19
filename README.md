@@ -2,7 +2,6 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 [![Downloads](https://img.shields.io/github/downloads/hanai3Bi/Switch-OC-Suite/total)](https://github.com/hanai3Bi/Switch-OC-Suite/releases)
-[![ko-fi](https://img.shields.io/badge/support-ko--fi-ff69b4)](https://ko-fi.com/hanai3Bi)
 
  
      
@@ -42,24 +41,24 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
   - DRAM Overclock (Safe: 1996.8 MHz)
 
 - Modded sys-clk and ReverseNX-RT
-  - Auto CPU Boost
+  - ~~Auto CPU Boost~~
     - For faster game loading
     - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
     - Effective only when charger is connected or governor is enabled.
     - This feature is considered unsafe on Erista, especially when combined with high GPU frequency or with governor enabled.
 
-  - CPU & GPU frequency governor (Experimental)
+  - ~~CPU & GPU frequency governor (Experimental)~~
     - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
     - Minimum CPU scaling frequency will be set to 1020Mhz on Mariko devices if set profile value is greater than 1020Mhz.
 
-  - Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)
+  - ~~Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)~~
     - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
 
   - Global Profile
     - Designated a dummy title id `0xA111111111111111`.
     - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
 
-  - Sync ReverseNX Mode
+  - ~~Sync ReverseNX Mode~~
     - No need to change clocks manually after toggling modes in ReverseNX (-RT)
 
 - **[System Settings (Optional)](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/system_settings.md)**
@@ -91,7 +90,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
     </details>
 
 5. Hekate-ipl bootloader Only
-   - Add `kip1=atmosphere/kips/loader.kip` to boot entry section in `bootloader/hekate_ipl.ini`.
+   - Add `kip1=atmosphere/kips/loader.kip` to last line at boot entry section in `bootloader/hekate_ipl.ini`.
 
 ## Updating via AIO
 
@@ -127,3 +126,4 @@ When compilation is done, uncompress the kip to make it work with configurator: 
 - Switchroot for their [modified L4T kernel and device tree](https://gitlab.com/switchroot/kernel)
 - ZatchyCatGames for RE and original OC loader patches for Atmosphere
 - KazushiMe for [Switch-OC-Suite](https://github.com/KazushiMe/Switch-OC-Suite)
+- lineon for research and help

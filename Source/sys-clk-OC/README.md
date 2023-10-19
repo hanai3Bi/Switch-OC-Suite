@@ -83,14 +83,14 @@ To protect the battery from excessive strain, clocks requested from config may b
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
 | **CPU** | 1785     | 1785           | 1785                | 1785   |
-| **GPU** | 460      | 768            | -                   | -      |
+| **GPU** | 460      | 768            | 921                 | 921    |
 
 
 ### Erista (Unsafe allowed)
 |         | Handheld | Charging (USB) | Charging (Official) | Docked |
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
-| **CPU** | 1785     | -              | -                   | -      |
+| **CPU** | 1785     | 1785           | -                   | -      |
 | **GPU** | 460      | 768            | -                   | -      |
 
 
@@ -99,15 +99,15 @@ To protect the battery from excessive strain, clocks requested from config may b
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
 | **CPU** | 1963     | 1963           | 1963                | 1963   |
-| **GPU** | 998      | 998            | 998                 | 998    |
+| **GPU** | 768      | 921            | 998                 | 998    |
 
 
 ### Mariko (Unsafe allowed)
 |         | Handheld | Charging (USB) | Charging (Official) | Docked |
 |:-------:|:--------:|:--------------:|:-------------------:|:------:|
 | **MEM** | -        | -              | -                   | -      |
-| **CPU** | -        | -              | -                   | -      |
-| **GPU** | 998      | -              | -                   | -      |
+| **CPU** | 1963     | 1963           | -                   | -      |
+| **GPU** | 768      | 921            | -                   | -      |
 
 
 ## Installation
@@ -207,12 +207,17 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 | Key                      | Desc                                                                          | Default   |
 |:------------------------:|-------------------------------------------------------------------------------|:---------:|
 |**allow_unsafe_freq**     | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF       |
+|**uncapped_clocks**       | Remove CPU/GPU clock cappings					 		                       | OFF       |
+|**temp_log_interval_ms**  | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms      |
+|**csv_write_interval_ms** | Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms      |
+|**poll_interval_ms**      | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms    |
+
+Only available for prior to Switch OC Suite 1.9.0
+
+| Key                      | Desc                                                                          | Default   |
 |**auto_cpu_boost**        | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | OFF       |
 |**sync_reversenx_mode**   | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON        |
 |**charging_current**      | Charging current limit (100 mA - 2000 mA)                                     | 2000 mA   |
 |**charging_limit_perc**   | Charging limit (20% - 100%)                                                   | 100%(OFF) |
 |**governor_experimental** | CPU & GPU frequency governor (Experimental)                                   | OFF       |
 |**governor_handheld_only**| Use governor only on Handheld Profile		                                   | OFF       |
-|**temp_log_interval_ms**  | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms      |
-|**csv_write_interval_ms** | Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms      |
-|**poll_interval_ms**      | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms    |
