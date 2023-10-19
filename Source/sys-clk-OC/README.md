@@ -215,6 +215,7 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 Only available for prior to Switch OC Suite 1.9.0
 
 | Key                      | Desc                                                                          | Default   |
+|:------------------------:|-------------------------------------------------------------------------------|:---------:|
 |**auto_cpu_boost**        | Auto-boost CPU when system Core #3 utilization ≥ 95%                          | OFF       |
 |**sync_reversenx_mode**   | Sync nominal profile (mode) with ReverseNX (-Tool and -RT)                    | ON        |
 |**charging_current**      | Charging current limit (100 mA - 2000 mA)                                     | 2000 mA   |
