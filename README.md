@@ -68,11 +68,9 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
 1. Download latest [release](https://github.com/hanai3Bi/Switch-OC-Suite/releases).
 
-2. Copy all files in `SdOut` to the root of SD card.
+2. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
 
-3. Grab `x.x.x_loader.kip` for your Atmosphere version, rename it to `loader.kip` and place it in `/atmosphere/kips/`.
-
-4. Customization via [online loader configurator](https://hanai3Bi.github.io/Switch-OC-Suite/#config):
+3. (optional) You can customize via [online loader configurator](https://hanai3Bi.github.io/Switch-OC-Suite/#config):
     <details>
 
     | Defaults   | Mariko        | Erista        |
@@ -89,8 +87,12 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
     </details>
 
-5. Hekate-ipl bootloader Only
-   - Add `kip1=atmosphere/kips/loader.kip` to last line at boot entry section in `bootloader/hekate_ipl.ini`.
+4. Hekate-ipl bootloader Only (fss0) (Not required for AMS fusee)
+   - At boot entry section in `bootloader/hekate_ipl.ini`, Add `kip1=atmosphere/kips/loader.kip` to any line that works.
+
+5. Install [sys-clk-oc](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest/download/sys-clk-oc.zip), or install official [sys-clk](https://github.com/retronx-team/sys-clk/releases) (2.0.0+) instead.
+
+6. (optional) Copy SdOut.zip for useful utilities.
 
 ## Updating via AIO
 
