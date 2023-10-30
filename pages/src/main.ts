@@ -221,8 +221,7 @@ var CustTable: Array<CustEntry> = [
     CustPlatform.All,
     4,
     ["System default: 1785000",
-     "Boost clock will be applied when applications request higher CPU frequency for quicker loading.",
-     "This will be set regardless of whether sys-clk is enabled."],
+     "Boost clock will be applied when applications request Boost Mode via performance configuration."],
     1785_000,
     [1020_000, 3000_000],
     1,
@@ -230,14 +229,14 @@ var CustTable: Array<CustEntry> = [
   ),
   new CustEntry(
     "commonEmcMemVolt",
-    "EMC Vddq (Erista Only) & RAM Vdd2 Voltage in uV",
+    "EMC Vdd2 Voltage in uV",
     CustPlatform.All,
     4,
     ["Acceptable range: 1100000 ≤ x ≤ 1250000, and it should be divided evenly by 12500.",
-     "Erista Default (HOS): 1125000 (bootloader: 1100000)",
-     "Mariko Default: 1100000 (It will not work without sys-clk-OC)",
-     "Official lpddr4(x) range: 1060mV~1175mV",
-     "Public version needs high voltage because of wrong values, but it is recommended to stay within safe limits",
+     "Erista Default: 1125000",
+     "Mariko Default: 1100000",
+     "Official lpddr4(x) range: 1060mV~1175mV (1100mV nominal)",
+     "OCS need high voltage unlike l4t because of not scaling mtc table well. However it is recommended to stay within official limits",
      "Not enabled by default"],
     0,
     [1100_000, 1250_000],
@@ -285,7 +284,7 @@ var CustTable: Array<CustEntry> = [
     4,
     ["Values should be ≥ 1600000, and divided evenly by 3200.",
      "Recommended Clocks: 1862400, 2131200, 2400000 (JEDEC)",
-     "Clocks above 2400Mhz might not boot, or work correctly",
+     "Some clocks above 2400Mhz might not boot, because OCS doesn't scale table very well",
      "<b>WARNING:</b> RAM overclock could be UNSTABLE if timing parameters are not suitable for your DRAM."],
     1996_800,
     [1600_000, 2502_400],
@@ -299,9 +298,8 @@ var CustTable: Array<CustEntry> = [
     ["Acceptable range: 550000 ≤ x ≤ 650000",
      "Value should be divided evenly by 5000",
      "Default: 600000",
-     "Official lpddr4(x) range: 570mV~650mV",
-     "Not enabled by default.",
-     "This will not work without sys-clk-OC."],
+     "Official lpddr4(x) range: 570mV~650mV (600mV nominal)",
+     "Not enabled by default."],
     0,
     [550_000, 650_000],
     5000,
@@ -312,7 +310,6 @@ var CustTable: Array<CustEntry> = [
     CustPlatform.Mariko,
     4,
     ["Reduce CPU power draw",
-     "Your CPU might not withstand undervolt and performance might drop",
      "<b>0</b> : Default Table",
      "<b>1</b> : Undervolt Level 1 (SLT - CPU speedo < 1650)",
      "<b>2</b> : Undervolt Level 1 (SLT - CPU speedo >= 1650)",],
@@ -326,12 +323,13 @@ var CustTable: Array<CustEntry> = [
     CustPlatform.Mariko,
     4,
     ["Reduce GPU power draw",
-     "Your GPU might not withstand undervolt and may not work properly",
-     "Can hang your console, or crash games",
+     "Your GPU might not withstand undervolt, and can hang your console, or crash games",
+     "Undervolting too much will drop GPU performance even if it seems stable",
+     "GPU voltages are dynamic and will change with temperature and gpu speedo",
      "<b>0</b> : Default Table",
      "<b>1</b> : Undervolt Level 1 (SLT: Aggressive)",
      "<b>2</b> : Undervolt Level 2 (HiOPT: Drastic)",
-     "<b>3</b> : Custom static GPU Table (Use Gpu Configuation below)"],
+     "<b>3</b> : Custom static GPU Voltage Table (Use Gpu Configuation below)"],
      0,
      [0,3],
      1,
@@ -819,10 +817,9 @@ class ReleaseAsset {
 
 class ReleaseInfo {
   ocVer: string;
-  amsVer: string;
   loaderKipAsset: ReleaseAsset;
+  sysclkOCAsset: ReleaseAsset
   sdOutZipAsset: ReleaseAsset;
-  amsUrl: string;
 
   readonly ocLatestApi = "https://api.github.com/repos/hanai3Bi/Switch-OC-Suite/releases/latest";
 
@@ -846,10 +843,9 @@ class ReleaseInfo {
 
   parseOcResponse(response) {
     this.ocVer = response.tag_name;
-    this.amsVer = this.ocVer.split(".").slice(0, 3).join(".");
     this.loaderKipAsset = new ReleaseAsset(response.assets.filter( a => a.name.endsWith("loader.kip") )[0]);
-    this.sdOutZipAsset  = new ReleaseAsset(response.assets.filter( a => a.name.endsWith(".zip") )[0]);
-    this.amsUrl = `https://github.com/Atmosphere-NX/Atmosphere/releases/tags/${this.amsVer}`;
+    this.sdOutZipAsset  = new ReleaseAsset(response.assets.filter( a => a.name.endsWith("SdOut.zip") )[0]);
+    this.sysclkOCAsset = new ReleaseAsset(response.assets.filter( a => a.name.endsWith("sys-clk-oc.zip") )[0]);
   };
 };
 
@@ -865,7 +861,7 @@ class DownloadSection {
     await info.load();
     this.update("loader_kip_btn", `loader.kip <b>${info.ocVer}</b><br>${info.loaderKipAsset.updatedAt}`, info.loaderKipAsset.downloadUrl);
     this.update("sdout_zip_btn", `SdOut.zip <b>${info.ocVer}</b><br>${info.sdOutZipAsset.updatedAt}`, info.sdOutZipAsset.downloadUrl);
-    this.update("ams_btn", `Atmosphere-NX <b>${info.amsVer}</b>`, info.amsUrl);
+    this.update("ams_btn", `sys-clk-oc <b>${info.ocVer}</b><br>${info.sysclkOCAsset.updatedAt}`, info.sysclkOCAsset.downloadUrl);
   }
 
   isVisible(): boolean {

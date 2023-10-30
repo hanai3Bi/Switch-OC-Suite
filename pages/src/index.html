@@ -185,7 +185,7 @@
           <details open>
             <summary>Modded sys-clk and ReverseNX-RT</summary>
             <ul>
-              <li>Auto CPU Boost
+              <li STYLE="text-decoration:line-through">Auto CPU Boost
                 <ul>
                   <li>For faster game loading</li>
                   <li>Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is
@@ -194,13 +194,13 @@
                   <li>This feature is considered unsafe on Erista, especially when combined with high GPU frequency or with governor enabled.</li>
                 </ul>
               </li>
-              <li>CPU &amp; GPU frequency governor (Experimental)
+              <li STYLE="text-decoration:line-through">CPU &amp; GPU frequency governor (Experimental)
                 <ul>
                   <li>Adjust frequency based on load. Might decrease power draw but can
                     introduce stutters. Can be turned off for specific titles.</li>
                 </ul>
               </li>
-              <li>Set charging current (100 mA - 2000 mA) and charging limit (20% -
+              <li STYLE="text-decoration:line-through">Set charging current (100 mA - 2000 mA) and charging limit (20% -
                 100%)
                 <ul>
                   <li>Long-term use of charge limit may render the battery gauge
@@ -215,7 +215,7 @@
                     profile" &gt; "System default".</li>
                 </ul>
               </li>
-              <li>Sync ReverseNX Mode
+              <li STYLE="text-decoration:line-through">Sync ReverseNX Mode
                 <ul>
                   <li>No need to change clocks manually after toggling modes in ReverseNX
                     (-RT and -Tool)</li>
@@ -231,10 +231,9 @@
           <h3 id="installation" open>Installation</h3>
           <ol type="1">
             <li>Download latest <a href="#download">release</a>.</li>
-            <li>Copy all files in <code>SdOut</code> to the root of SD card.</li>
             <li>Grab <code>x.x.x_loader.kip</code> for your Atmosphere version, rename it to <code>loader.kip</code> and
               place it in <code>/atmosphere/kips/</code>.</li>
-            <li>Customization via <a href="#config">online loader configurator</a>
+            <li>(optional) You can customize via <a href="#config">online loader configurator</a>
               <table role="grid">
                 <thead>
                   <tr>
@@ -262,12 +261,12 @@
                   <tr>
                     <td>GPU OC</td>
                     <td>1267 MHz Max</td>
-                    <td>N/A</td>
+                    <td>998 MHz Max</td>
                   </tr>
                   <tr>
                     <td>RAM OC</td>
-                    <td>1996 MHz Max</td>
-                    <td>1862 MHz Max</td>
+                    <td>1996 MHz</td>
+                    <td>1862 MHz</td>
                   </tr>
                   <tr>
                     <td>RAM Volt</td>
@@ -277,16 +276,30 @@
                   <tr>
                     <td>RAM Timing</td>
                     <td>Auto-Adjusted</td>
+                    <td>Auto-Adjusted</td>
+                  </tr>
+                  <tr>
+                    <td>CPU UV</td>
                     <td>Disabled</td>
+                    <td>N/A</td>
+                  </tr>
+                  <tr>
+                    <td>GPU UV</td>
+                    <td>Disabled</td>
+                    <td>N/A</td>
                   </tr>
                 </tbody>
               </table>
             </li>
-            <li>Hekate-ipl bootloader Only
+            <li>Hekate-ipl bootloader Only (fss0) (Not required for AMS fusee)
               <ul>
-                <li>Add <code>kip1=atmosphere/kips/loader.kip</code> to boot entry
-                  section in <code>bootloader/hekate_ipl.ini</code>.</li>
+                <li>At boot entry section in <code>bootloader/hekate_ipl.ini</code>,
+                  Add <code>kip1=atmosphere/kips/loader.kip</code> to any line that works.</li>
               </ul>
+            </li>
+            <li>Install sys-clk-oc, or install official sys-clk (2.0.0+) instead.
+            </li>
+            <li>(optional) Copy SdOut.zip for useful utilities.
             </li>
           </ol>
           <details>
@@ -309,7 +322,7 @@
               <li>Above all else, you should know <a href="#readme">what "unsafe" means and issues might arise</a>.</li>
               <li>See the end of <a href="https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md"
                   target="_blank">README in sys-clk-OC</a>. Place this line <code>allow_unsafe_freq=1</code> under
-                <code>[value]</code> section in
+                <code>[values]</code> section in
                 <code>/config/sys-clk/config.ini</code>
               </li>
             </ul>
@@ -318,9 +331,12 @@
             <summary>I would like to bypass limit enforced in sys-clk to improve handheld performance without charger
               connected.</summary>
             <ul>
-              <li>Never will it be implemented here, or work out of the box.</li>
-              <li>You have to modify the code yourself for your own use. If you are to share modified binaries you have
-                made based on this project publicly, make sure to comply with GPL v2 licenses.</li>
+              <li>Bypassing clock cappings will be bad for battery</a>.</li>
+              <li>See the end of <a href="https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/Source/sys-clk-OC/README.md"
+                target="_blank">README in sys-clk-OC</a>. Place this line <code>uncapped_clocks=1</code> under
+              <code>[values]</code> section in
+              <code>/config/sys-clk/config.ini</code>
+            </li>
             </ul>
           </details>
         </body>
@@ -349,6 +365,8 @@
                   kernel
                   and device tree</a></li>
               <li>ZatchyCatGames for RE and original OC loader patches for Atmosphere</li>
+              <li><a href="https://github.com/KazushiMe/Switch-OC-Suite" target="_blank">KazushiMe for original Switch-OC-Suite</a>
+                <li>lineon for research and help</li>
             </ul>
           </details>
         </footer>
