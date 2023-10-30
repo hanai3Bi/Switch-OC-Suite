@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define CUST_REV 10
+#define CUST_REV 11
 
 #include "oc_common.hpp"
 #include "pcv/pcv_common.hpp"

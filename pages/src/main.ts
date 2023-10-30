@@ -1,5 +1,5 @@
 /* Config: Cust */
-const CUST_REV_ADV = 10;
+const CUST_REV_ADV = 11;
 
 enum CustPlatform {
   Undefined = 0,
