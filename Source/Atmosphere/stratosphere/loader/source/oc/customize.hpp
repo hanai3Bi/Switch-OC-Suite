@@ -54,6 +54,7 @@ typedef struct CustomizeTable {
     u32 marikoEmcVddqVolt;
     u32 marikoCpuUV;
     u32 marikoGpuUV;
+    u32 commonGpuVoltOffset;
     // advanced config
     u32 marikoEmcDvbShift;
     u32 ramTimingPresetOne;

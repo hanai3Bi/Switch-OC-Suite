@@ -334,6 +334,18 @@ var CustTable: Array<CustEntry> = [
      [0,3],
      1,
   ),
+  new CustEntry(
+    "commonGpuVoltOffset",
+    "GPU Volt Offset",
+    CustPlatform.All,
+    4,
+    ["Negative Voltage offset value for gpu dynamic voltage calculation",
+     "For example, value of 10 will decrease 10mV gpu volt from all frequencies",
+     "Acceptable range: 0 ~ 100"],
+     0,
+     [0,100],
+     1,
+  ),
 ];
 
 var AdvTable: Array<AdvEntry> = [

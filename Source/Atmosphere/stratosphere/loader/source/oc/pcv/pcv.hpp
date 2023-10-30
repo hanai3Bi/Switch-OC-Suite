@@ -289,6 +289,13 @@ Result GpuFreqCvbTable(u32* ptr) {
             entry++;
         }
     }
+    else if (C.commonGpuVoltOffset) {
+        cvb_entry_t* entry = static_cast<cvb_entry_t *>(gpu_cvb_table_head);
+        for (size_t i = 0; i < customize_entry_count; i++) {
+            PATCH_OFFSET(&(entry->cvb_pll_param.c0), (entry->cvb_pll_param.c0 - C.commonGpuVoltOffset*1000));
+            entry++;
+        }
+    }
 
     R_SUCCEED();
 };
