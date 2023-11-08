@@ -207,6 +207,7 @@ The `[values]` section allows you to alter timings in sys-clk, you should not ne
 |:------------------------:|-------------------------------------------------------------------------------|:---------:|
 |**allow_unsafe_freq**     | Allow unsafe frequencies (CPU > 1963.5 MHz, GPU > 921.6 MHz)                  | OFF       |
 |**uncapped_clocks**       | Remove CPU/GPU clock cappings					 		                       | OFF       |
+|**override_boost_mode**   | Override boost mode frequency with user set values (CPU/GPU)				   | OFF       |
 |**temp_log_interval_ms**  | Defines how often sys-clk log temperatures, in milliseconds (`0` to disable)  | 0 ms      |
 |**csv_write_interval_ms** | Defines how often sys-clk writes to the CSV, in milliseconds (`0` to disable) | 0 ms      |
 |**poll_interval_ms**      | Defines how fast sys-clk checks and applies profiles, in milliseconds         | 500 ms    |

@@ -341,6 +341,7 @@ var CustTable: Array<CustEntry> = [
     4,
     ["Negative Voltage offset value for gpu dynamic voltage calculation",
      "For example, value of 10 will decrease 10mV gpu volt from all frequencies",
+     "Default gpu vmin: Erista - 812.5mV / Mariko - 610mV",
      "Acceptable range: 0 ~ 100"],
      0,
      [0,100],

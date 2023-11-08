@@ -90,7 +90,8 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 4. Hekate-ipl bootloader (fss0) Only  (Not required for AMS fusee)
    - At boot entry section in `bootloader/hekate_ipl.ini`, Add `kip1=atmosphere/kips/loader.kip` to any line that works.
 
-5. Install [sys-clk-oc](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest/download/sys-clk-oc.zip), or install official [sys-clk](https://github.com/retronx-team/sys-clk/releases) (2.0.0+) instead (Not recommended because of no protection from unsafe freqs).
+5. Install [sys-clk-oc](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest/download/sys-clk-oc.zip)
+   official [sys-clk](https://github.com/retronx-team/sys-clk/releases) (2.0.0+) is compatible but not recommended (no bugfixes or additional features).
 
 6. (optional) Copy SdOut.zip for useful utilities.
 
