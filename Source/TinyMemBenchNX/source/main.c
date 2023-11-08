@@ -903,7 +903,7 @@ int main(int argc, char* argv[])
 
     printf("TinyMemBenchNX v0.4.11\n\
 (based on tinymembench-pthread, a multi-thread fork of simple benchmark for memory throughput and latency)\n\n");
-    printf("Copyright (c) 2021-2022 KazushiMe\n");
+    printf("Copyright (c) 2011-2016 Siarhei Siamashka\n");
     printf("Copyright (c) 2023 hanai3Bi\n");
 
     printf("\n");
