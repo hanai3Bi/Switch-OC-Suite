@@ -8,7 +8,7 @@
 
 한국어 : [Korean](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/README_kr.md)
 
-This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to use it, USE AT YOUR OWN RISK
+This project is very dangerous and can possibly damage your console. Therefore I do not recommend using this project. If you decide to use it, USE AT YOUR OWN RISK. THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND.
 
 Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
@@ -40,26 +40,12 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
   - DRAM Overclock (Safe: 1996.8 MHz)
 
-- Modded sys-clk and ReverseNX-RT
-  - ~~Auto CPU Boost~~
-    - For faster game loading
-    - Enable CPU Boost (1785 MHz) when CPU Core#3 (System Core) is stressed (mainly I/O operations).
-    - Effective only when charger is connected or governor is enabled.
-    - This feature is considered unsafe on Erista, especially when combined with high GPU frequency or with governor enabled.
-
-  - ~~CPU & GPU frequency governor (Experimental)~~
-    - Adjust frequency based on load. Might decrease power draw but can introduce stutters. Can be turned off for specific titles.
-    - Minimum CPU scaling frequency will be set to 1020Mhz on Mariko devices if set profile value is greater than 1020Mhz.
-
-  - ~~Set charging current (100 mA - 2000 mA) and charging limit (20% - 100%)~~
-    - Long-term use of charge limit may render the battery gauge inaccurate. Performing full cycles could help recalibration, or try [battery_desync_fix_nx](https://github.com/CTCaer/battery_desync_fix_nx).
-
+- Modded sys-clk
   - Global Profile
     - Designated a dummy title id `0xA111111111111111`.
     - Priority: "Temp overrides" > "Application profile" > "Global profile" > "System default".
-
-  - ~~Sync ReverseNX Mode~~
-    - No need to change clocks manually after toggling modes in ReverseNX (-RT)
+  - Real Voltage readings (CPU/GPU/RAM)
+  - Bug Fixes
 
 - **[System Settings (Optional)](https://github.com/hanai3Bi/Switch-OC-Suite/blob/master/system_settings.md)**
 
@@ -76,10 +62,9 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
     | Defaults   | Mariko        | Erista        |
     | ---------- | ------------- | ------------- |
     | CPU OC     | 2295 MHz Max  | 2091 MHz Max  |
-    | CPU Boost  | 1785 MHz      | N/A           |
-    | CPU Volt   | 1235 mV Max   | 1235 mV Max   |
-    | GPU OC     | 1267 MHz Max  | N/A           |
-    | RAM OC     | 1996 MHz Max  | 1862 MHz Max  |
+    | CPU Volt   | 1235 mV       | 1235 mV       |
+    | GPU OC     | 1267 MHz Max  | 998 Mhz max   |
+    | RAM OC     | 1996 MHz      | 1862 MHz      |
     | RAM Volt   | Disabled      | Disabled      |
     | RAM Timing | Auto-Adjusted | Auto-Adjusted |
     | CPU UV     | Disabled      | N/A           |
@@ -91,7 +76,7 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
    - At boot entry section in `bootloader/hekate_ipl.ini`, Add `kip1=atmosphere/kips/loader.kip` to any line that works.
 
 5. Install [sys-clk-oc](https://github.com/hanai3Bi/Switch-OC-Suite/releases/latest/download/sys-clk-oc.zip)
-   official [sys-clk](https://github.com/retronx-team/sys-clk/releases) (2.0.0+) is compatible but not recommended (no bugfixes or additional features).
+   - official [sys-clk](https://github.com/retronx-team/sys-clk/releases) (2.0.0+) is compatible, but not recommended (no bugfixes or additional features).
 
 6. (optional) Copy SdOut.zip for useful utilities.
 
@@ -108,11 +93,13 @@ Overclocking Suite for Nintendo Switch consoles running Atmosphere CFW.
 
 <details>
 
-Grab necessary patches from the repo, then compile sys-clk, ReverseNX-RT and Atmosphere loader with devkitpro.
+1. Copy Switch-OC-Suite files into Atmosphere folder. 
 
-Before compiling Atmosphere loader, run `patch.py` in `Atmosphere/stratosphere/loader/source/` to insert oc module into loader sysmodule.
+2. Before compiling, run `patch.py` in `Atmosphere/stratosphere/loader/source/` to insert oc module into loader sysmodule.
 
-When compilation is done, uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
+3. Compile Atmosphere loader with devkitpro.
+
+4. When compilation is done, uncompress the kip to make it work with configurator: `hactool -t kip1 Atmosphere/stratosphere/loader/out/nintendo_nx_arm64_armv8a/release/loader.kip --uncompress=./loader.kip`
 
 </details>
 
