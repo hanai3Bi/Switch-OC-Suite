@@ -538,6 +538,12 @@ Result MemFreqMax(u32* ptr) {
     R_SUCCEED();
 }
 
+Result GpuVmin(u32* ptr) {
+    if(C.gpuVmin < 800)
+        PATCH_OFFSET(ptr, C.marikoEmcMaxClock);
+    R_SUCCEED();
+}
+
 Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
     struct {
         u8 reg;
@@ -599,6 +605,7 @@ void Patch(uintptr_t mapped_nso, size_t nso_size) {
         { "CPU Volt Dfll",  &CpuVoltDfll,           1, nullptr, 0x0000FFCF },
         { "GPU Freq Table", GpuFreqCvbTable<true>,  1, nullptr, GpuCvbDefaultMaxFreq },
         { "GPU Freq Asm",   &GpuFreqMaxAsm,         2, &GpuMaxClockPatternFn },
+        { "GPU vMin    ",   &GpuVmin,               0, nullptr, &GpuVmin },
         //{ "GPU Freq PLL",   &GpuFreqPllLimit,       1, nullptr, GpuClkPllLimit },
         { "MEM Freq Mtc",   &MemFreqMtcTable,       0, nullptr, EmcClkOSLimit },
         { "MEM Freq Dvb",   &MemFreqDvbTable,       1, nullptr, EmcClkOSLimit },
