@@ -52,6 +52,7 @@ namespace mariko {
     constexpr u32 CpuClkOfficial  = 1963'500;
     constexpr u32 CpuVoltOfficial = 1120;
 
+
     constexpr cvb_entry_t GpuCvbTableDefault[] = {
         // GPUB01_NA_CVB_TABLE
         {   76800, {}, {  610000,                                 } },
@@ -75,6 +76,7 @@ namespace mariko {
     };
 
     constexpr u32 GpuClkPllLimit  = 1300'000'000;
+    constexpr u32 GpuVmin = 610;
 
     /* GPU Max Clock asm Pattern:
     *
